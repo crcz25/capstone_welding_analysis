@@ -1,0 +1,19 @@
+<icon_data_format valuetype="IMAGE" name="IMAGE" >
+ <parameter name="size" >786432</parameter>
+ <parameter name="version" >1</parameter>
+ <parameter name="layout" >SCAN</parameter>
+ <component valuetype="image" name="Image" >
+  <parameter name="size" >1536</parameter>
+  <parameter name="height" >512</parameter>
+  <imagetraits>
+   <parameter name="size x" >1536</parameter>
+   <parameter name="size y" >512</parameter>
+   <parameter name="offset x" >0</parameter>
+   <parameter name="offset y" >0</parameter>
+  </imagetraits>
+  <subcomponent valuetype="BYTE" name="Image" >
+   <parameter name="size" >1536</parameter>
+   <parameter name="width" >1536</parameter>
+  </subcomponent>
+ </component>
+</icon_data_format>

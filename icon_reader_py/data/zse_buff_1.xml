@@ -1,0 +1,32 @@
+<icon_data_format valuetype="" name="" >
+ <parameter name="size" >4608</parameter>
+ <parameter name="version" >1</parameter>
+ <parameter name="layout" >SUBCOMPONENT</parameter>
+ <component valuetype="DCM" name="Hi3D 1" >
+  <parameter name="size" >4608</parameter>
+  <parameter name="height" >1</parameter>
+  <sensorrangetraits>
+   <parameter name="coordinates" ></parameter>
+   <parameter name="fov x0" >0</parameter>
+   <parameter name="fov x1" >1535</parameter>
+   <parameter name="fov x2" >0</parameter>
+   <parameter name="fov x3" >1535</parameter>
+   <parameter name="fov z0" >1</parameter>
+   <parameter name="fov z1" >1</parameter>
+   <parameter name="fov z2" >8191</parameter>
+   <parameter name="fov z3" >8191</parameter>
+   <parameter name="origin x" >0</parameter>
+   <parameter name="scale x" >1</parameter>
+   <parameter name="origin z" >510.875</parameter>
+   <parameter name="scale z" >-0.0625</parameter>
+  </sensorrangetraits>
+  <subcomponent valuetype="BYTE" name="Intensity" >
+   <parameter name="size" >1536</parameter>
+   <parameter name="width" >1536</parameter>
+  </subcomponent>
+  <subcomponent valuetype="WORD" name="Range" >
+   <parameter name="size" >3072</parameter>
+   <parameter name="width" >1536</parameter>
+  </subcomponent>
+ </component>
+</icon_data_format>
