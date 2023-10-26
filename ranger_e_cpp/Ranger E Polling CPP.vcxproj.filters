@@ -36,4 +36,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="HorMaxThr.prm">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="Ranger E Hi3D.prm">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>

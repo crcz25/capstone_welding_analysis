@@ -130,6 +130,10 @@
     <ClInclude Include="DataAccess.h" />
     <ClInclude Include="ThreadSafePrint.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="HorMaxThr.prm" />
+    <None Include="Ranger E Hi3D.prm" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

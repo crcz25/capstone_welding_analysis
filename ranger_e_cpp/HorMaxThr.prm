@@ -1,0 +1,60 @@
+<ROOT valuetype='CameraObject'>
+<CAMERA name='SICKIVP Ranger E55' valuetype='PM' >
+
+<MODULE name='Ethernet' valuetype='COMM' >
+<GROUP name='Parameters'>
+<PARAMETER name='max package size' valuetype='int' >1472</PARAMETER>
+<PARAMETER name='redundancy frequency' valuetype='int'>10</PARAMETER>
+</GROUP>
+</MODULE>
+
+<CONFIGURATION name='Measurement' valuetype='Measurement' >
+	<GROUP name='Parameters'>
+	<PARAMETER name='cycle time' valuetype='int' >3000</PARAMETER>
+	<PARAMETER name='start column' valuetype='int' >0</PARAMETER>
+	<PARAMETER name='number of columns' valuetype='int'>1536</PARAMETER>
+	<PARAMETER name='trig mode' valuetype='int' >0</PARAMETER>
+	<PARAMETER name='number of pulses per trig' valuetype='int' >1</PARAMETER>
+	<PARAMETER name='use enable' valuetype='int' >0</PARAMETER>
+	<PARAMETER name='scan height' valuetype='int' >512</PARAMETER>
+	<PARAMETER name='mark' valuetype='int' >0</PARAMETER>
+	</GROUP>
+
+	<COMPONENT name='MaxThr 1' valuetype='HorMaxThr' >
+	<GROUP name='Parameters'>
+	<PARAMETER name='enable' valuetype='int' >1</PARAMETER>
+	<PARAMETER name='start row' valuetype='int' >0</PARAMETER>
+	<PARAMETER name='number of rows' valuetype='int' >512</PARAMETER>
+	<PARAMETER name='exposure time' valuetype='int' >5000</PARAMETER>
+	<PARAMETER name='gain' valuetype='int' >1</PARAMETER>
+	<PARAMETER name='ad bits' valuetype='int' >7</PARAMETER>
+	<PARAMETER name='threshold' valuetype='int' >30</PARAMETER>
+	<PARAMETER name='median' valuetype='int' >1</PARAMETER>
+	<PARAMETER name='morphology' valuetype='int' >0</PARAMETER>
+	<PARAMETER name='morphology size' valuetype='int' >3</PARAMETER>
+	</GROUP>
+	</COMPONENT>
+</CONFIGURATION>
+
+<CONFIGURATION name='Image' valuetype='Image' >
+	<GROUP name='Parameters'>
+	<PARAMETER name='start column' valuetype='int' >0</PARAMETER>
+	<PARAMETER name='number of columns' valuetype='int' >1536</PARAMETER>
+	<PARAMETER name='trig mode' valuetype='int' >0</PARAMETER>
+	<PARAMETER name='number of pulses per trig' valuetype='int' >1</PARAMETER>
+	<PARAMETER name='use enable' valuetype='int' >0</PARAMETER>
+	</GROUP>
+
+	<COMPONENT name='Image 1' valuetype='image' >
+	<GROUP name='Parameters'>
+	<PARAMETER name='enable' valuetype='int' >1</PARAMETER>
+	<PARAMETER name='measurement ROI overlay' valuetype='int' >0</PARAMETER>
+	<PARAMETER name='start row' valuetype='int' >0</PARAMETER>
+	<PARAMETER name='number of rows' valuetype='int' >512</PARAMETER>
+	<PARAMETER name='exposure time' valuetype='int' >10000</PARAMETER>
+	<PARAMETER name='gain' valuetype='int' >1</PARAMETER>
+	</GROUP>
+	</COMPONENT>
+</CONFIGURATION>
+</CAMERA>
+</ROOT>
