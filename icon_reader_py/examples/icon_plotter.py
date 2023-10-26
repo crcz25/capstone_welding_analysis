@@ -28,6 +28,26 @@ def main():
             plt.figure(f"Subcomponents for {name}")
             range_image = component.get_range()
 
+            # Plot only the first row of the range image (first scan in time)
+            row = range_image[0, :]
+            x_axis = range(len(row))
+            fig, ax = plt.subplots()
+            ax.plot(x_axis, row)
+            ax.set(xlabel="pixel", ylabel="range", title="Range image row")
+            ax.grid()
+            plt.show()
+
+            # Plot 3d image of the range image
+            x = range_image.shape[1]
+            y = range_image.shape[0]
+            fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+            x_axis = range(x)
+            y_axis = range(y)
+            X, Y = np.meshgrid(x_axis, y_axis)
+            ax.plot_surface(X, Y, range_image)
+            ax.set(xlabel="x", ylabel="y", zlabel="range", title="Range image")
+            plt.show()
+
             if range_image is not None:
                 plt.subplot(1, 3, 1)
                 plt.title("Range image")
