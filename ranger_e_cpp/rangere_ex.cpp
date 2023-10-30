@@ -31,6 +31,8 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <locale>
+#include <chrono>
 
 // Include the icon api
 #include "icon_api.h"
@@ -147,18 +149,6 @@ int main(int argc, char* argv[])
 	else {
 		cout << "Please enter IP address of camera: ";
 		cin >> ip;
-	}
-
-	// Set how ofter an image is saved
-	int modulo;
-	// Grab the second argument as the modulo value.
-	if (argc > 2) {
-		modulo = atoi(argv[2]);
-		cout << "Using modulo: " << modulo << endl;
-	}
-	else {
-		cout << "Please enter modulo value: ";
-		cin >> modulo;
 	}
 
 	//********** BEGIN CAMERA CONTROL INIT
@@ -640,21 +630,22 @@ int main(int argc, char* argv[])
 	// Setup a time counter and a scan counter to measure the profile rate
 	int oldtick = 0, count = 0;
 
-	// Get now time
-	time_t now = time(0);
-	std::string filename = "SCAN" + std::to_string(now) + ".dat";
-	ofstream myfile;
-	myfile.open(filename, ios::out | ios::app);
+	// Get the current time
+	auto currentTime = std::chrono::system_clock::now();
+	std::time_t now = std::chrono::system_clock::to_time_t(currentTime);
 
-	// Save the xml data format to file
-	ofstream myfile2;
-	myfile2.open("SCAN" + std::to_string(now) + ".xml", ios::out | ios::app);
-	myfile2 << dr->toString().c_str() << endl;
-	myfile2.close();
+	// Define a format for the date and time
+	std::tm timeInfo;
+	localtime_s(&timeInfo, &now); // Use localtime_s on Windows, or localtime on Linux/Mac
+	char buffer[80];
+	strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H-%M-%S", &timeInfo);
+
+	// Create the filename with the formatted date and time
+	std::string filename = "SCAN_" + std::string(buffer);
 
 	// Main Loop. In this loop we will poll for incoming data until the user presses a key
 	// Every time we get data we will perform calibration and rectification of this data
-	while (!_kbhit()) // while no key was pressed...
+	while (true) // while no key was pressed...
 	{
 		// Ask the frame grabber if there is any new buffer available in the FIFO.
 		// If no data has arrived within 1000 ms we will timeout and continue
@@ -674,97 +665,44 @@ int main(int argc, char* argv[])
 				count = 0;
 			}
 
+			// Print stats of current itreration
+			cout << "SCAN ID: " << outBufferRectified.getScanID(0) << endl;
+			cout << "Size MB: " << grabber->getDataFormat()->dataSize() << endl;
+			cout << "Number of scans: " << count << endl;
+
 			// Apply the calibration filter to get calibrated data in world units.
 			// The result is stored in outBufferCalibrated
 			calibrationFilter.apply(*inBuffer, outBufferCalibrated);
-
-			// To access the calibrated data we call the getReadPointer() member of the output buffer
-			// The calibrated data contains two components: range (R) and position (X)
-			// The read pointers received will point out one region of memory each. The rangeX region
-			// is a consecutive array of RAM where all the X values of the entire buffer are stored.
-			// In the same way the rangeR pointer points out a consecutive array of R (range) values.
-			// The parameter file used in this example contains a Ranger E Hi3D (DCM) component which
-			// also includes an intensity and optionally a scatter subcomponent. These two values can 
-			// be extracted in the same way by requesting a read pointer to "Intensity" and "Scatter"
-			const float* rangeX;
-			res = outBufferCalibrated.getReadPointer("Hi3D 1", "Range X", rangeX);
-			const float* rangeR;
-			res = outBufferCalibrated.getReadPointer("Hi3D 1", "Range R", rangeR);
 
 			// Apply the rectification filter to generate resampled range data in a format which directly
 			// corresponds to real world units.
 			// This works in the same way as the calibration filters and you can retrieve read pointers to 
 			// arrays of consecutive range, intensity and optionally also scatter data in the same way
 			rectificationFilter.apply(outBufferCalibrated, outBufferRectified);
-			const float* range;
-			res = outBufferRectified.getReadPointer("Hi3D 1", "Range", range);
-			const float* intensity;
-			res = outBufferRectified.getReadPointer("Hi3D 1", "Intensity", intensity);
-
-			// Now we can access individual pixels and e.g. print the range and intensity of pixel
-			// (x,y) = (100, 200)
-			// We first find out how many horizontal pixels there are in a buffer. The buffers are
-			// organized row by row in memory and since this is a buffer with the subcomponent layout 
-			// we can easily access a certain pixel by just adding the offset from the origin.
-			// This offset is (of course) x + buffer width * y
-			int bwidth = dr->getComponent(0)->getNamedSubComponent("Range")->getWidth();
-			int offset = 750 + 200 * bwidth;
-			cout << "(750, 200): Range = " << *(range + offset)
-				<< ", Intensity = " << *(intensity + offset) << endl;
-
-
-			// Print the entire buffer to file
-			// The buffer is organized in the subcomponent layout. This means that the first subcomponent
-			// is stored first, then the second, etc. The first subcomponent is the range component and
-			// the second is the intensity component. The third subcomponent is the scatter component
-			// which is optional and may not be present in the data format. The scatter component is
-			// not used in this example.
-			// The buffer is stored in a binary format. The first 4 bytes are the number of scans in the
-			// buffer. The next 4 bytes are the number of subcomponents in the buffer. The next 4 bytes
-			// are the number of pixels in the first subcomponent. The next 4 bytes are the number of
-			// pixels in the second subcomponent, etc. After this header the data is stored in consecutive
-			// order. The first subcomponent is stored first, then the second, etc. Each subcomponent is
-			// stored as a consecutive array of floats. The first pixel of the first subcomponent is stored
-			// first, then the second, etc. The first pixel of the second subcomponent is stored after the
-			// last pixel of the first subcomponent, etc.
-			// The file is stored in the same folder as the application executable in .dat format
-			// The file name is "buffer.dat"
-			// cout << "Writing buffer to file... ";
-			// outBufferRectified.saveBuffer("buffer.dat");
-			// Build the row of data with the Intensity and Range components
-			// The buffer is organized in the subcomponent layout. This means that the first subcomponent
-			// is stored first, then the second, etc. The first subcomponent is the range component and
-
-			cout << "SCAN ID: " << outBufferRectified.getScanID(0) << endl;
-			cout << "Size MB: " << grabber->getDataFormat()->dataSize() << endl;
-
-
-			// Save the data to a xml and dat (at that time)
-			outBufferRectified.saveBuffer(to_string(outBufferRectified.getScanID(0)).c_str());
-			cout << "Done." << endl;
 
 			// Print the structure of the buffer
 			accessData(&outBufferRectified);
 
-			// Save the data to a image file and raw based on modulo
-			if (outBufferRectified.getScanID(0) % modulo == 0) {
-				cout << "Saving image to file... " << endl;
-				ostringstream str, str2;
-				/// Save the image in BMP format.
-				str << "SCAN" << inBuffer->getScanID(0) << ".BMP";
-				cout << "Saving image to " << str.str() << endl;
-				inBuffer->saveImage(str.str().c_str());
-				// Save the image in RAW format.
-				// str2 << "SCAN" << outBufferRectified.getScanID(0) << ".RAW";
-				// cout << "Saving image to " << str2.str() << endl;
-				// saveRaw(str2.str(), outBufferRectified.getReadPointer(0), outBufferRectified.getScanSize());
-			}
+			// Save the data to a xml and dat (at that time)
+			outBufferRectified.saveBuffer(filename.c_str());
+
+			/// Save the image in BMP format.
+			cout << "Saving image to file... " << endl;
+			ostringstream str;
+			cout << "Saving image to " << str.str() << endl;
+			// Generate the filename for the image
+			filename = filename + ".png";
+			// Save the image
+			inBuffer->saveImage(filename.c_str(), "PNG");
 
 			// We are now done with the original Icon Buffer. We therefore need to inform the grabber that
 			// this buffer can be reused to store new incoming data
 			grabber->releaseIconBuffer();
 
 			cout << endl;
+
+			// Exit the while loop
+			break;
 		}
 		else
 		{
