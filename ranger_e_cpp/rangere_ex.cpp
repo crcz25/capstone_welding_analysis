@@ -25,7 +25,10 @@
    $Author: $
    $HeadURL:  $
 
-   Argument list: <IP> <modulo> <IN parameter file> <config mode>
+   Argument list: <IP> <IN parameter file> <config mode>
+   IP: IP address of camera
+   IN parameter file: Parameter file to load into camera (.PRM)
+   config mode: Configuration to use (Measurement or Image)
 */
 #include <iostream>
 #include <fstream>
@@ -233,26 +236,24 @@ int main(int argc, char* argv[])
 	// configuration
 
 	// Download the current parameter file
-	ret = cam->fileSaveParameters("DOWNLOAD.PRM");
-	if (ret != EthernetCamera::E_ALL_OK) {
-		cout << "Download of parameter file failed." << endl << endl;
-		cout << "Press enter to exit application.";
-		cin.get();
-		return closeDown(-1, cam, NULL);
-	}
-	// Grab the third argument as the parameter file to use.
-	if (argc > 3) {
-		cout << "Using parameter file: " << argv[3] << endl;
-		ret = cam->fileLoadParameters(argv[3]);
+	// ret = cam->fileSaveParameters("DOWNLOAD.PRM");
+	// if (ret != EthernetCamera::E_ALL_OK) {
+	//	cout << "Download of parameter file failed." << endl << endl;
+	//	cout << "Press enter to exit application.";
+	//	cin.get();
+	//	return closeDown(-1, cam, NULL);
+	// }
+	// Grab the second argument as the parameter file to use.
+	if (argc > 2) {
+		cout << "Using parameter file: " << argv[2] << endl;
+		ret = cam->fileLoadParameters(argv[2]);
 	}
 	else {
-		cout << "Loading parameter file: DOWNLOAD.PRM" << endl;
-		// ret = cam->fileLoadParameters("DOWNLOAD.PRM");
-		ret = cam->fileLoadParameters("Ranger E Hi3D.PRM");
+		cout << "Please enter parameter file to use: ";
+		string prm;
+		cin >> prm;
+		ret = cam->fileLoadParameters(prm.c_str());
 	}
-
-	// ret = cam->fileLoadParameters("Ranger E Hi3D.prm");
-	// ret = cam->fileLoadParameters("HorMaxThr.prm");
 
 	// If we were not able to send the file to the camera we shut down the application in this example.
 	if (ret != EthernetCamera::E_ALL_OK) {
@@ -281,13 +282,13 @@ int main(int argc, char* argv[])
 	for (size_t i = 0; i < configs.size(); i++) {
 		cout << i << " -- " << configs[i].c_str() << endl;
 	}
-	// Grab the fourth argument as the configuration to use.
-	if (argc > 4) {
-		cout << "Using configuration: " << argv[4] << endl;
-		ret = cam->setActiveConfiguration(argv[4]);
+	// Grab the third argument as the configuration to use.
+	if (argc > 3) {
+		cout << "Using configuration: " << argv[3] << endl;
+		ret = cam->setActiveConfiguration(argv[3]);
 	}
 	else {
-		cout << "Using configuration: Measurement" << endl;
+		cout << "Using default configuration: Measurement" << endl;
 		ret = cam->setActiveConfiguration("Measurement");
 	}
 
