@@ -1,25 +1,42 @@
-/** rangere_ex.cpp
+/** calibration.cpp
 
-    This example covers the basic functions like setting up the camera and framegrabber classes,
-    start and stop the camera, load parameter file. The example ends up with a polling mode operation
-    to aquire frame grabber data.
+	This example shows how to
 
-    
-    \par Copyright
-    (c) 2007 SICK IVP AB
+	* Connect to an ethernet camera
+	* Set up the camera configuration using a parameter file stored on disk
+	* Set up a software frame grabber and configure it to listen to input from the ethernet camera
+	* Retrieve scan data from the camera using polling
+	* Filter the raw data to get calibrated data
+	* Filter the calibrated data to get rectified data
+
+	The example works with Ranger E and Ruler E cameras
+	The camera needs to have a calibration LUT stored in flash. If you run the example on a Ruler E
+	this is always the case since it comes shipped with a precalibrated LUT. If you use a Ranger E or D
+	camera you first need to create a calibration LUT with the Coordinator tool
+
+	To use the example with a Ranger D camera you need to remove all references to the Intensity
+	subcomponent since Ranger D cameras only deliver range data
+
+	\par Copyright
+	(c) 2009 SICK IVP AB
 
    $Revision: $
    $LastChangedDate: $
    $Author: $
    $HeadURL:  $
+
+   Argument list: <IP> <modulo> <IN parameter file> <config mode>
 */
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 
-// Include the iCon API
+// Include the icon api
 #include "icon_api.h"
+
+// Include the auto linker configuration for iCon API.
+#include "icon_auto_link.h"
 
 #include <windows.h>
 
@@ -29,31 +46,27 @@
 // Include file for iCon Framegrabber support.
 #include "framegrabber.h"
 
-// For keypress detection.
-#include <conio.h>
+// Include file for calibration filter.
+#include "filter/calibration.h"
 
-#include <iostream>
-#include <sstream>
-#include <conio.h>
-#include <memory>   // For use of auto_ptr
-
-// Include iCon Express classes etc.
-#include "icamerasystem.h"
-#include "icamerasystemsubscriber.h"
+// Include file for rectification filter.
+#include "filter/rectification.h"
 
 // Example program includes
-// #include "ErrorHandling.h"
 #include "DataAccess.h"
 #include "ThreadSafePrint.h"
 
+
+// For keypress detection.
+#include <conio.h>
 
 using namespace std;
 using namespace icon;
 
 // In file dataformatexample.cpp
-void showDataFormat(Camera *cam0);
+//void showDataFormat(Camera *cam0);
 
-int closeDown(int err, EthernetCamera* cam, FrameGrabber *grabber);
+int closeDown(int err, EthernetCamera* cam, FrameGrabber* grabber);
 
 // Construct an error callback by inheriting the
 // icon::ErrorHandler class and override onError
@@ -61,22 +74,6 @@ class MyErrHandler : public icon::ErrorHandler {
 	void onError(int errorLevel, const icon::String& err) { cout << err.c_str() << endl; };
 };
 
-
-bool saveRaw(std::string &filename, const unsigned char *data, int length)
-{
-	ofstream stream;
-
-	stream.open(filename.c_str(), ios_base::out | ios_base::trunc | ios_base::binary);
-
-	for(int i=0; i < length; i++)
-	{
-		stream << data[i];
-	}
-
-	stream.close();
-
-	return 0;
-}
 
 /// Sets the process priority to REALTIME and the thread priority to IDLE
 /// This implies priority 24-8=16 in ProcExplorer
@@ -92,358 +89,722 @@ void SetPriority(void)
 	//	SetThreadPriority(CurrentThread, THREAD_PRIORITY_IDLE);
 }
 
+bool saveRaw(std::string& filename, const unsigned char* data, int length) {
+	ofstream stream;
+
+	stream.open(filename.c_str(), ios_base::out | ios_base::trunc | ios_base::binary);
+
+	for (int i = 0; i < length; i++) {
+		stream << data[i];
+	}
+
+	stream.close();
+
+	return 0;
+}
+
+
 int main(int argc, char* argv[])
 {
-	// Construct & bind the error handler
+	// Initial Comment:
+	//
+	// Notice that many of the iCon classes are not entirely thread safe. It is perfectly safe to use
+	// e.g. one thread per camera in a multi camera setup but it is not safe to let several threads use
+	// the same camera and frame grabber objects. If e.g. Multi-threaded image analysis is needed make sure
+	// to set up the application to use one thread in all communication with a specific camera and frame 
+	// grabber.
+	//
+	// If you use callbacks to access the incoming data there will be a certain amount of multi-threading
+	// The recommended and verified use is to let the callback functions (which are running in separate 
+	// threads from the main program) only operate on the incoming buffers and not handle communication 
+	// with camera and grabber. If a result from analysing the data is that a camera should be e.g. 
+	// stopped or reconfigured the callback function should pass a message to the main thread and ask for
+	// this action to be taken.
+
+	// Construct & bind the error handler. The error handler is used to receive human readable 
+	// error and warning messages from the camera. These messages are what you can read in the log
+	// window in Ranger Studio
 	MyErrHandler err;
 	setErrorHandler(&err);
 
+	// Give the program real time priority to indicate that it needs to run as uninterrupted as possible
+	// This is not required for a simple example program but for more advanced analysis to reach required
+	// performance it may be needed to boost the program priority.
 	SetPriority();
 
-	// Set the com-parameters. This must be done before the init function is called. 
-	// If init fails, call close, adjust the parameters and try again.
+	// In order to connect to an Ethernet camera we need to use its IP address. 
+	// Here we ask the user for this information.
+	// An alternative approach is to scan the local network for connected cameras using the 
+	// EthernetCamera::discoverDevices() member function. This will return a collection of all 
+	// connected devices from which you can retrieve information such as their IP address, camera type, etc
 	string ip;
-	cout << endl << "Enter IP address of camera to use (enter 'l' for 127.0.0.1, enter 'd' for 192.168.0.92): ";
-	cin >> ip;
 
-	// shortcut key for localhost.
-	if(ip == "d")
-		ip = "192.168.0.92";
+	// Grab the first argument as the IP address of the camera to use.
+	if (argc > 1) {
+		ip = argv[1];
+		cout << "Using IP: " << ip << endl;
+	}
+	else {
+		cout << "Please enter IP address of camera: ";
+		cin >> ip;
+	}
 
-	// shortcut key for localhost.
-	if(ip == "l")
-		ip = "127.0.0.1";
-
-	// Set how often an image is saved.
+	// Set how ofter an image is saved
 	int modulo;
-	cout << endl << "Enter the interval between each saved image: ";
-	cin >> modulo;
-
-	cin.ignore();
+	// Grab the second argument as the modulo value.
+	if (argc > 2) {
+		modulo = atoi(argv[2]);
+		cout << "Using modulo: " << modulo << endl;
+	}
+	else {
+		cout << "Please enter modulo value: ";
+		cin >> modulo;
+	}
 
 	//********** BEGIN CAMERA CONTROL INIT
 
-	// Call camera factory in the icon api. Ask for a EthernetCamera camera
+	// In this section we will create and initialize an object to control the camera. 
+	// We will also configure it with a parameter file from the PC and set it up to operate in
+	// Measurement mode
+	//
+	// Before running the camera init function we also need to create a frame grabber object.
+	// The reason is that we need to inform the camera about what IP and port number to use. The
+	// IP address is known beforehand but the port number is assigned when creating the frame grabber
+	// object
+
+	// Call camera factory in the icon api. Ask for a EthernetCamera camera. This will generate a generic
+	// camera object which needs to be converted to an Ethernet camera object
 	Camera* cam_generic = createCamera("EthernetCamera", "MyCamera");
 
-	// Check result from factory and cast it to a EthernetCamera camera
-	if(cam_generic == 0 || cam_generic->getCameraType() != EthernetCamera::cameraType) {
+	// Check result from factory - shut down if creation failed
+	if (cam_generic == 0 || cam_generic->getCameraType() != EthernetCamera::cameraType) {
 		delete cam_generic;
 		return -1;
 	}
 
-	// Cast to the correct subclass.
+	// Cast the generic camera object to be an instance of the EthernetCamera class. This means it has
+	// ethernet properties such as IP address, port number, etc. There is currently one other type of camera
+	// which is the RangerC. A RangerC camera object has CameraLink properties such as frame grabber number 
+	// and port, serial port number, etc. 
 	EthernetCamera* cam = static_cast<EthernetCamera*>(cam_generic);
 
-	if(cam == NULL)
-	{	
+	// If the casting failed, shut down and exit
+	if (cam == NULL)
+	{
 		/// The cast failed.
 		delete cam_generic;
 		return -1;
 	}
 
-	FrameGrabber *grabber = createFrameGrabber("FGEthernetFast", "MyGrabber");
+	// Create a frame grabber object to be of Ethernet type. This means that it is a software grabber
+	// used to collect data coming in from an Ethernet controller. We need the object already now to 
+	// retrieve the frame grabbers port number. From the grabber we extract the frame grabber parameters.
+	// These need to be cast to Ethernet grabber parameters since they are requested from a generic frame
+	// grabber object
+	FrameGrabber* grabber = createFrameGrabber("FGEthernetFast", "MyGrabber");
+	FGEthernetFastParameters* prms = dynamic_cast<FGEthernetFastParameters*>(grabber->getParameters());
+	if (prms == NULL)
+	{
+		cout << "Incorrect parameter type returned from getParameters()" << endl;
+		cin.get();
+		return closeDown(-1, cam, grabber);
 
-	FGEthernetFastParameters* prms = dynamic_cast<FGEthernetFastParameters*>(grabber->getParameters()); 
+	}
 
-	// UDP Port of the command channel on the camera.
-    cam->setComParameters(ip.c_str(), prms->getFrameGrabberPort(), prms->getRedundancyPort(), EthernetCamera::HIGH_PERFORMANCE_DATA_CHANNEL);
+	// Tell the camera what UDP port on the PC to send data to.
+	cam->setComParameters(ip.c_str(), prms->getFrameGrabberPort(), prms->getRedundancyPort(), EthernetCamera::HIGH_PERFORMANCE_DATA_CHANNEL);
 
+	// Tell the camera to wait for maximum three seconds for response to sent messages
 	cam->setProtocolTimeout(3000); // 3 s timeout
 
 	// Init camera
-	cout << "Connecting ... " << endl;
+	// Now we have set the camera parameters we need to set. Initialization of the camera gives this
+	// program control of the camera. It does however not affect its current state.
+	// 
+	// If init fails, shut down neatly...
+	cout << "initiating ... " << endl;
 	int ret = cam->connect();
-	if(ret != EthernetCamera::E_ALL_OK) {
-		cout << "Connect failed." << endl << endl;
-        cout << "Press enter to exit application.";
+	if (ret != EthernetCamera::E_ALL_OK) {
+		cout << "init failed. \n\npress enter to exit application.";
 		cin.get();
 		return closeDown(-1, cam, NULL);
 	}
-	cout << "connect ok." << endl;
+	cout << "init ok." << endl;
 
-	// Check camera status
-	int status;
-	ret = cam->checkCamStatus(status);
-	if(ret == EthernetCamera::E_ALL_OK) {
-		cout << "Status was: " << status << endl;
-	}
-
-	// We first disable data from the camera (if the last application has not cleaned up properly)
-
+	// To be on the safe side we stop the camera (in case some other application had started it 
+	// and not stopped it when finishing.
 	ret = cam->stop();
-	if(ret == EthernetCamera::E_ALL_OK) {
-		cout << "Stop: Status was: " << status << endl;
+	if (ret == EthernetCamera::E_ALL_OK) {
+		cout << "Stopping camera failed." << endl;
 	}
 
-	// Get the available configurations
-	icon::StringVector configs;
-	ret = cam->getAvailableConfigurations(configs);
-	if(ret != EthernetCamera::E_ALL_OK) {
-		cout << "Get available configurations failed." << endl << endl;
-        cout << "Press enter to exit application.";
-		cin.get();
-		return closeDown(-1, cam, NULL);
-	}
-
-	cout << endl << "Configurations:" << endl;
-	for(size_t i = 0; i < configs.size(); i++) {
-		cout << i << " -- " << configs[i].c_str()  << endl;
-	}
+	// Send a camera configuration file to the camera. This will only send the file to the camera
+	// The camera will be configured to use the parameters of the file when we later set the active 
+	// configuration
 
 	// Download the current parameter file
-
 	ret = cam->fileSaveParameters("DOWNLOAD.PRM");
-	if(ret != EthernetCamera::E_ALL_OK) {
+	if (ret != EthernetCamera::E_ALL_OK) {
 		cout << "Download of parameter file failed." << endl << endl;
-        cout << "Press enter to exit application.";
+		cout << "Press enter to exit application.";
 		cin.get();
 		return closeDown(-1, cam, NULL);
-	}  
+	}
+	// Grab the third argument as the parameter file to use.
+	if (argc > 3) {
+		cout << "Using parameter file: " << argv[3] << endl;
+		ret = cam->fileLoadParameters(argv[3]);
+	}
+	else {
+		cout << "Loading parameter file: DOWNLOAD.PRM" << endl;
+		// ret = cam->fileLoadParameters("DOWNLOAD.PRM");
+		ret = cam->fileLoadParameters("Ranger E Hi3D.PRM");
+	}
 
-	// Upload a new parameter file
-	if(argc > 1)
-		ret = cam->fileLoadParameters(argv[1]);
-	else
-		ret = 0;
+	// ret = cam->fileLoadParameters("Ranger E Hi3D.prm");
+	// ret = cam->fileLoadParameters("HorMaxThr.prm");
 
-	if(ret != EthernetCamera::E_ALL_OK) {
-		cout << "Upload of parameter file failed." << endl << endl;
-        cout << "Press enter to exit application.";
+	// If we were not able to send the file to the camera we shut down the application in this example.
+	if (ret != EthernetCamera::E_ALL_OK) {
+		cout << "upload of parameter file failed.\n\npress enter to exit application.";
 		cin.get();
 		return closeDown(-1, cam, NULL);
 	}
 
-	int confindex = 0;
-	// Select a configuration
-	cout << endl << "Select config (0-" << ((unsigned int)configs.size() - 1) << "): ";
-	cin >> confindex;
-	cin.ignore();
+	// Set the camera's active configuration to be 'Measurement'. When this is done, the camera will
+	// generate a sensor program based on the parameters we sent earlier and test it. This may take 
+	// a second or two. In this process the minimum cycle time will be computed (by testing). This is
+	// reported on the error channel but there is also an API function to explicitly ask for it. This
+	// function is named Camera::getMeasuredMinCycleTime()
 
-	if(confindex < 0 || confindex >= (int)configs.size()) {
-		cout << "Invalid configuration." << endl << endl;
-        cout << "Press enter to exit application.";
+	// Get available configurations
+	icon::StringVector configs;
+	ret = cam->getAvailableConfigurations(configs);
+	if (ret != EthernetCamera::E_ALL_OK) {
+		cout << "Get available configurations failed." << endl << endl;
+		cout << "Press enter to exit application.";
+		cin.get();
+		return closeDown(-1, cam, NULL);
+	}
+	// Print the available configurations
+	cout << endl << "Configurations:" << endl;
+	for (size_t i = 0; i < configs.size(); i++) {
+		cout << i << " -- " << configs[i].c_str() << endl;
+	}
+	// Grab the fourth argument as the configuration to use.
+	if (argc > 4) {
+		cout << "Using configuration: " << argv[4] << endl;
+		ret = cam->setActiveConfiguration(argv[4]);
+	}
+	else {
+		cout << "Using configuration: Measurement" << endl;
+		ret = cam->setActiveConfiguration("Measurement");
+	}
+
+	// ret = cam->setActiveConfiguration("Measurement");
+	if (ret != EthernetCamera::E_ALL_OK) {
+		cout << "Set active configuration failed with error code: " << ret << endl << endl;
+		cout << "Press enter to exit application.";
 		cin.get();
 		return closeDown(-1, cam, NULL);
 	}
 
-	// Set the configuration
-	ret = cam->setActiveConfiguration(configs.at(confindex));
-	if(ret != EthernetCamera::E_ALL_OK) {
-        cout << "Set active configuration failed with error code: " << ret << endl << endl;
-        cout << "Press enter to exit application.";
-		cin.get();
-		return closeDown(-1, cam, NULL);
-	}
-
+	// Now the camera is configured and ready to use. By calling the camera object's start() member we can 
+	// make it instantly start acquiring profiles.
 	//********** END CAMERA CONTROL INIT
+
+
+
+
 
 	//********** BEGIN FRAME GRABBER INIT
 
+	// We have already earlier created a frame grabber object. Now it is time to configure it
+	// to accept data from the camera.
+
 	cout << "Initiating Frame Grabber." << endl;
 
+	// Tell the frame grabber how many scans to store in each IconBuffer.
+	// We use 512 scans in each buffer in this example.
+	// Important notice! If the camera is operating in Image mode this value should always be set to 1
+	// since an image mode image is to some extent considered as one long scan. The reason is that 
+	// the whole image is acquired at one instance in time.
+	int numberOfScans;
+	// Check if the camera is operating in Image mode or not
+	if (argv[4] == "Image") {
+		numberOfScans = 1;
+	}
+	else {
+		numberOfScans = 512;
+	}
+	prms->setNoScans(numberOfScans);
 
-	if(prms == NULL)
-	{
-		cout << "Incorrect parameter type returned from getParameters()" << endl;
+	// When using the FGEthernetFast framegrabber class you need to tell the camera the buffer height
+	// before starting.
+	ret = cam->setBufferHeight(numberOfScans);
+	if (ret != EthernetCamera::E_ALL_OK) {
+		cout << "set buffer height failed.\n\npress enter to exit application.";
+		cin.get();
+		return closeDown(-1, cam, NULL);
 	}
 
-	// IP address of the camera 
+	// Tell the frame grabber what camera to listen to by handing it the IP address of the camera 
 	prms->setCameraIP(ip.c_str());
 
+	// Ask the camera for the data port from which it sends its measurement data and give this information
+	// to the frame grabber. The grabber now knows what port on what IP address to listen to.
 	int dataPort;
-	if(cam->getCameraDataPort(dataPort))
+	if (cam->getCameraDataPort(dataPort))
 	{
-		cout << "Get camera data port failed." << endl << endl;
-        cout << "Press enter to exit application.";
+		cout << "get camera data port failed.\n\npress enter to exit application.";
 		cin.get();
 		return closeDown(-1, cam, NULL);
 	}
-
-	// UDP source port of the stream data on the camera.
 	prms->setCameraPort(dataPort);
 
-	// Framegrabber buffer size in Megabytes.
+	// Tell the grabber how much RAM (in Megabytes) to allocate for data buffers. This will
+	// indirectly determine how many data buffers it will allocate. The size of one buffer is the
+	// number of rows * the size of one scan. The number of buffers is thus the BufferSize/size of 
+	// each buffer (always truncated since only full buffers are allowed). At this stage we do not yet
+	// know the size of each buffer. We will soon ask the camera for information about its data format
 	prms->setBufferSize(50);
-	// Number of scans per IconBuffer.
-	if (configs.at(confindex) == "Image")
-    {   // Use 1 scan for Image, i.e. each buffer contains 1 complete image
-        prms->setNoScans(1);
-    }
-    else
-    {   // Use 50 scans for Measurement, i.e. each buffer contains 50 profiles
-        prms->setNoScans(50);
-    }
 
-    if(cam->setBufferHeight(prms->getNoScans()))
-    {
-        cout << "Set buffer height failed." << endl << endl;
-        cout << "Press enter to exit application.";
-		cin.get();
-		return closeDown(-1, cam, NULL);
-    }
-
-    // How often is recovery packets sent.
+	// Set up handling of lost packet recovery.
+	// Occasionally data packets are lost in transfer over ethernet connections. The camera sends its
+	// measurement data using the unverified UDP protocol and no data will ever be resent from the camera
+	// to the PC. This design maximizes performance in terms of speed at the price of robustness.
+	// To counter this there is some redundancy included in the data sent from the camera. This
+	// redundant information can be used by iCon to reconstruct lost packets on the PC side.
+	// You can select how much redundancy to send by adjusting the camera parameter 'redundancy frequency'
+	// If this parameter is set to e.g. 10 one packet out of a sequence of ten can be recovered.
+	// You need to tell the frame grabber what redundancy frequency to use for it to handle this properly
+	// This is done by asking the camera for the current setting of that particular parameter:
 
 	icon::String type, ver, serial;
 
-	if(cam->getCameraInfo(type,ver,serial))
+	// This somewhat complicated example also shows how to get the current value of any 
+	// camera parameter without even knowing what type of camera it is....
+
+	// Ask the camera what camera type it is (Ruler E1200, Ranger E55, Ranger D40, etc)
+	// This info goes in the XML parameter structure to find the redundancy frequency
+	if (cam->getCameraInfo(type, ver, serial))
 	{
-		cout << "Get camera info failed." << endl << endl;
-        cout << "Press enter to exit application.";
+		cout << "get camera info failed.\n\npress enter to exit application.";
 		cin.get();
 		return closeDown(-1, cam, NULL);
 	}
 
+	// Compose the XML path where the redundancy frequency is found.
 	std::string path = "<ROOT><CAMERA name='";
 	path += type.c_str();
 	path += "'><MODULE name='Ethernet'>";
 	const std::string name = "redundancy frequency";
 	icon::String paramValue2;
 
-	if(cam->getParameterValue(path.c_str(), name.c_str(), paramValue2))
+	// Ask the camera for the value of the "redundancy frequency" parameter of the "Ethernet" section
+	// of the configuration structure
+	if (cam->getParameterValue(path.c_str(), name.c_str(), paramValue2))
 	{
-		cout << "Get recovery interval failed." << endl << endl;
-        cout << "Press enter to exit application.";
+		cout << "get recovery interval failed.\n\npress enter to exit application.";
 		cin.get();
 		return closeDown(-1, cam, NULL);
 	}
 
+	// Transfer the redundancy frequency information to the frame grabber
 	prms->setRecoveryInterval(atoi(paramValue2.c_str()));
 
-	// Polling mode of Framegrabber. FGCALLBACK is the other choice.
+	// Set up the frame grabber to use polling to access measurement data.
+	// This means that the applicaiton program (this program) will repeatedly ask iCon if there is any
+	// new data available. The alternative approach is to use callbacks (FGCALLBACK) and provide the frame
+	// grabber with a pointer to a function which it will call as soon as there is a new buffer available.
 	prms->setMode(icon::FrameGrabber::FGPOLLING);
-	// Manual release will be used.
+
+	// Tell the frame grabber that manual release will be used. This means that whenever the user 
+	// application has finished processing a buffer it will manually inform the grabber that it no longer
+	// needs this buffer and that the grabber can reuse it. It is strongly recommended to always use
+	// manual release in combination with polling. If you use the Pleora High Performance drivers you should
+	// always use manual release when using polling.
+	//
+	// Remember that the frame grabber always owns the data buffer memory. That is, the grabber allocates
+	// and deallocates the buffer memory. Releasing a buffer only means informing the grabber that you will
+	// not access that buffer any longer.
+	//
+	// ALso remember that the buffers are organized in a cyclic FIFO and that you always release the oldest 
+	// buffer first. If you need to access buffers in random order you need to store a copy of the buffers.
+	// These buffers are then owned, allocated and deallocated by your application program
 	prms->setRelease(icon::FrameGrabber::MANUAL_RELEASE);
-	// Pointer to a user supplied argument to the callback, not used.
+
+	// Pointer to a user supplied argument to the callback. Since we are using polling this parameter is
+	// not used. If you use callbacks it can be used to pass information about the calling object to the
+	// callback function. This is typically used to let the callback function know how to use the data.
+	// Callback functions are called from the frame grabber and are run in a separate thread from the 
+	// main program.
 	prms->setUserData(NULL);
 
-	// Display the data format
-
-	showDataFormat(cam);
-
-
-	// Get the data format from the camera.
+	// Get the data format from the camera. This retrieves the scan format of the current configuration of
+	// the camera. This will tell the frame grabber how to allocate its buffers. The data format contains
+	// information about what components and subcomponents are part of the measurement data, how large 
+	// these are (in bytes and pixels) etc. You can extract component info by calling the getComponent()
+	// member of the dataFormat. Components contain detailed information about e.g the range of values a
+	// certain subcomponent can have. This information is stored in the Component's Traits property.
+	//
+	// In this example we only ask the camera for its format to pass the information on to the frame grabber
 	icon::String dataformat;
 	ret = cam->getDataFormat("", dataformat);
-	if(ret != EthernetCamera::E_ALL_OK) {
-		cout << "Get data format failed." << endl << endl;
-        cout << "Press enter to exit application.";
+	if (ret != EthernetCamera::E_ALL_OK) {
+		cout << "get data format failed.\n\npress enter to exit application.";
 		cin.get();
 		return closeDown(-1, cam, NULL);
 	}
 
-    unsigned long packetSize;
-   	ret = cam->getPacketSize(packetSize);
-	if(ret != EthernetCamera::E_ALL_OK) {
-		cout << "Get packet size failed." << endl << endl;
-        cout << "Press enter to exit application.";
+	// Notice that the data format is so far treated as a string. A DataFormat object
+	// can be initialized with this string. We do this now to show how it is done. 
+	// The created DataFormat object will also be used by the calibration filter further down.
+	DataFormat df;
+	ret = df.init(dataformat.c_str());
+	if (ret != DataFormat::E_ALL_OK)
+	{
+		cout << "Initialization of DataFormat object failed.\n\npress enter to exit application.";
+		cin.get();
+		return closeDown(-1, cam, grabber);
+	}
+
+	// Get the packet payload size from the camera. This must be done after all camera
+	// configuration is done to get packet size that is valid for the dataformat that
+	// the camera will use.
+	unsigned long packetSize;
+	ret = cam->getPacketSize(packetSize);
+	if (ret != EthernetCamera::E_ALL_OK) {
+		cout << "get packet size failed.\n\npress enter to exit application.";
 		cin.get();
 		return closeDown(-1, cam, NULL);
 	}
 
-	// Set the data format to same as the camera.
+	// Set the data format and packet size used by the frame grabber to the same as the
+	// camera currently uses.
 	prms->setDataFormat(dataformat, packetSize);
 
-
-	
+	// Now the grabber knows all it needs to initialize its buffers and connect to a camera
+	//
+	// Summary:
+	// Camera info, IP address and port number
+	// Data format: Size of each scan
+	// Number of rows (scans) per buffer
+	// Data access mode (polling or callbacks)
+	// Release mode (manual or automatic)
 	ret = grabber->connect();
-	if(ret != EthernetCamera::E_ALL_OK) {
-		cout << "Framegrabber connect failed." << endl << endl;
-        cout << "Press enter to exit application.";
+	if (ret != EthernetCamera::E_ALL_OK) {
+		cout << "framegrabber connect failed.\n\npress enter to exit application.";
 		cin.get();
 		return closeDown(-1, cam, grabber);
 	}
 
- 	ret = grabber->startGrab();
-	if(ret != FrameGrabber::E_ALL_OK) {
-		cout << "Framegrabber startGrab failed." << endl << endl;
-        cout << "Press enter to exit application.";
+	// A connected grabber is configured and ready to start. It is however not yet started.
+	// Starting the grabber just tells it to start listening for incoming measurement data.
+	grabber->startGrab();
+	if (ret != EthernetCamera::E_ALL_OK) {
+		cout << "framegrabber startGrab failed.\n\npress enter to exit application.";
 		cin.get();
 		return closeDown(-1, cam, grabber);
 	}
-	
-	//********** END FRAME GRABBER INIT
 
-	// Start the camera with the chosen configuration
-	cout << "Starting camera... "; 
+	// Now the grabber is up and running. As soon as the number of scans corresponding to one buffer
+	// has been received from the camera, the first IconBuffer will be marked as available to the user 
+	// application. Since we use polling the user application will not be informed automatically but needs
+	// to ask the grabber at regular intervals if there is any new data available.
+//********** 
+// END FRAME GRABBER INIT
+
+
+
+
+
+//********** START CALIBRATION AND RECTIFICATION INIT
+
+	// This involves the following steps:
+	//
+	// Download the calibration LUT from the camera or load it from disk.
+	// Create a calibration filter and an IconBuffer to store the calibrated data in.
+	// Configure the calibration filter to use the current data format and calibration LUT.
+	// Create a rectification filter and an IconBuffer to store the rectified data in.
+
+	// Retrieve the calibration LUT from the camera and store it as a string
+	// The calibration LUT tells the calibration filter how to translate sensor coordinates (pixels) 
+	// into real world measurements (mm or inches). An alternative to retrieving the LUT from the camera 
+	// is to load it from disk. The Coordinator tool can store its resulting LUT:s both on disk and camera
+	// flash. If you use a MultiScan setup with several range (3D) components you will have to store LUT:s
+	// on disk since you can only store one LUT on the camera flash. To load the LUT from file you
+	// use the initFromFile() function instead of the initFromData() when configuring the filter
+	// 
+	// In this example we however download the LUT from the camera...
+
+	// Create a string and load the LUT into it. The LUT is stored in a User Data area of the camera flash
+	icon::String calibrationLUT;
+	ret = cam->flashGetUserData(calibrationLUT);
+	if (ret != EthernetCamera::E_ALL_OK) {
+		cout << "reading calibration LUT from camera flash memory failed.\n\n" <<
+			"press enter to exit application.";
+		cin.get();
+		return closeDown(-1, cam, grabber);
+	}
+
+
+	cout << "Length of calibration LUT: " << calibrationLUT.size() << endl;
+	// Create a pointer which will point out the incoming raw measurement data 
+	IconBuffer* inBuffer = NULL;
+
+	// Create an empty iCon Buffer which will be used to store the calibrated data produced by
+	// the calibration filter. Also create a buffer to store the output from rectification
+	IconBuffer outBufferCalibrated;
+	IconBuffer outBufferRectified;
+
+	// Create a calibration filter object and configure it with the LUT from the camera, the data format
+	// from the camera and the number of scans per buffer used by the frame grabber. Note that the
+	// inBuffer will be a raw IconBuffer using the scan layout (where subcomponents are stored 
+	// side by side in memory) whereas the output from the calibration (and rectification) filter will be
+	// stored in the subcomponent layout (where subcomponents are stored one after the other in memory)
+	// If you instead wish to load the LUT from file you use the initFromFile() function instead
+	CalibrationFilter calibrationFilter;
+	calibrationFilter.initFromData(calibrationLUT, df, numberOfScans);
+
+	// Call the method prepareResults in order to perform all initiation work before analysing the first
+	// scan. This is optional but if the initiation needs to be done when the applicatino is running, 
+	// processing of the first buffer will be slower than the rest.
+	calibrationFilter.prepareResult(outBufferCalibrated);
+
+	// If you would like to know what the data format of the outBufferCalibrated buffer is you can 
+	// always ask it. After running the prepareResult the data format of the buffer is setup properly
+	// Here is an example on how to print the data format XML description in the console window.
+	// You can also use the data format's member functions to ask it about individual subcomponents
+	const DataFormat* d = outBufferCalibrated.getDataFormat();
+	cout << d->toString().c_str() << endl;
+
+	// Create a rectification filter and configure it to generate an output buffer with the width 
+	// 1536 pixels. Rectification means resampling the calibrated set of (x, z) data points to a regular
+	// coordinate system where the distance between two adjacent pixels is constant across the entire field
+	// of view. This resampling can be done to an arbitrary resolution which is determined by the
+	// rectification width. The value 1536 is the sensor width in pixels meaning that the widest part of the
+	// field of view will be resampled to scale 1:1 whereas the more narrow parts of the FOV will be down-
+	// sampled. In the downsampling some data will be lost. The alternative is to set a larger width to keep
+	// the full resolution in the narrow sections of the FOV. This will have the drawback that the wider 
+	// parts of the FOV are upsampled giving a false impression of the resolution being better that it 
+	// actually is in those regions. It will also generate larger buffers containing more pixels which may
+	// slow down the analysis process
+	unsigned long rectificationWidth = 1536; // Rectify to the same width as the input data
+	RectificationFilter rectificationFilter(rectificationWidth);
+
+	// Plug in the rectification filter to use the output from the calibration filter as input
+	// We have not done this for the calibration filter since the inBuffer pointer will point at different
+	// buffers in the FIFO queue every time we run the calibration
+	ret = rectificationFilter.setInput(*(outBufferCalibrated.getDataFormat()), numberOfScans);
+
+	// Prepare the rectification filter to not let initiation and allocation slow down processing of
+	// the first buffer
+	ret = rectificationFilter.prepareResult(outBufferRectified);
+	const DataFormat* dr = outBufferRectified.getDataFormat();
+	cout << dr->toString().c_str() << endl;
+
+	//********** END CALIBRATION AND RECTIFICATION INIT
+
+
+	// Now everything is set up and configured. The frame grabber is running and the processing filters
+	// are ready to calibrate and rectify the incoming data. No data will however come in as long as 
+	// the camera is not running...
+
+	// Start the camera...
+	cout << "starting camera... ";
 	ret = cam->start();
-	if(ret != EthernetCamera::E_ALL_OK) {
-		cout << " failed." << endl << endl;
-        cout << "Press enter to exit application.";
+	if (ret != EthernetCamera::E_ALL_OK) {
+		cout << " failed.\n\npress enter to exit application.";
 		cin.get();
 	}
 
-	IconBuffer *buffer;
+	// Now the camera is running. The frame grabber is also running. The application software is ready to
+	// start analyzing incoming data. When data will come in is now in the hands of the camera.
+	// If the 'Use Enable' camera parameter is set, the camera will wait for its enable input to be active 
+	// before it will do anything. If 'Use Enable' is cleared, the camera will start acquiring profiles...
+
+	// ...depending on if the 'trig mode' camera parameter is set to 0 or 2. If it is set to 0 the camera
+	// is running in free running mode and scans will be acquired at regular intervals determined by
+	// the 'cycle time' camera parameter.
+	// If trig mode is 2 scan acquisition is triggered by an external device (encoder)
+	//
+	// Conclusion: If both trig mode and use enable are set to 0 we know that data will now reach the PC
+	// at a constant rate. If not, we do not know when neither the first scan nor the first full buffer
+	// will reach the PC. It may take an arbitrary time since it is triggered by peripheral devices.
+
+
+	// Setup a result variable to temporarily store the result status from various functions
 	int res;
+
+	// Setup a time counter and a scan counter to measure the profile rate
 	int oldtick = 0, count = 0;
 
-	// Loop until key press.
-	while(!_kbhit())
+	// Get now time
+	time_t now = time(0);
+	std::string filename = "SCAN" + std::to_string(now) + ".dat";
+	ofstream myfile;
+	myfile.open(filename, ios::out | ios::app);
+
+	// Save the xml data format to file
+	ofstream myfile2;
+	myfile2.open("SCAN" + std::to_string(now) + ".xml", ios::out | ios::app);
+	myfile2 << dr->toString().c_str() << endl;
+	myfile2.close();
+
+	// Main Loop. In this loop we will poll for incoming data until the user presses a key
+	// Every time we get data we will perform calibration and rectification of this data
+	while (!_kbhit()) // while no key was pressed...
 	{
-		// Get a new scan in 'scan' and timeout if nothing is received in 1000 ms.
-		res = grabber->getNextIconBuffer(&buffer, 1000);
-		if(res == 0)
+		// Ask the frame grabber if there is any new buffer available in the FIFO.
+		// If no data has arrived within 1000 ms we will timeout and continue
+		res = grabber->getNextIconBuffer(&inBuffer, 1000);
+
+		// If a new buffer was received...
+		if (res == 0)
 		{
+			// Add the number of scans per buffer to the scan counter
 			count += prms->getNoScans();
-			if((GetTickCount()-oldtick) > 10000)
+
+			// Every 10 seconds we print out the average number of received profiles per second
+			if ((GetTickCount() - oldtick) > 10000)
 			{
 				cout << count / 10 << " Hz." << endl;
 				oldtick = GetTickCount();
 				count = 0;
 			}
 
-			// cout << "Received scan with ID: " << buffer->getScanID(0) << " size: " << grabber->getDataFormat()->dataSize() << endl;
-			
-			/// Here we do some processing of the scan...
-			if((buffer->getScanID(0) % modulo) == 0)
-			{
-				cout << " Saving..." << endl;
+			// Apply the calibration filter to get calibrated data in world units.
+			// The result is stored in outBufferCalibrated
+			calibrationFilter.apply(*inBuffer, outBufferCalibrated);
+
+			// To access the calibrated data we call the getReadPointer() member of the output buffer
+			// The calibrated data contains two components: range (R) and position (X)
+			// The read pointers received will point out one region of memory each. The rangeX region
+			// is a consecutive array of RAM where all the X values of the entire buffer are stored.
+			// In the same way the rangeR pointer points out a consecutive array of R (range) values.
+			// The parameter file used in this example contains a Ranger E Hi3D (DCM) component which
+			// also includes an intensity and optionally a scatter subcomponent. These two values can 
+			// be extracted in the same way by requesting a read pointer to "Intensity" and "Scatter"
+			const float* rangeX;
+			res = outBufferCalibrated.getReadPointer("Hi3D 1", "Range X", rangeX);
+			const float* rangeR;
+			res = outBufferCalibrated.getReadPointer("Hi3D 1", "Range R", rangeR);
+
+			// Apply the rectification filter to generate resampled range data in a format which directly
+			// corresponds to real world units.
+			// This works in the same way as the calibration filters and you can retrieve read pointers to 
+			// arrays of consecutive range, intensity and optionally also scatter data in the same way
+			rectificationFilter.apply(outBufferCalibrated, outBufferRectified);
+			const float* range;
+			res = outBufferRectified.getReadPointer("Hi3D 1", "Range", range);
+			const float* intensity;
+			res = outBufferRectified.getReadPointer("Hi3D 1", "Intensity", intensity);
+
+			// Now we can access individual pixels and e.g. print the range and intensity of pixel
+			// (x,y) = (100, 200)
+			// We first find out how many horizontal pixels there are in a buffer. The buffers are
+			// organized row by row in memory and since this is a buffer with the subcomponent layout 
+			// we can easily access a certain pixel by just adding the offset from the origin.
+			// This offset is (of course) x + buffer width * y
+			int bwidth = dr->getComponent(0)->getNamedSubComponent("Range")->getWidth();
+			int offset = 750 + 200 * bwidth;
+			cout << "(750, 200): Range = " << *(range + offset)
+				<< ", Intensity = " << *(intensity + offset) << endl;
+
+
+			// Print the entire buffer to file
+			// The buffer is organized in the subcomponent layout. This means that the first subcomponent
+			// is stored first, then the second, etc. The first subcomponent is the range component and
+			// the second is the intensity component. The third subcomponent is the scatter component
+			// which is optional and may not be present in the data format. The scatter component is
+			// not used in this example.
+			// The buffer is stored in a binary format. The first 4 bytes are the number of scans in the
+			// buffer. The next 4 bytes are the number of subcomponents in the buffer. The next 4 bytes
+			// are the number of pixels in the first subcomponent. The next 4 bytes are the number of
+			// pixels in the second subcomponent, etc. After this header the data is stored in consecutive
+			// order. The first subcomponent is stored first, then the second, etc. Each subcomponent is
+			// stored as a consecutive array of floats. The first pixel of the first subcomponent is stored
+			// first, then the second, etc. The first pixel of the second subcomponent is stored after the
+			// last pixel of the first subcomponent, etc.
+			// The file is stored in the same folder as the application executable in .dat format
+			// The file name is "buffer.dat"
+			// cout << "Writing buffer to file... ";
+			// outBufferRectified.saveBuffer("buffer.dat");
+			// Build the row of data with the Intensity and Range components
+			// The buffer is organized in the subcomponent layout. This means that the first subcomponent
+			// is stored first, then the second, etc. The first subcomponent is the range component and
+
+			cout << "SCAN ID: " << outBufferRectified.getScanID(0) << endl;
+			cout << "Size MB: " << grabber->getDataFormat()->dataSize() << endl;
+
+
+			// Save the data to a xml and dat (at that time)
+			outBufferRectified.saveBuffer(to_string(outBufferRectified.getScanID(0)).c_str());
+			cout << "Done." << endl;
+
+			// Print the structure of the buffer
+			accessData(&outBufferRectified);
+
+			// Save the data to a image file and raw based on modulo
+			if (outBufferRectified.getScanID(0) % modulo == 0) {
+				cout << "Saving image to file... " << endl;
 				ostringstream str, str2;
 				/// Save the image in BMP format.
-				str << "SCAN" << buffer->getScanID(0) << ".BMP";
+				str << "SCAN" << inBuffer->getScanID(0) << ".BMP";
 				cout << "Saving image to " << str.str() << endl;
-				buffer->saveImage(str.str().c_str());
-
-				/// Save the image in RAW format.
-				str2 << "SCAN" << buffer->getScanID(0) << ".RAW";
-				cout << "Saving image to " << str2.str() << endl;
-				saveRaw(str2.str(), buffer->getReadPointer(0), buffer->getScanSize());
-
-				// Extract data from scan layout buffer
-				const DataFormat *myDataFormat = buffer->getDataFormat();
-				cout << "Data format: " << myDataFormat->toString().c_str() << endl; // This needs to be saved as XML to be able to use it later in the python script
-
-				// Print the structure of the .dat file
-				accessData(buffer);
-
+				inBuffer->saveImage(str.str().c_str());
+				// Save the image in RAW format.
+				// str2 << "SCAN" << outBufferRectified.getScanID(0) << ".RAW";
+				// cout << "Saving image to " << str2.str() << endl;
+				// saveRaw(str2.str(), outBufferRectified.getReadPointer(0), outBufferRectified.getScanSize());
 			}
 
-            // Release buffer (manual release mode)
-            grabber->releaseIconBuffer();
-		} 
+			// We are now done with the original Icon Buffer. We therefore need to inform the grabber that
+			// this buffer can be reused to store new incoming data
+			grabber->releaseIconBuffer();
+
+			cout << endl;
+		}
 		else
 		{
+			// If no buffer arrived within the timeout period, fail and print "timeout" on screen
 			cout << "Timeout. " << endl;
 		}
 	}
 
-	// Stop and exit
-	cout << "stopping camera." << endl; 
+	// Now the user has pressed a key. The application should terminate in a neat way
+
+	// First stop the camera
+	// This instantly stops the camera from acquiring and sending more scans to the PC. 
+	// There may however still be buffers left in the frame grabber
+	cout << "stopping camera." << endl;
 	cam->stop();
 
+	// Stop the frame grabber. If we were using callbacks, no more callbacks would be initiated 
+	// after this point. There may however still be a callback function being executed in a separate thread
 	cout << "stopping frame grabber." << endl;
 	grabber->stopGrab();
+
+	// If we intend to at this stage make changes to the configuration which will also affect the data format
+	// we need to disconnect from the frame grabber. If we only wanted to stop buffer acquisition for a 
+	// while, perhaps to change some parameter which does not affect the data format we would not even need
+	// to stop the grabber. In this example we intend to shut down everything.
+
+	// Disconnect the frame grabber. This will de-allocate all buffers in the FIFO (but of course not the 
+	// ones created in the user application such as the calibration and rectification output buffers)
+	// If we were in callback mode, disconnect would wait for the last callback to terminate before 
+	// deallocating the FIFO
 	grabber->disconnect();
 
-
+	// Finally we call the closeDown function which deletes camera and grabber objects and shut down the API
 	return closeDown(0, cam, grabber);
 }
 
 int
-closeDown(int err, EthernetCamera* cam, FrameGrabber *grabber) {
-	if(cam != 0) delete cam;
-	if(grabber != 0) delete grabber;
+closeDown(int err, EthernetCamera* cam, FrameGrabber* grabber) {
+	if (cam != 0) delete cam;
+	if (grabber != 0) delete grabber;
 	closeApi();
 	return err;
 }
