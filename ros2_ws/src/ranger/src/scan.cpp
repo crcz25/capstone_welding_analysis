@@ -93,14 +93,15 @@ class MinimalPublisher : public rclcpp::Node
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr rectified_publisher_;
   size_t count_;
 
+  std::string param_file;
+
 public:
-  MinimalPublisher()
-      : Node("minimal_publisher"), count_(0), rectificationFilter(1536)
+  MinimalPublisher(const std::string &file_path_)
+      : Node("minimal_publisher"), count_(0), rectificationFilter(1536), param_file(file_path_)
   {
 
     //********** BEGIN CAMERA CONTROL INIT
-    string ip = "192.168.0.92", 
-    param_file = "C:\\Users\\magok\\source\\repos\\crcz25\\capstone_welding_analysis\ros2_ws\\src\\ranger\\params\\Ranger E Hi3D.prm", type_config = "Measurement";
+    string ip = "192.168.0.92", type_config = "Measurement";
     cout << "creating camera and framegrabber ... " << endl;
     // Create the Camera
     cam_generic = createCamera("EthernetCamera", "MyCamera");
@@ -157,13 +158,13 @@ public:
     //   cout << "Download of parameter file failed." << endl;
     //   closeDown(-1, cam, NULL);
     // }
-    // // Set the Camera file
-    // ret = cam->fileLoadParameters(param_file.c_str());
-    // if (ret != EthernetCamera::E_ALL_OK)
-    // {
-    //   cout << "upload of parameter file failed.\n\n";
-    //   closeDown(-1, cam, NULL);
-    // }
+    // Set the Camera file
+    ret = cam->fileLoadParameters(param_file.c_str());
+    if (ret != EthernetCamera::E_ALL_OK)
+    {
+      cout << "upload of parameter file failed.\n\n";
+      closeDown(-1, cam, NULL);
+    }
     // Print the configuration available
     icon::StringVector configs;
     ret = cam->getAvailableConfigurations(configs);
@@ -191,6 +192,7 @@ public:
     //********** END CONFIGURE CAMERA
 
     //********** BEGIN FRAME GRABBER INIT
+    cout << "Configuring framegrabber ... " << endl;
     int numberOfScans = 512, ramDataBuffers = 50;
     icon::String type, ver, serial;
     // Set the number of scans
@@ -344,6 +346,7 @@ public:
     //********** END FRAME GRABBER INIT
 
     //********** START CALIBRATION AND RECTIFICATION INIT
+    cout << "Configuring calibration and rectification ... " << endl;
     // Create a string and load the LUT into it. The LUT is stored in a User Data area of the camera flash
     icon::String calibrationLUT;
     ret = cam->flashGetUserData(calibrationLUT);
@@ -387,7 +390,7 @@ public:
     // actually is in those regions. It will also generate larger buffers containing more pixels which may
     // slow down the analysis process
     // unsigned long rectificationWidth = 1536; // Rectify to the same width as the input data
-    // rectificationFilter_ = RectificationFilter(rectificationWidth);
+    // rectificationFilter = RectificationFilter(rectificationWidth);
 
     // Plug in the rectification filter to use the output from the calibration filter as input
     // We have not done this for the calibration filter since the inBuffer pointer will point at different
@@ -402,14 +405,22 @@ public:
 
     //********** END CALIBRATION AND RECTIFICATION INIT
 
+    cout << "starting camera... ";
+    ret = cam->start();
+    if (ret != EthernetCamera::E_ALL_OK)
+    {
+      cout << " failed.\n\npress enter to exit application.";
+    }
+
     //********** BEGIN PUBLISHER
-    publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
-    rectified_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("rectified_data", 10);
+    // publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
+    // timer_ = this->create_wall_timer(
+    //     500ms, std::bind(&MinimalPublisher::timer_callback, this));
+
+    // rectified_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("rectified_data", 10);
     // Create a publisher for the rectified data
-    timer_ = this->create_wall_timer(
-        500ms, std::bind(&MinimalPublisher::timer_callback, this));
-    timer_ = this->create_wall_timer(
-        500ms, std::bind(&MinimalPublisher::publishRectifiedData, this));
+    // timer_ = this->create_wall_timer(
+    //     500ms, std::bind(&MinimalPublisher::publishRectifiedData, this));
 
     //********** END PUBLISHER
   }
@@ -430,16 +441,18 @@ private:
 
     // retrieve read pointers to arrays of range and intensity data
     const float *range;
-    res = outBufferRectified.getReadPointer("Hi3D 1","Range", range);
-    if (res != icon::E_ALL_OK) {
-        safeCout("Could not find 'Hi3D 1 Range' subcomponent in buffer.");
+    res = outBufferRectified.getReadPointer("Hi3D 1", "Range", range);
+    if (res != icon::E_ALL_OK)
+    {
+      safeCout("Could not find 'Hi3D 1 Range' subcomponent in buffer.");
     }
 
     const float *intensity;
-    if (res != icon::E_ALL_OK) {
-        safeCout("Could not find 'Hi3D 1 Intensity' subcomponent in buffer.");
+    if (res != icon::E_ALL_OK)
+    {
+      safeCout("Could not find 'Hi3D 1 Intensity' subcomponent in buffer.");
     }
-    res = outBufferRectified.getReadPointer("Hi3D 1","Intensity", intensity);
+    res = outBufferRectified.getReadPointer("Hi3D 1", "Intensity", intensity);
 
     // Build the Image message using both range and intensity data to create a matrix of 1536x512x2
     // The first matrix is the range data and the second is the intensity data
@@ -463,7 +476,6 @@ private:
     // Publish the message
     rectified_publisher_->publish(message);
 
-
     // Print data structure
     accessData(&outBufferRectified);
     accessHi3DRange(&outBufferRectified);
@@ -486,8 +498,11 @@ int main(int argc, char *argv[])
   setErrorHandler(&err);
   SetPriority();
 
+  std::string file_path = "C:\\Users\\magok\\source\\repos\\crcz25\\capstone_welding_analysis\\ros2_ws\\src\\ranger\\include\\ranger\\RangerEHi3D.prm";
+  // std::string file_path = "RangerEHi3D.prm";
+
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<MinimalPublisher>());
+  rclcpp::spin(std::make_shared<MinimalPublisher>(file_path));
   rclcpp::shutdown();
   return 0;
 }
