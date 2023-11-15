@@ -72,6 +72,7 @@ using namespace icon;
 //void showDataFormat(Camera *cam0);
 
 int closeDown(int err, EthernetCamera* cam, FrameGrabber* grabber);
+string currentFormattedTime();
 
 // Construct an error callback by inheriting the
 // icon::ErrorHandler class and override onError
@@ -106,6 +107,33 @@ bool saveRaw(std::string& filename, const unsigned char* data, int length) {
 	stream.close();
 
 	return 0;
+}
+
+string currentFormattedTime() {
+	// Get the current time
+	auto currentTime = std::chrono::system_clock::now();
+	auto duration = currentTime.time_since_epoch();
+	auto hours = std::chrono::duration_cast<std::chrono::hours>(duration);
+	duration -= hours;
+	auto minutes = std::chrono::duration_cast<std::chrono::minutes>(duration);
+	duration -= minutes;
+	auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
+	duration -= seconds;
+	auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+	duration -= milliseconds;
+	time_t theTime = time(NULL);
+	struct tm* aTime = localtime(&theTime);
+
+	// Convert duration to YY-MM-DD-HH-MM-SS-MS format
+	string formattedTime = to_string(aTime->tm_year + 1900) + "-" + 
+		to_string(aTime->tm_mon + 1) + "-" + 
+		to_string(aTime->tm_mday) + "-" + 
+		to_string(aTime->tm_hour) + "-" + 
+		to_string(aTime->tm_min) + "-" + 
+		to_string(aTime->tm_sec) + "-" + 
+		to_string(milliseconds.count());
+	
+	return formattedTime;
 }
 
 
@@ -629,24 +657,14 @@ int main(int argc, char* argv[])
 	int res;
 
 	// Setup a time counter and a scan counter to measure the profile rate
-	int oldtick = 0, count = 0;
-
-	// Get the current time
-	auto currentTime = std::chrono::system_clock::now();
-	std::time_t now = std::chrono::system_clock::to_time_t(currentTime);
-
-	// Define a format for the date and time
-	std::tm timeInfo;
-	localtime_s(&timeInfo, &now); // Use localtime_s on Windows, or localtime on Linux/Mac
-	char buffer[80];
-	strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H-%M-%S", &timeInfo);
+	int oldtick = 0, count = 0, count_hz = 0;
 
 	// Create the filename with the formatted date and time
-	std::string filename = "SCAN_" + std::string(buffer);
+	std::string out_path = "", filename_tmp = "";
 
 	// Main Loop. In this loop we will poll for incoming data until the user presses a key
 	// Every time we get data we will perform calibration and rectification of this data
-	while (true) // while no key was pressed...
+	while (!_kbhit()) // while no key was pressed...
 	{
 		// Ask the frame grabber if there is any new buffer available in the FIFO.
 		// If no data has arrived within 1000 ms we will timeout and continue
@@ -656,20 +674,21 @@ int main(int argc, char* argv[])
 		if (res == 0)
 		{
 			// Add the number of scans per buffer to the scan counter
-			count += prms->getNoScans();
+			count_hz += prms->getNoScans();
+			count += 1;
 
 			// Every 10 seconds we print out the average number of received profiles per second
-			if ((GetTickCount() - oldtick) > 10000)
+			/*if ((GetTickCount() - oldtick) > 10000)
 			{
 				cout << count / 10 << " Hz." << endl;
 				oldtick = GetTickCount();
-				count = 0;
-			}
+				count_hz = 0;
+			}*/
 
 			// Print stats of current itreration
-			cout << "SCAN ID: " << outBufferRectified.getScanID(0) << endl;
-			cout << "Size MB: " << grabber->getDataFormat()->dataSize() << endl;
-			cout << "Number of scans: " << count << endl;
+			// cout << "SCAN ID: " << outBufferRectified.getScanID(0) << endl;
+			// cout << "Size Bytes: " << grabber->getDataFormat()->dataSize() << endl;
+			// cout << "Number of scans: " << count << endl;
 
 			// Apply the calibration filter to get calibrated data in world units.
 			// The result is stored in outBufferCalibrated
@@ -682,19 +701,31 @@ int main(int argc, char* argv[])
 			rectificationFilter.apply(outBufferCalibrated, outBufferRectified);
 
 			// Print the structure of the buffer
-			accessData(&outBufferRectified);
+			// accessData(&outBufferRectified);
+
+			// Every 10 seconds we print out the average number of received profiles per second
+			/*if ((GetTickCount64() - oldtick) > 10000)
+			{
+				cout << count_hz / 10 << " Hz." << endl;
+				oldtick = GetTickCount64();
+				count_hz = 0;
+			}*/
 
 			// Save the data to a xml and dat (at that time)
-			outBufferRectified.saveBuffer(filename.c_str());
+			// Generate the filename for the image
+			filename_tmp = "SCAN_" + currentFormattedTime() + "_" + to_string(count);
+			out_path = "../data/" + filename_tmp;
+			cout << "Saving data to " << out_path << endl;
+			outBufferRectified.saveBuffer(out_path.c_str());
 
 			/// Save the image in BMP format.
-			cout << "Saving image to file... " << endl;
-			ostringstream str;
-			cout << "Saving image to " << str.str() << endl;
+			// cout << "Saving image to file... " << endl;
+			// ostringstream str;
+			// cout << "Saving image to " << str.str() << endl;
 			// Generate the filename for the image
-			filename = filename + ".png";
+			// filename = filename + ".png";
 			// Save the image
-			inBuffer->saveImage(filename.c_str(), "PNG");
+			// inBuffer->saveImage(filename.c_str(), "PNG");
 
 			// We are now done with the original Icon Buffer. We therefore need to inform the grabber that
 			// this buffer can be reused to store new incoming data
@@ -703,16 +734,15 @@ int main(int argc, char* argv[])
 			cout << endl;
 
 			// Exit the while loop
-			break;
+			// break;
 		}
-		else
+		/*else
 		{
 			// If no buffer arrived within the timeout period, fail and print "timeout" on screen
 			cout << "Timeout. " << endl;
-		}
+		}*/
 	}
 
-	// Now the user has pressed a key. The application should terminate in a neat way
 
 	// First stop the camera
 	// This instantly stops the camera from acquiring and sending more scans to the PC. 

@@ -397,3 +397,11 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+
+# Ignore Scan Files
+/data/**/*.xml
+/data/**/*.dat
+/data/**/*.png
+/data/**/*.ply
+/data/**/*.pcd
