@@ -19,6 +19,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/multi_array_layout.hpp"
 #include "sensor_msgs/msg/image.hpp"
 
 // Include the icon api
@@ -87,10 +88,12 @@ class MinimalPublisher : public rclcpp::Node
   IconBuffer *inBuffer = NULL, outBufferCalibrated, outBufferRectified;
   CalibrationFilter calibrationFilter;
   RectificationFilter rectificationFilter;
+  const DataFormat *dr_;
 
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr rectified_publisher_;
+  rclcpp::Publisher<std_msgs::msg::MultiArrayLayout>::SharedPtr publisher_intensity_;
+  rclcpp::Publisher<std_msgs::msg::MultiArrayLayout>::SharedPtr publisher_range_;
   size_t count_;
 
   std::string param_file;
@@ -400,8 +403,8 @@ public:
     // Prepare the rectification filter to not let initiation and allocation slow down processing of
     // the first buffer
     ret = rectificationFilter.prepareResult(outBufferRectified);
-    const DataFormat *dr = outBufferRectified.getDataFormat();
-    cout << dr->toString().c_str() << endl;
+    dr_ = outBufferRectified.getDataFormat();
+    cout << dr_->toString().c_str() << endl;
 
     //********** END CALIBRATION AND RECTIFICATION INIT
 
@@ -413,78 +416,102 @@ public:
     }
 
     //********** BEGIN PUBLISHER
-    // publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
-    // timer_ = this->create_wall_timer(
-    //     500ms, std::bind(&MinimalPublisher::timer_callback, this));
-
-    // rectified_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("rectified_data", 10);
-    // Create a publisher for the rectified data
-    // timer_ = this->create_wall_timer(
-    //     500ms, std::bind(&MinimalPublisher::publishRectifiedData, this));
+    publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
+    publisher_intensity_ = this->create_publisher<std_msgs::msg::MultiArrayLayout>("intensity", 10);
+    publisher_range_ = this->create_publisher<std_msgs::msg::MultiArrayLayout>("range", 10);
+    timer_ = this->create_wall_timer(
+        500ms, std::bind(&MinimalPublisher::timer_callback, this));
 
     //********** END PUBLISHER
   }
 
 private:
-  void publishRectifiedData()
+  void timer_callback()
   {
     // Setup a result variable to temporarily store the result status from various functions
     int res;
+
     // Ask the frame grabber if there is any new buffer available in the FIFO.
     // If no data has arrived within 1000 ms we will timeout and continue
     res = grabber->getNextIconBuffer(&inBuffer, 1000);
-    calibrationFilter.apply(*inBuffer, outBufferCalibrated);
-    rectificationFilter.apply(outBufferCalibrated, outBufferRectified);
-    // Print data from the rectified buffer
-    cout << "Rectified data Scan ID: " << outBufferRectified.getScanID(0) << endl;
-    cout << "Rectified data Size: " << grabber->getDataFormat()->dataSize() << endl;
-
-    // retrieve read pointers to arrays of range and intensity data
-    const float *range;
-    res = outBufferRectified.getReadPointer("Hi3D 1", "Range", range);
-    if (res != icon::E_ALL_OK)
+    // If a new buffer was received...
+    if (res == 0)
     {
-      safeCout("Could not find 'Hi3D 1 Range' subcomponent in buffer.");
+      cout << "Scan received" << endl;
+      cout << "SCAN ID: " << outBufferRectified.getScanID(0) << endl;
+      // Apply the calibration filter to get calibrated data in world units.
+      // The result is stored in outBufferCalibrated
+      calibrationFilter.apply(*inBuffer, outBufferCalibrated);
+      // Apply the rectification filter to generate resampled range data in a format which directly
+      // corresponds to real world units.
+      // This works in the same way as the calibration filters and you can retrieve read pointers to
+      // arrays of consecutive range, intensity and optionally also scatter data in the same way
+      rectificationFilter.apply(outBufferCalibrated, outBufferRectified);
+      // Get the read pointers to the range and intensity data in the rectified buffer
+      const float *range_data;
+      int res_range = outBufferRectified.getReadPointer("Hi3D 1", "Range", range_data);
+      const float *intensity_data;
+      int res_intensity = outBufferRectified.getReadPointer("Hi3D 1", "Intensity", intensity_data);
+
+      // Check that 'Hi3D 1 Range' and 'Hi3D 1 Intensity' exist is to try to access the data and see if it works.
+      if (res_range == icon::E_ALL_OK && res_intensity == icon::E_ALL_OK)
+      {
+        // If we get here we know that the buffer contains the subcomponents we are looking for
+        // and we can access the data
+
+        // We first find out how many horizontal pixels there are in a buffer. The buffers are
+        // organized row by row in memory and since this is a buffer with the subcomponent layout
+        // we can easily access a certain pixel by just adding the offset from the origin.
+        // This offset is (of course) x + buffer width * y
+        unsigned int numberOfScans = inBuffer->getHeight();
+        unsigned int bwidth = inBuffer->getDataFormat()->getNamedComponent("Hi3D 1")->getNamedSubComponent("Range")->getWidth();
+        cout << "(Width, Height) = (" << bwidth << ", " << numberOfScans << ")" << endl;
+
+        // Reserving the space for the range and intensity data
+        std::vector<std::vector<float>> range_vec(numberOfScans, std::vector<float>(bwidth));
+        std::vector<std::vector<float>> intensity_vec(numberOfScans, std::vector<float>(bwidth));
+
+        // Loop through the range and intensity data and store them in the vector
+        for (unsigned int scan = 0; scan < numberOfScans; scan++)
+        {
+          // Loop through all elements in each scan.
+          for (unsigned int col = 0; col < bwidth; col++)
+          {
+            int offset = col + scan * bwidth;
+            // Get the range and intensity values
+            const float val_range = *(range_data + offset), val_intensity = *(intensity_data + offset);
+            // print the obtained values
+            // safeCout("Range: " << val_range << " Intensity: " << val_intensity << endl);
+            // Store the values in the vector
+            range_vec[scan][col] = val_range;
+            intensity_vec[scan][col] = val_intensity;
+          }
+        }
+        cout << "Range vector (Width, Height) = (" << range_vec[0].size() << ", " << range_vec.size() << ")" << endl;
+        cout << "Intensity vector (Width, Height) = (" << intensity_vec[0].size() << ", " << intensity_vec.size() << ")" << endl;
+
+        // We construct the message to be published for the range data
+        auto message_range = std_msgs::msg::MultiArrayLayout();
+
+        // We construct the message to be published for the intensity data
+        auto message_intensity = std_msgs::msg::MultiArrayLayout();
+
+        // We publish the message
+        publisher_range_->publish(message_range);
+        publisher_intensity_->publish(message_intensity);
+
+        // We are now done with the original Icon Buffer. We therefore need to inform the grabber that
+        // this buffer can be reused to store new incoming data
+        grabber->releaseIconBuffer();
+      }
+      else
+      {
+        cout << "Could not find 'Hi3D 1 Range' and 'Hi3D 1 Intensity' in buffer" << endl;
+      }
+    } else {
+      cout << "No scan received" << endl;
     }
 
-    const float *intensity;
-    if (res != icon::E_ALL_OK)
-    {
-      safeCout("Could not find 'Hi3D 1 Intensity' subcomponent in buffer.");
-    }
-    res = outBufferRectified.getReadPointer("Hi3D 1", "Intensity", intensity);
-
-    // Build the Image message using both range and intensity data to create a matrix of 1536x512x2
-    // The first matrix is the range data and the second is the intensity data
-
-    // Create the message
-    auto message = sensor_msgs::msg::Image();
-    // Set the header
-    message.header.stamp = this->now();
-    message.header.frame_id = "frame";
-    // Set the image size
-    message.height = 512;
-    message.width = 1536;
-    // Set the encoding
-    message.encoding = "32FC1";
-    // Set the step
-    message.step = 512 * sizeof(float);
-    // Set the data
-    message.data.resize(message.step * message.height);
-    // Copy the data
-    // memcpy(&message.data[0], range, message.step * message.height);
-    // Publish the message
-    rectified_publisher_->publish(message);
-
-    // Print data structure
-    accessData(&outBufferRectified);
-    accessHi3DRange(&outBufferRectified);
-
-    // Clean up by releasing the buffer back to the frame grabber
-    grabber->releaseIconBuffer();
-  }
-  void timer_callback()
-  {
     auto message = std_msgs::msg::String();
     message.data = "Hello, world! " + std::to_string(count_++);
     RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
