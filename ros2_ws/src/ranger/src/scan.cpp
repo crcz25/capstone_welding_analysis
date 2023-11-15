@@ -425,6 +425,31 @@ public:
     //********** END PUBLISHER
   }
 
+  ~MinimalPublisher()
+  {
+    cout << "stopping camera... " << endl;
+    cam->stop();
+
+    // Stop the frame grabber. If we were using callbacks, no more callbacks would be initiated
+    // after this point. There may however still be a callback function being executed in a separate thread
+    cout << "stopping frame grabber." << endl;
+    grabber->stopGrab();
+
+    // If we intend to at this stage make changes to the configuration which will also affect the data format
+    // we need to disconnect from the frame grabber. If we only wanted to stop buffer acquisition for a
+    // while, perhaps to change some parameter which does not affect the data format we would not even need
+    // to stop the grabber. In this example we intend to shut down everything.
+
+    // Disconnect the frame grabber. This will de-allocate all buffers in the FIFO (but of course not the
+    // ones created in the user application such as the calibration and rectification output buffers)
+    // If we were in callback mode, disconnect would wait for the last callback to terminate before
+    // deallocating the FIFO
+    grabber->disconnect();
+
+    // Finally we call the closeDown function which deletes camera and grabber objects and shut down the API
+    closeDown(0, cam, grabber);
+  }
+
 private:
   void timer_callback()
   {
