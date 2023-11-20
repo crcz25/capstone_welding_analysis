@@ -95,20 +95,18 @@ class MinimalPublisher : public rclcpp::Node
   std_msgs::msg::Header header;
 
   rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
   rclcpp::Publisher<interfaces::msg::Scan>::SharedPtr publisher_intensity_;
   rclcpp::Publisher<interfaces::msg::Scan>::SharedPtr publisher_range_;
   size_t count_;
 
-  std::string param_file;
+  std::string param_file, ip_address, type_config;
 
 public:
-  MinimalPublisher(const std::string &file_path_)
-      : Node("minimal_publisher"), count_(0), rectificationFilter(1536), param_file(file_path_)
+  MinimalPublisher(const std::string &ip_address_, const std::string &file_path_, const std::string &type_config_)
+      : Node("minimal_publisher"), count_(0), rectificationFilter(1536), param_file(file_path_), ip_address(ip_address_), type_config(type_config_)
   {
 
     //********** BEGIN CAMERA CONTROL INIT
-    string ip = "192.168.0.92", type_config = "Measurement";
     cout << "creating camera and framegrabber ... " << endl;
     // Create the Camera
     cam_generic = createCamera("EthernetCamera", "MyCamera");
@@ -133,7 +131,7 @@ public:
       closeDown(-1, cam, grabber);
     }
     // Set the parameters for the framegrabber
-    cam->setComParameters(ip.c_str(), prms->getFrameGrabberPort(), prms->getRedundancyPort(), EthernetCamera::HIGH_PERFORMANCE_DATA_CHANNEL);
+    cam->setComParameters(ip_address.c_str(), prms->getFrameGrabberPort(), prms->getRedundancyPort(), EthernetCamera::HIGH_PERFORMANCE_DATA_CHANNEL);
     cam->setProtocolTimeout(3000); // 3 s timeout
     // Initialize the camera
     cout << "init camera ... " << endl;
@@ -212,7 +210,7 @@ public:
       closeDown(-1, cam, NULL);
     }
     // Tell the frame grabber what camera to listen to by handing it the IP address of the camera
-    prms->setCameraIP(ip.c_str());
+    prms->setCameraIP(ip_address.c_str());
     // Ask the camera for the data port from which it sends its measurement data and give this information
     // to the frame grabber. The grabber now knows what port on what IP address to listen to.
     int dataPort;
@@ -420,7 +418,6 @@ public:
     }
 
     //********** BEGIN PUBLISHER
-    publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
     // Create a publisher for the intensity data
     // scan_msg_intensity = std::make_shared<interfaces::msg::Scan>();
     publisher_intensity_ = this->create_publisher<interfaces::msg::Scan>("intensity", 10);
@@ -565,11 +562,6 @@ private:
     {
       cout << "Timeout: No scan received" << endl;
     }
-
-    // auto message = std_msgs::msg::String();
-    // message.data = "Hello, world! " + std::to_string(count_++);
-    // RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
-    // publisher_->publish(message);
   }
 };
 
@@ -579,18 +571,21 @@ int main(int argc, char *argv[])
   setErrorHandler(&err);
   SetPriority();
 
-  // Check that the user has provided a parameter file
-  if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <file_path>" << std::endl;
-        return 1;
+  // Check that the user has provided a IP address, a parameter file and a type configuration
+  if (argc != 4)
+  {
+    cout << "Usage: " << argv[0] << " <ip_address> <parameter_file> <type_config>" << endl;
+    return 1;
   }
 
-  // Get the file path
-  std::string file_path(argv[1]);
+  // Get the parameters from the command line
+  std::string ip_address = argv[1];
+  std::string file_path = argv[2];
+  std::string type_config = argv[3];
   // Initialize the ROS2 node
   rclcpp::init(argc, argv);
   // Create the node
-  rclcpp::spin(std::make_shared<MinimalPublisher>(file_path));
+  rclcpp::spin(std::make_shared<MinimalPublisher>(ip_address, file_path, type_config));
   // Shutdown the node
   rclcpp::shutdown();
   return 0;
