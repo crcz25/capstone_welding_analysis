@@ -13,20 +13,40 @@ class PlotControlFrame(ctk.CTkFrame):
         self.slider.grid(row=0, columnspan=4, padx=(10, 10), pady=(10, 10), sticky="nsew")
 
         # Create main control buttons
-        scan_button = ctk.CTkButton(self, text="Take scan", command=master.take_scan)
-        previous_button = ctk.CTkButton(self, text="Previous", command=master.previous_plot)
-        next_button = ctk.CTkButton(self, text="Next", command=master.next_plot)
-        load_button = ctk.CTkButton(self, text="Import scan", command=master.import_scan)
+        self.scan_button = ctk.CTkButton(self, text="Take scan", command=self.take_stop_scan)
+        self.previous_button = ctk.CTkButton(self, text="Previous", command=self.previous_plot)
+        self.next_button = ctk.CTkButton(self, text="Next", command=self.next_plot)
+        self.load_button = ctk.CTkButton(self, text="Import scan", command=self.import_scan)
 
-        scan_button.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
-        previous_button.grid(row=1, column=1, padx=10, pady=10, sticky="ew")
-        next_button.grid(row=1, column=2, padx=10, pady=10, sticky="ew")
-        load_button.grid(row=1, column=3, padx=10, pady=10, sticky="w")
+        self.scan_button.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+        self.previous_button.grid(row=1, column=1, padx=10, pady=10, sticky="ew")
+        self.next_button.grid(row=1, column=2, padx=10, pady=10, sticky="ew")
+        self.load_button.grid(row=1, column=3, padx=10, pady=10, sticky="w")
 
         # Dropdown menus
-        scan_type_menu = ctk.CTkOptionMenu(self, values=["Single scan", "Continuous scan"], anchor="center",
-                                           command=master.filter_menu)
-        scan_type_menu.grid(row=2, column=0, padx=10, pady=10, sticky="w")
+        self.scan_type_menu = ctk.CTkOptionMenu(self, values=["Single scan", "Continuous scan"], anchor="center",
+                                           command=self.filter_menu)
+        self.scan_type_menu.grid(row=2, column=0, padx=10, pady=10, sticky="w")
 
-        filter_menu = ctk.CTkOptionMenu(self, values=["Gaussian"], anchor="center", command=master.filter_menu)
-        filter_menu.grid(row=2, column=1, padx=10, pady=10, sticky="w")
+        self.filter_menu = ctk.CTkOptionMenu(self, values=["Gaussian"], anchor="center", command=self.filter_menu)
+        self.filter_menu.grid(row=2, column=1, padx=10, pady=10, sticky="w")
+
+
+    #--------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
+    def take_stop_scan(self):
+        self.master.change_button_text(self.scan_button, "Take scan", "Stop scan")
+
+    def previous_plot(self):
+        pass
+
+    def next_plot(self):
+        pass
+
+    def import_scan(self):
+        pass
+
+    def scan_type_menu(self, choice):
+        pass
+
+    def filter_menu(self, choice):
+        pass

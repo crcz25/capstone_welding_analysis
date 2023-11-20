@@ -17,3 +17,6 @@ class InfoFrame(ctk.CTkFrame):
         self.scaling_label_alerts.grid(row=2, column=0, padx=10, pady=(10, 0))
         self.textbox_alerts = ctk.CTkTextbox(self, width=220)
         self.textbox_alerts.grid(row=3, column=0, padx=(10, 10), pady=(10, 0), sticky="nsew")
+    
+
+    #--------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
