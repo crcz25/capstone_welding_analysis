@@ -405,3 +405,9 @@ FodyWeavers.xsd
 /data/**/*.png
 /data/**/*.ply
 /data/**/*.pcd
+
+# Ignore Build Files from ROS
+**/build/**
+**/devel/**
+**/install/**
+**/log/**
