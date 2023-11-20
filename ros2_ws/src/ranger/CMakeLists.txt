@@ -10,6 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(interfaces REQUIRED)  
 
   # Add the include directories to the project
 # Add the additional include directories from the SICK Ranger camera located in the installation folder:
@@ -62,9 +63,11 @@ ament_target_dependencies(
   "rclcpp"
   "std_msgs"
   "sensor_msgs"
+  "interfaces"
 )
 
-install(TARGETS scan
+install(TARGETS
+  scan
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

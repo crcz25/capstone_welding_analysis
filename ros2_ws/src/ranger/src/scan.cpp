@@ -19,8 +19,8 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "std_msgs/msg/multi_array_layout.hpp"
-#include "sensor_msgs/msg/image.hpp"
+#include "std_msgs/msg/header.hpp"
+#include "interfaces/msg/scan.hpp"
 
 // Include the icon api
 #include "icon_api.h"
@@ -90,10 +90,14 @@ class MinimalPublisher : public rclcpp::Node
   RectificationFilter rectificationFilter;
   const DataFormat *dr_;
 
+  interfaces::msg::Scan scan_msg_range;
+  interfaces::msg::Scan scan_msg_intensity;
+  std_msgs::msg::Header header;
+
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
-  rclcpp::Publisher<std_msgs::msg::MultiArrayLayout>::SharedPtr publisher_intensity_;
-  rclcpp::Publisher<std_msgs::msg::MultiArrayLayout>::SharedPtr publisher_range_;
+  rclcpp::Publisher<interfaces::msg::Scan>::SharedPtr publisher_intensity_;
+  rclcpp::Publisher<interfaces::msg::Scan>::SharedPtr publisher_range_;
   size_t count_;
 
   std::string param_file;
@@ -417,11 +421,15 @@ public:
 
     //********** BEGIN PUBLISHER
     publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
-    publisher_intensity_ = this->create_publisher<std_msgs::msg::MultiArrayLayout>("intensity", 10);
-    publisher_range_ = this->create_publisher<std_msgs::msg::MultiArrayLayout>("range", 10);
+    // Create a publisher for the intensity data
+    // scan_msg_intensity = std::make_shared<interfaces::msg::Scan>();
+    publisher_intensity_ = this->create_publisher<interfaces::msg::Scan>("intensity", 10);
+    // Create a publisher for the range data
+    // scan_msg_range = std::make_shared<interfaces::msg::Scan>();
+    publisher_range_ = this->create_publisher<interfaces::msg::Scan>("range", 10);
+    // Create a timer callback to publish the data
     timer_ = this->create_wall_timer(
         500ms, std::bind(&MinimalPublisher::timer_callback, this));
-
     //********** END PUBLISHER
   }
 
@@ -487,60 +495,81 @@ private:
         // We first find out how many horizontal pixels there are in a buffer. The buffers are
         // organized row by row in memory and since this is a buffer with the subcomponent layout
         // we can easily access a certain pixel by just adding the offset from the origin.
-        // This offset is (of course) x + buffer width * y
         unsigned int numberOfScans = inBuffer->getHeight();
         unsigned int bwidth = inBuffer->getDataFormat()->getNamedComponent("Hi3D 1")->getNamedSubComponent("Range")->getWidth();
-        cout << "(Width, Height) = (" << bwidth << ", " << numberOfScans << ")" << endl;
 
         // Reserving the space for the range and intensity data
-        std::vector<std::vector<float>> range_vec(numberOfScans, std::vector<float>(bwidth));
-        std::vector<std::vector<float>> intensity_vec(numberOfScans, std::vector<float>(bwidth));
+        std::vector<float> range_vec(numberOfScans * bwidth), intensity_vec(numberOfScans * bwidth);
 
         // Loop through the range and intensity data and store them in the vector
         for (unsigned int scan = 0; scan < numberOfScans; scan++)
         {
           // Loop through all elements in each scan.
+          outBufferRectified.getReadPointer("Hi3D 1", "Range", scan, range_data);
+          outBufferRectified.getReadPointer("Hi3D 1", "Intensity", scan, intensity_data);
+
           for (unsigned int col = 0; col < bwidth; col++)
           {
-            int offset = col + scan * bwidth;
+            // Now we can access individual pixels and e.g. print the range and intensity of pixel
+            // (x,y) = (100, 200)
+            // This offset is (of course) x + buffer width * y
+            // int offset = col + bwidth * scan;
             // Get the range and intensity values
-            const float val_range = *(range_data + offset), val_intensity = *(intensity_data + offset);
+            const float val_range = *(range_data + col), val_intensity = *(intensity_data + col);
+            // const float val_range = *(range_data + offset), val_intensity = *(intensity_data + offset);
             // print the obtained values
             // safeCout("Range: " << val_range << " Intensity: " << val_intensity << endl);
             // Store the values in the vector
-            range_vec[scan][col] = val_range;
-            intensity_vec[scan][col] = val_intensity;
+            range_vec.push_back(val_range);
+            intensity_vec.push_back(val_intensity);
           }
         }
-        cout << "Range vector (Width, Height) = (" << range_vec[0].size() << ", " << range_vec.size() << ")" << endl;
-        cout << "Intensity vector (Width, Height) = (" << intensity_vec[0].size() << ", " << intensity_vec.size() << ")" << endl;
+
+        // We construct the Header section of the message
+        header.stamp = this->now();
+        header.frame_id = "laser";
 
         // We construct the message to be published for the range data
-        auto message_range = std_msgs::msg::MultiArrayLayout();
+        scan_msg_range.header.stamp = header.stamp;
+        scan_msg_range.header.frame_id = "range";
+        scan_msg_range.height = numberOfScans;
+        scan_msg_range.width = bwidth;
+        scan_msg_range.step = bwidth * numberOfScans;
+        scan_msg_range.data.insert(scan_msg_range.data.end(), range_vec.begin(), range_vec.end());
 
         // We construct the message to be published for the intensity data
-        auto message_intensity = std_msgs::msg::MultiArrayLayout();
+        scan_msg_intensity.header.stamp = header.stamp;
+        scan_msg_intensity.header.frame_id = "intensity";
+        scan_msg_intensity.height = numberOfScans;
+        scan_msg_intensity.width = bwidth;
+        scan_msg_intensity.step = bwidth * numberOfScans;
+        scan_msg_intensity.data.insert(scan_msg_intensity.data.end(), intensity_vec.begin(), intensity_vec.end());
 
         // We publish the message
-        publisher_range_->publish(message_range);
-        publisher_intensity_->publish(message_intensity);
+        publisher_range_->publish(scan_msg_range);
+        publisher_intensity_->publish(scan_msg_intensity);
 
         // We are now done with the original Icon Buffer. We therefore need to inform the grabber that
         // this buffer can be reused to store new incoming data
         grabber->releaseIconBuffer();
+        
+        // Increment the counter
+        count_++;
       }
       else
       {
         cout << "Could not find 'Hi3D 1 Range' and 'Hi3D 1 Intensity' in buffer" << endl;
       }
-    } else {
-      cout << "No scan received" << endl;
+    }
+    else
+    {
+      cout << "Timeout: No scan received" << endl;
     }
 
-    auto message = std_msgs::msg::String();
-    message.data = "Hello, world! " + std::to_string(count_++);
-    RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
-    publisher_->publish(message);
+    // auto message = std_msgs::msg::String();
+    // message.data = "Hello, world! " + std::to_string(count_++);
+    // RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
+    // publisher_->publish(message);
   }
 };
 
