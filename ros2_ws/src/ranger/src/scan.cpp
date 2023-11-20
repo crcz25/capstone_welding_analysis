@@ -579,11 +579,19 @@ int main(int argc, char *argv[])
   setErrorHandler(&err);
   SetPriority();
 
-  std::string file_path = "C:\\Users\\magok\\source\\repos\\crcz25\\capstone_welding_analysis\\ros2_ws\\src\\ranger\\include\\ranger\\RangerEHi3D.prm";
-  // std::string file_path = "RangerEHi3D.prm";
+  // Check that the user has provided a parameter file
+  if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <file_path>" << std::endl;
+        return 1;
+  }
 
+  // Get the file path
+  std::string file_path(argv[1]);
+  // Initialize the ROS2 node
   rclcpp::init(argc, argv);
+  // Create the node
   rclcpp::spin(std::make_shared<MinimalPublisher>(file_path));
+  // Shutdown the node
   rclcpp::shutdown();
   return 0;
 }
