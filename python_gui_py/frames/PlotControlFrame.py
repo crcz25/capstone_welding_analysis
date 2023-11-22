@@ -6,7 +6,7 @@ class PlotControlFrame(ctk.CTkFrame):
         super().__init__(master, bg_color="transparent", **kwargs)
         self.grid(row=1, column=1, padx=(10, 10), pady=(10, 10), sticky="nsew")
         self.grid_columnconfigure(3, weight=1)
-        self.grid_rowconfigure(1, weight=0)
+        self.grid_rowconfigure(4, weight=1)
 
         # Create Slider
         self.slider = ctk.CTkSlider(self, from_=0, to=100)
@@ -30,6 +30,13 @@ class PlotControlFrame(ctk.CTkFrame):
 
         self.filter_menu = ctk.CTkOptionMenu(self, values=["Gaussian"], anchor="center", command=self.filter_menu)
         self.filter_menu.grid(row=2, column=1, padx=10, pady=10, sticky="w")
+
+        # Console
+        self.console_label = ctk.CTkLabel(self, text="Console")
+        self.console_label.grid(row=3, column=0, padx=(10, 10), pady=(10, 10), sticky="ws")
+
+        self.console_entry = ctk.CTkEntry(self)
+        self.console_entry.grid(row=4, column=0, columnspan=4, rowspan=2 , padx=(10, 10), pady=(10, 10), sticky="nsew")
 
 
     #--------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#

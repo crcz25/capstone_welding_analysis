@@ -5,7 +5,7 @@ from frames.MenuFrame import MenuFrame
 from frames.PlotFrame import PlotFrame
 from frames.InfoFrame import InfoFrame
 from frames.PlotControlFrame import PlotControlFrame
-from frames.CameraSettingsFrame import CameraSettingsFrame
+from frames.SettingsFrame import SettingsFrame
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("dark-blue")
@@ -28,7 +28,7 @@ class App(ctk.CTk):
         self.plot_frame = PlotFrame(self)
         self.info_frame = InfoFrame(self)
         self.plot_control_frame = PlotControlFrame(self)
-        self.settings_frame = CameraSettingsFrame(self)
+        self.settings_frame = SettingsFrame(self)
 
         # Set default values
         self.menu_frame.appearance_mode_optionmenu.set("Dark")
@@ -67,7 +67,7 @@ class App(ctk.CTk):
     def menu_button(self, frame_type):
         if frame_type == "home":
             self.show_default_frames()
-        elif frame_type == "camera":
+        elif frame_type == "settings":
             self.show_camera_frames()
 
     def show_camera_frames(self):
@@ -79,6 +79,7 @@ class App(ctk.CTk):
     def show_default_frames(self):
         self.settings_frame.grid_remove()
         self.info_frame.grid()
+        self.plot_frame.grid()
         self.plot_control_frame.grid()    
 
 

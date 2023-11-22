@@ -12,7 +12,7 @@ class MenuFrame(ctk.CTkFrame):
 
         self.sidebar_button_1 = ctk.CTkButton(self, text="Home", command= lambda: master.menu_button("home"))
         self.sidebar_button_1.grid(row=1, column=0, padx=20, pady=10)
-        self.sidebar_button_2 = ctk.CTkButton(self, text="Camera", command= lambda: master.menu_button("camera"))
+        self.sidebar_button_2 = ctk.CTkButton(self, text="Settings", command= lambda: master.menu_button("settings"))
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
 
         self.appearance_mode_label = ctk.CTkLabel(self, text="Appearance Mode:", anchor="w")
