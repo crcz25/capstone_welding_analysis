@@ -70,8 +70,8 @@ void SetPriority(void)
   CurrentProcess = GetCurrentProcess();
   CurrentThread = GetCurrentThread();
   //	SetPriorityClass(CurrentProcess, IDLE_PRIORITY_CLASS);
-  SetPriorityClass(CurrentProcess, HIGH_PRIORITY_CLASS);
-  //	SetPriorityClass(CurrentProcess, REALTIME_PRIORITY_CLASS);
+  // SetPriorityClass(CurrentProcess, HIGH_PRIORITY_CLASS);
+  SetPriorityClass(CurrentProcess, REALTIME_PRIORITY_CLASS);
   //	SetThreadPriority(CurrentThread, THREAD_PRIORITY_IDLE);
 }
 
@@ -180,12 +180,11 @@ public:
       closeDown(-1, cam, NULL);
     }
     // Print the available configurations
-    cout << endl
-         << "Configurations:" << endl;
-    for (size_t i = 0; i < configs.size(); i++)
-    {
-      cout << i << " -- " << configs[i].c_str() << endl;
-    }
+    // cout << endl << "Configurations:" << endl;
+    // for (size_t i = 0; i < configs.size(); i++)
+    // {
+    //   cout << i << " -- " << configs[i].c_str() << endl;
+    // }
     // Set the configuration
     ret = cam->setActiveConfiguration(type_config.c_str());
     if (ret != EthernetCamera::E_ALL_OK)
@@ -381,7 +380,7 @@ public:
     // Here is an example on how to print the data format XML description in the console window.
     // You can also use the data format's member functions to ask it about individual subcomponents
     const DataFormat *d = outBufferCalibrated.getDataFormat();
-    cout << d->toString().c_str() << endl;
+    // cout << d->toString().c_str() << endl;
 
     // Create a rectification filter and configure it to generate an output buffer with the width
     // 1536 pixels. Rectification means resampling the calibrated set of (x, z) data points to a regular
@@ -467,8 +466,8 @@ private:
     // If a new buffer was received...
     if (res == 0)
     {
-      cout << "Scan received" << endl;
-      cout << "SCAN ID: " << outBufferRectified.getScanID(0) << endl;
+      // cout << "Scan received" << endl;
+      cout << "SCAN ID: " << count_ << endl;
       // Apply the calibration filter to get calibrated data in world units.
       // The result is stored in outBufferCalibrated
       calibrationFilter.apply(*inBuffer, outBufferCalibrated);
@@ -529,6 +528,7 @@ private:
         // We construct the message to be published for the range data
         scan_msg_range.header.stamp = header.stamp;
         scan_msg_range.header.frame_id = "range";
+        scan_msg_range.id = count_;
         scan_msg_range.height = numberOfScans;
         scan_msg_range.width = bwidth;
         scan_msg_range.step = bwidth * numberOfScans;
@@ -537,6 +537,7 @@ private:
         // We construct the message to be published for the intensity data
         scan_msg_intensity.header.stamp = header.stamp;
         scan_msg_intensity.header.frame_id = "intensity";
+        scan_msg_intensity.id = count_;
         scan_msg_intensity.height = numberOfScans;
         scan_msg_intensity.width = bwidth;
         scan_msg_intensity.step = bwidth * numberOfScans;
@@ -549,7 +550,7 @@ private:
         // We are now done with the original Icon Buffer. We therefore need to inform the grabber that
         // this buffer can be reused to store new incoming data
         grabber->releaseIconBuffer();
-        
+
         // Increment the counter
         count_++;
       }
@@ -560,7 +561,7 @@ private:
     }
     else
     {
-      cout << "Timeout: No scan received" << endl;
+      cout << "Timeout (1000ms): No scan received" << endl;
     }
   }
 };
