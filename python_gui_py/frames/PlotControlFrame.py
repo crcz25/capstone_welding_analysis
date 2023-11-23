@@ -50,7 +50,7 @@ class PlotControlFrame(ctk.CTkFrame):
         pass
 
     def import_scan(self):
-        pass
+        self.master.import_files()
 
     def scan_type_menu(self, choice):
         pass

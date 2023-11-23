@@ -27,7 +27,8 @@ class SettingsFrame(ctk.CTkFrame):
         self.paramfile_label = ctk.CTkLabel(self, text="Parameter file:")
         self.paramfile_label.grid(row=2, column=0, padx=(10, 10), pady=(10, 10), sticky="ew")
 
-        self.parameter_file_button = ctk.CTkButton(self, text="Import parameter file")
+        self.parameter_file_button = ctk.CTkButton(self, text="Import parameter file",
+                                                   command=master.import_files)
         self.parameter_file_button.grid(row=2, column=2, padx=(10, 10), pady=(10, 10), sticky="ew")
 
         # Connect Button

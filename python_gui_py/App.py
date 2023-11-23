@@ -1,6 +1,8 @@
 import customtkinter as ctk
 import datetime
 
+from customtkinter import filedialog
+
 from frames.MenuFrame import MenuFrame
 from frames.PlotFrame import PlotFrame
 from frames.InfoFrame import InfoFrame
@@ -80,7 +82,10 @@ class App(ctk.CTk):
         self.settings_frame.grid_remove()
         self.info_frame.grid()
         self.plot_frame.grid()
-        self.plot_control_frame.grid()    
+        self.plot_control_frame.grid()
+    
+    def import_files(self):
+        filedialog.askdirectory()
 
 
 if __name__ == "__main__":
