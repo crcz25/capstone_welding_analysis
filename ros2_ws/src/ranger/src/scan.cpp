@@ -457,6 +457,10 @@ public:
 private:
   void timer_callback()
   {
+    // Empty the message data vectors before filling them with new data
+    scan_msg_range.data.clear();
+    scan_msg_intensity.data.clear();
+
     // Setup a result variable to temporarily store the result status from various functions
     int res;
 
@@ -482,7 +486,7 @@ private:
       const float *intensity_data;
       int res_intensity = outBufferRectified.getReadPointer("Hi3D 1", "Intensity", intensity_data);
 
-      // Check that 'Hi3D 1 Range' and 'Hi3D 1 Intensity' exist is to try to access the data and see if it works.
+      // Check that 'Hi3D 1 Range' and 'Hi3D 1 Intensity' exist to try to access the data and see if it works.
       if (res_range == icon::E_ALL_OK && res_intensity == icon::E_ALL_OK)
       {
         // If we get here we know that the buffer contains the subcomponents we are looking for
@@ -495,7 +499,7 @@ private:
         unsigned int bwidth = inBuffer->getDataFormat()->getNamedComponent("Hi3D 1")->getNamedSubComponent("Range")->getWidth();
 
         // Reserving the space for the range and intensity data
-        std::vector<float> range_vec(numberOfScans * bwidth), intensity_vec(numberOfScans * bwidth);
+        // std::vector<float> range_vec(numberOfScans * bwidth), intensity_vec(numberOfScans * bwidth);
 
         // Loop through the range and intensity data and store them in the vector
         for (unsigned int scan = 0; scan < numberOfScans; scan++)
@@ -512,12 +516,21 @@ private:
             // int offset = col + bwidth * scan;
             // Get the range and intensity values
             const float val_range = *(range_data + col), val_intensity = *(intensity_data + col);
+            // If the data is greater than 0, print the obtained values
+            // if (val_range > 0 || val_intensity > 0)
+            // {
+            //   cout << "Range: " << val_range << " Intensity: " << val_intensity << endl;
+            // }
             // const float val_range = *(range_data + offset), val_intensity = *(intensity_data + offset);
             // print the obtained values
             // safeCout("Range: " << val_range << " Intensity: " << val_intensity << endl);
+
             // Store the values in the vector
-            range_vec.push_back(val_range);
-            intensity_vec.push_back(val_intensity);
+            scan_msg_range.data.push_back(val_range);
+            scan_msg_intensity.data.push_back(val_intensity);
+
+            // range_vec.push_back(val_range);
+            // intensity_vec.push_back(val_intensity);
           }
         }
 
@@ -532,7 +545,8 @@ private:
         scan_msg_range.height = numberOfScans;
         scan_msg_range.width = bwidth;
         scan_msg_range.step = bwidth * numberOfScans;
-        scan_msg_range.data.insert(scan_msg_range.data.end(), range_vec.begin(), range_vec.end());
+        // Replace the data in the message with the data from the vector
+        // scan_msg_range.data.insert(scan_msg_range.data.begin(), range_vec.begin(), range_vec.end());
 
         // We construct the message to be published for the intensity data
         scan_msg_intensity.header.stamp = header.stamp;
@@ -541,7 +555,7 @@ private:
         scan_msg_intensity.height = numberOfScans;
         scan_msg_intensity.width = bwidth;
         scan_msg_intensity.step = bwidth * numberOfScans;
-        scan_msg_intensity.data.insert(scan_msg_intensity.data.end(), intensity_vec.begin(), intensity_vec.end());
+        // scan_msg_intensity.data.insert(scan_msg_intensity.data.begin(), intensity_vec.begin(), intensity_vec.end());
 
         // We publish the message
         publisher_range_->publish(scan_msg_range);
