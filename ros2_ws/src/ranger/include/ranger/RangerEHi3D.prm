@@ -1,16 +1,16 @@
 <ROOT valuetype='CameraObject'>
-<CAMERA name='SICKIVP Ranger E50' valuetype='PM' >
-<CONFIGURATION name='Measurement' valuetype='Measurement' >
-<COMPONENT name='Hi3D 1' valuetype='DCM' >
-</COMPONENT>
-</CONFIGURATION>
-<CONFIGURATION name='Image' valuetype='Image' >
-<GROUP name='Parameters'>
-</GROUP>
-<COMPONENT name='Image 1' valuetype='image' >
-<GROUP name='Parameters'>
-</GROUP>
-</COMPONENT>
-</CONFIGURATION>
-</CAMERA>
+    <CAMERA name='SICKIVP Ranger E50' valuetype='PM'>
+        <CONFIGURATION name='Measurement' valuetype='Measurement'>
+            <COMPONENT name='Hi3D 1' valuetype='DCM'>
+            </COMPONENT>
+        </CONFIGURATION>
+        <CONFIGURATION name='Image' valuetype='Image'>
+            <GROUP name='Parameters'>
+            </GROUP>
+            <COMPONENT name='Image 1' valuetype='image'>
+                <GROUP name='Parameters'>
+                </GROUP>
+            </COMPONENT>
+        </CONFIGURATION>
+    </CAMERA>
 </ROOT>
