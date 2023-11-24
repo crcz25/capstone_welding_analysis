@@ -13,7 +13,7 @@ class MinimalSubscriber(Node):
         )
         self.subscription  # prevent unused variable warning
         # Variable to save the data in npz format
-        self.data_npz = np.array([])
+        self.data_npz = []
 
     def listener_callback(self, msg):
         id = msg.id
@@ -32,7 +32,8 @@ class MinimalSubscriber(Node):
         # ax.imshow(data, cmap="gray")
         # plt.show()
         # Save the data
-        self.data_npz = np.append(self.data_npz, data)
+        self.data_npz.append(data)
+        # print(len(self.data_npz))
 
 
 def main(args=None):
