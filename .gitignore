@@ -412,5 +412,6 @@ FodyWeavers.xsd
 **/install/**
 **/log/**
 
-# Ignore rosbag files
+# Ignore rosbag files and npz files
 **scan_*
+*.npz
