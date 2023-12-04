@@ -415,3 +415,6 @@ FodyWeavers.xsd
 # Ignore rosbag files and npz files
 **scan_*
 *.npz
+
+# Ignore .vscode
+.vscode
