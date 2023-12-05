@@ -1,4 +1,5 @@
 import time
+import seaborn as sns
 from collections import defaultdict
 
 import matplotlib.pyplot as plt
@@ -29,6 +30,8 @@ class MinimalSubscriber(Node):
         # Variable to save the data
         self.range = np.array([])
         self.intensity = np.array([])
+        self.ply_mat_range = np.array([])
+        self.ply_mat_intensity = np.array([])
 
     def write_ply_header(
         self, file, num_vertices, num_triangles, write_triangles=False
@@ -170,26 +173,75 @@ class MinimalSubscriber(Node):
 
     def process_data(self):
         # print("Processing data")
-        pixel_size = {"y": 1.0, "x": 0.1122161041015625, "z": 1.0}
+        pixel_size = {"x": 0.1122161041015625, "y": 1.0, "z": 1.0}
         origin: {"y": 0, "x": 0.0100641, "z": 0.0}
         # Get the calibrated data, is to be considered as a number of points (X, R) in the laser plane rather than an image.
         # The row (scan) number where an (X, R) point is located tells us the point’s position in the (X, Y, Z) real-world space.
         # R and Z are kept apart to indicate that R is parallel to the laser plane rather than perpendicular to the conveyor plane.
-        range_image = self.range
-        intensity_image = self.intensity
+
+        range_image = np.array(self.range)
+        intensity_image = np.array(self.intensity)
         # Plot the data as an image
         if len(range_image) > 0 and len(intensity_image) > 0:
-            range_image = np.array(range_image)
-            intensity_image = np.array(intensity_image)
             print(f"Range image shape: {range_image.shape}")
             print(f"Intensity image shape: {intensity_image.shape}")
             # Adjust the width of the plot based on the pixel size to get the plot with the correct
             # world coordinates
-            mesh_width = range_image.shape[1] * pixel_size["x"]
-            print(f"Mesh width: {mesh_width}")
             # Normalize the x axis to the mesh width
+            mesh_width = range_image.shape[1] * pixel_size["x"]
             x = np.linspace(0, mesh_width, range_image.shape[1])
+            print(f"Mesh width: {mesh_width}")
             profile = range_image[0]
+
+            # Calculate the dynamic filter of the profile
+            # WINDOW_SIZE = 5  # Window size for the algorithm (adjustable)
+            # PRECISION_THRESHOLD = 0.01  # Fixed precision threshold (adjustable)
+            # thresholds = []  # For visualization
+            # maxs = []  # For visualization
+            # mins = []  # For visualization
+            # step_times = []  # Array to store the times when steps were detected
+            # sample_old = 0.0  # Initialize the previous sample
+            # sample_new = 0.0  # Initialize the current sample
+            # sample_result = 0.0  # Initialize the sample result
+            # for i in range(len(profile) - WINDOW_SIZE):
+            #     # Calculate the maximum and minimum acceleration in the window
+            #     maximum = np.max(profile[i : i + WINDOW_SIZE])
+            #     minimum = np.min(profile[i : i + WINDOW_SIZE])
+            #     # Calculate the threshold for the window
+            #     threshold = (maximum + minimum) / 2
+
+            #     # Store the threshold for visualization
+            #     thresholds.append(threshold)
+            #     maxs.append(maximum)
+            #     mins.append(minimum)
+
+            #     sample_result = profile[i]
+            #     if abs(sample_result - sample_new) > PRECISION_THRESHOLD:
+            #         sample_new = sample_result
+            #     else:
+            #         sample_old = sample_new
+
+            #     # A step is defined as happening if there is a negative slope of the acceleration plot (sample_new < sample_old) when the  acceleration curve crosses below the dynamic threshold.
+            #     if sample_old >= threshold > sample_new and sample_new < sample_old:
+            #         # print("Step detected at time " + str(time))
+            #         step_times.append(time)
+
+            # kernel = np.array([1, 4, 6, 4, 1]) / 16
+            # profile = np.convolve(profile, kernel, mode="same")
+
+            # Append the profiles to the array of profiles
+            self.ply_mat_range = np.append(self.ply_mat_range, range_image)
+            # Reshape the array to a 2D array
+            self.ply_mat_range = self.ply_mat_range.reshape(-1, range_image.shape[1])
+            print(f"PLY range mat shape: {self.ply_mat_range.shape}")
+
+            # Append the profiles to the array of profiles
+            self.ply_mat_intensity = np.append(self.ply_mat_intensity, intensity_image)
+            # Reshape the array to a 2D array
+            self.ply_mat_intensity = self.ply_mat_intensity.reshape(
+                -1, intensity_image.shape[1]
+            )
+            print(f"PLY intensity mat shape: {self.ply_mat_intensity.shape}")
 
             # Create the figure
             fig, ax = plt.subplots()
@@ -199,13 +251,17 @@ class MinimalSubscriber(Node):
             ax.set_ylabel("Z [mm]")
             ax.set_xlim(0, mesh_width)
             ax.set_ylim(0, 100)
-            ax.plot(x, profile)
-            plt.show()
+            ax.scatter(x, profile, s=1, c="black")
+            # ax.plot(x[: len(x) - WINDOW_SIZE], thresholds, c="red")
+            # ax.plot(x[: len(x) - WINDOW_SIZE], maxs, c="blue")
+            # ax.plot(x[: len(x) - WINDOW_SIZE], mins, c="green")
+            # plt.show()
 
             # Create a box plot of the range image
-            fig, ax = plt.subplots()
-            ax.boxplot(range_image[0])
-            plt.show()
+            # fig, ax = plt.subplots()
+            # ax.boxplot(range_image[0])
+            # plt.show()
+            # sns.boxplot(x=range_image[0], color="skyblue", linewidth=2.5, width=0.5)
 
             # Plot the data
             # Adjust the plot limits to match the real world coordinates
@@ -228,7 +284,8 @@ class MinimalSubscriber(Node):
             #     # Wait 0.01 seconds to view the plot
             #     plt.pause(0.01)
             # Write the ply file
-            self.generate_ply(range_image, intensity_image)
+            if (self.ply_mat_range.shape[0] == 12800):
+                self.generate_ply(self.ply_mat_range, self.ply_mat_intensity)
         # print(len(self.data_npz))
 
         # if id == 62:
