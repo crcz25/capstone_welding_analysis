@@ -1,18 +1,20 @@
-import customtkinter as ctk
 import datetime
 
+import customtkinter as ctk
+import rclpy
 from customtkinter import filedialog
-
-from frames.MenuFrame import MenuFrame
-from frames.PlotFrame import PlotFrame
 from frames.InfoFrame import InfoFrame
+from frames.MenuFrame import MenuFrame
+from frames.NodeThread import ROSNodeThread
 from frames.PlotControlFrame import PlotControlFrame
+from frames.PlotFrame import PlotFrame
 from frames.SettingsFrame import SettingsFrame
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("dark-blue")
 
-#--------------------------------------------------------GUI BASE--------------------------------------------------------#
+
+# --------------------------------------------------------GUI BASE--------------------------------------------------------#
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -29,12 +31,14 @@ class App(ctk.CTk):
         self.menu_frame = MenuFrame(self)
         self.plot_frame = PlotFrame(self)
         self.info_frame = InfoFrame(self)
+        # Create the thread for the node
+        # thread = threading.Thread()
         self.plot_control_frame = PlotControlFrame(self)
         self.settings_frame = SettingsFrame(self)
 
         # Set default values
         self.menu_frame.appearance_mode_optionmenu.set("Dark")
-        self.menu_frame.scaling_optionmenu.set("100%")  
+        self.menu_frame.scaling_optionmenu.set("100%")
         self.plot_control_frame.slider.set(0)
         self.settings_frame.grid_remove()
 
@@ -43,15 +47,18 @@ class App(ctk.CTk):
         scan_time = datetime.datetime.now()
 
         # Insert data to textboxes
-        self.info_frame.textbox_info.insert("0.0", f"Scan: {scan_name}" + '\n' + f"Time: {scan_time}")
+        self.info_frame.textbox_info.insert("0.0", f"Scan: {scan_name}" + "\n" + f"Time: {scan_time}")
         self.info_frame.textbox_alerts.insert("0.0", "Defects:")
 
         # These disable writing in the right frame textboxes
         self.info_frame.textbox_info.configure(state="disabled")
         self.info_frame.textbox_alerts.configure(state="disabled")
 
+        # ROS2 node
+        self.ros_node_thread = None
+        self.scanning_in_progress = False
 
-    #--------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
+    # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def change_appearance_mode_event(self, new_appearance_mode: str):
         ctk.set_appearance_mode(new_appearance_mode)
         self.show_default_frames()
@@ -64,6 +71,15 @@ class App(ctk.CTk):
     def change_button_text(self, button, text_1, text_2):
         current_state = button.cget("text")
         new_state = text_2 if current_state == text_1 else text_1
+        print(f"Changing button text from {current_state} to {new_state}")
+        # Check if it is time to start or stop the scan
+        if current_state == "Take scan":
+            print("Starting scan")
+            self.start_scan()
+        elif current_state == "Stop scan":
+            print("Stopping scan")
+            self.stop_scan()
+
         button.configure(text=new_state)
 
     def menu_button(self, frame_type):
@@ -83,11 +99,35 @@ class App(ctk.CTk):
         self.info_frame.grid()
         self.plot_frame.grid()
         self.plot_control_frame.grid()
-    
+
     def import_files(self):
         filedialog.askdirectory()
 
+    def call_scan(self):
+        self.plot_control_frame.take_stop_scan()
+
+    def start_scan(self):
+        if not self.scanning_in_progress:
+            self.scanning_in_progress = True
+            self.ros_node_thread = ROSNodeThread("test.csv")
+            self.ros_node_thread.start()
+
+    def stop_scan(self):
+        if self.scanning_in_progress:
+            self.scanning_in_progress = False
+            self.ros_node_thread.stop_event.set()
+            self.ros_node_thread.join()
+
 
 if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    try:
+        rclpy.init(args=None)
+        app = App()
+        app.mainloop()
+    except KeyboardInterrupt:
+        app.destroy()
+        rclpy.shutdown()
+    finally:
+        print("Exiting")
+        rclpy.shutdown()
+        exit()
