@@ -2,7 +2,8 @@ import threading
 import time
 
 import rclpy
-from scan_demo.subscriber import MinimalSubscriber
+from customtkinter import filedialog
+from data_recorder.recorder import Recorder
 
 
 class ROSNodeThread(threading.Thread):
@@ -22,17 +23,20 @@ class ROSNodeThread(threading.Thread):
         run: The main method that runs the thread.
     """
 
-    def __init__(self, csv_file_path=None):
+    def __init__(self):
         super().__init__()
         self.ros_node = None
-        self.csv_file_path = csv_file_path
+        self.csv_file_path = None
         self.stop_event = threading.Event()
 
     def set_ros_node(self):
         """
         Sets up the ROS node object.
         """
-        self.ros_node = MinimalSubscriber()
+        self.ros_node = Recorder()
+
+    def save_data(self, file_path):
+        self.ros_node.save_data(file_path)
 
     def run(self):
         """
@@ -46,12 +50,11 @@ class ROSNodeThread(threading.Thread):
                     self.set_ros_node()
                 # Spin the node once
                 rclpy.spin_once(self.ros_node, timeout_sec=0.1)
-                # Print the length of the data, we use a lock to prevent the node from changing the data while we are
-                # printing it
+                # Print the length of the data, we use a lock to prevent the node from changing the data while we are printing it
                 with self.ros_node.lock:
                     # We can do something with the data here
-                    if len(self.ros_node.data_npz) > 0:
-                        print(len(self.ros_node.data_npz))
+                    if len(self.ros_node.data_npy) > 0:
+                        print(len(self.ros_node.data_npy))
                 # If the node is not alive, break out of the loop
                 if not self.is_alive():
                     break
@@ -60,8 +63,6 @@ class ROSNodeThread(threading.Thread):
         finally:
             # Close the node
             print("Closing ROS Node Thread")
-            # We can also ddo something with the node before closing it (need to use lock inside the node)
-            self.ros_node.save_data(self.csv_file_path)
             # Destroy the node if it is not None
             if self.ros_node is not None:
                 self.ros_node.destroy_node()

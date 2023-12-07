@@ -47,7 +47,9 @@ class App(ctk.CTk):
         scan_time = datetime.datetime.now()
 
         # Insert data to textboxes
-        self.info_frame.textbox_info.insert("0.0", f"Scan: {scan_name}" + "\n" + f"Time: {scan_time}")
+        self.info_frame.textbox_info.insert(
+            "0.0", f"Scan: {scan_name}" + "\n" + f"Time: {scan_time}"
+        )
         self.info_frame.textbox_alerts.insert("0.0", "Defects:")
 
         # These disable writing in the right frame textboxes
@@ -109,7 +111,7 @@ class App(ctk.CTk):
     def start_scan(self):
         if not self.scanning_in_progress:
             self.scanning_in_progress = True
-            self.ros_node_thread = ROSNodeThread("test.csv")
+            self.ros_node_thread = ROSNodeThread()
             self.ros_node_thread.start()
 
     def stop_scan(self):
@@ -117,6 +119,11 @@ class App(ctk.CTk):
             self.scanning_in_progress = False
             self.ros_node_thread.stop_event.set()
             self.ros_node_thread.join()
+            # Save the data
+            self.csv_file_path = filedialog.askdirectory()
+            # Check if the extension is correct if not add it
+            print(f"Saving data to {self.csv_file_path}")
+            self.ros_node_thread.save_data(self.csv_file_path)
 
 
 if __name__ == "__main__":
