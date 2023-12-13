@@ -49,9 +49,6 @@ class App(ctk.CTk):
         scan_time = datetime.datetime.now()
 
         # Insert data to textboxes
-        self.info_frame.textbox_info.insert(
-            "0.0", f"Scan: {scan_name}" + "\n" + f"Time: {scan_time}"
-        )
         self.info_frame.textbox_alerts.insert("0.0", "Defects:")
 
         # These disable writing in the right frame textboxes
@@ -68,6 +65,10 @@ class App(ctk.CTk):
         self.timestamp_file = None
         self.range_data = np.array([])
         self.timestamp_data = np.array([])
+
+        # Visualization
+        self.current_frame = 0
+        self.max_frames = 0
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def change_appearance_mode_event(self, new_appearance_mode: str):
@@ -130,6 +131,10 @@ class App(ctk.CTk):
         self.range_data = np.load(self.range_file[0])
         print(f"Range file to open: {self.range_file}")
         print(f"Size of range data: {self.range_data.shape}")
+        # Set the max frames
+        self.max_frames = self.range_data.shape[0] - 1
+        # Set the slider to the max number of scans
+        self.plot_control_frame.slider.configure(to=self.range_data.shape[1] - 1)
 
         # timestamps are the csv files
         self.timestamp_file = [f for f in self.files if f.endswith(".csv")]
@@ -137,6 +142,37 @@ class App(ctk.CTk):
         self.timestamp_data = np.genfromtxt(self.timestamp_file[0], delimiter=",")
         print(f"Timestamp file to open: {self.timestamp_file}")
         print(f"Size of timestamp data: {self.timestamp_data.shape}")
+
+        # Update the info frame textboxes
+        self.update_info_frame()
+
+    def update_info_frame(self):
+        # Check if the data is loaded
+        if self.range_file is not None and self.timestamp_file is not None:
+            self.info_frame.textbox_info.configure(state="normal")
+            self.info_frame.textbox_info.delete("1.0", "end")
+            txt = f"""Scan: {self.range_file[0].split("/")[-1]}\nTime: {self.timestamp_data[self.current_frame]}\nFrame: {self.current_frame + 1}"""
+            self.info_frame.textbox_info.insert("0.0", txt)
+            self.info_frame.textbox_info.configure(state="disabled")
+        else:
+            print("Data is not loaded")
+
+    def change_plot(self, change):
+        # Check if the data is loaded
+        if self.range_file is not None and self.timestamp_file is not None:
+            print(f"Current frame: {self.current_frame}, Max frames: {self.max_frames}")
+            print(f"Change: {change}")
+            self.current_frame += change
+            # Check if the frame is out of bounds
+            if self.current_frame < 0:
+                self.current_frame = 0
+            elif self.current_frame > self.max_frames:
+                self.current_frame = self.max_frames
+            print(f"New frame: {self.current_frame}")
+            # Update the info frame textboxes
+            self.update_info_frame()
+        else:
+            print("Data is not loaded")
 
     def call_scan(self):
         self.plot_control_frame.take_stop_scan()

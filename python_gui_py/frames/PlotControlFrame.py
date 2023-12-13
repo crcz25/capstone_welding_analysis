@@ -1,5 +1,4 @@
 import customtkinter as ctk
-
 #--------------------------------------------------------SLIDER/MAIN CONTROL FRAME--------------------------------------------------------#
 class PlotControlFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -44,10 +43,10 @@ class PlotControlFrame(ctk.CTkFrame):
         self.master.change_button_text(self.scan_button, "Take scan", "Stop scan")
 
     def previous_plot(self):
-        pass
+        self.master.change_plot(-1)
 
     def next_plot(self):
-        pass
+        self.master.change_plot(1)
 
     def import_scan(self):
         self.master.import_files()
