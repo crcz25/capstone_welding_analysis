@@ -1,6 +1,8 @@
 import datetime
+import os
 
 import customtkinter as ctk
+import numpy as np
 import rclpy
 from customtkinter import filedialog
 from frames.InfoFrame import InfoFrame
@@ -60,6 +62,13 @@ class App(ctk.CTk):
         self.ros_node_thread = None
         self.scanning_in_progress = False
 
+        # Import files
+        self.files = None
+        self.range_file = None
+        self.timestamp_file = None
+        self.range_data = np.array([])
+        self.timestamp_data = np.array([])
+
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def change_appearance_mode_event(self, new_appearance_mode: str):
         ctk.set_appearance_mode(new_appearance_mode)
@@ -103,7 +112,31 @@ class App(ctk.CTk):
         self.plot_control_frame.grid()
 
     def import_files(self):
-        filedialog.askdirectory()
+        # Ask the user for the files to import timestamps and ranges (.csv and .npy)
+        self.files = filedialog.askopenfilenames(
+            title="Select files to import",
+            filetypes=(
+                ("all files", "*.*"),
+                ("CSV files", "*.csv"),
+                ("Numpy files", "*.npy"),
+            ),
+        )
+        print(f"Files to import: {self.files}")
+
+        # Separate the files into timestamps and ranges
+        # ranges are the npy files
+        self.range_file = [f for f in self.files if f.endswith(".npy")]
+        # open the npy file
+        self.range_data = np.load(self.range_file[0])
+        print(f"Range file to open: {self.range_file}")
+        print(f"Size of range data: {self.range_data.shape}")
+
+        # timestamps are the csv files
+        self.timestamp_file = [f for f in self.files if f.endswith(".csv")]
+        # open the csv file
+        self.timestamp_data = np.genfromtxt(self.timestamp_file[0], delimiter=",")
+        print(f"Timestamp file to open: {self.timestamp_file}")
+        print(f"Size of timestamp data: {self.timestamp_data.shape}")
 
     def call_scan(self):
         self.plot_control_frame.take_stop_scan()
