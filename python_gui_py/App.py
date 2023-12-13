@@ -147,7 +147,7 @@ class App(ctk.CTk):
 
         # Update the plot
         self.plot_frame.create_figure(
-            current_frame=self.current_frame, data=self.range_data
+            current_frame=self.current_frame, profile=0, data=self.range_data
         )
 
     def update_info_frame(self):
@@ -155,13 +155,16 @@ class App(ctk.CTk):
         if self.range_file is not None and self.timestamp_file is not None:
             self.info_frame.textbox_info.configure(state="normal")
             self.info_frame.textbox_info.delete("1.0", "end")
-            txt = f"""Scan: {self.range_file[0].split("/")[-1]}\nTime: {self.timestamp_data[self.current_frame]}\nFrame: {self.current_frame + 1}"""
+            txt = f"""Scan: {self.range_file[0].split("/")[-1]} \
+                \nTime: {self.timestamp_data[self.current_frame]} \
+                \nFrame: {self.current_frame + 1} \
+                \nProfile: {int(self.plot_control_frame.slider.get()) + 1}"""
             self.info_frame.textbox_info.insert("0.0", txt)
             self.info_frame.textbox_info.configure(state="disabled")
         else:
             print("Data is not loaded")
 
-    def change_plot(self, change):
+    def change_plot(self, change, profile=0):
         # Check if the data is loaded
         if self.range_file is not None and self.timestamp_file is not None:
             print(f"Current frame: {self.current_frame}, Max frames: {self.max_frames}")
@@ -175,8 +178,8 @@ class App(ctk.CTk):
             print(f"New frame: {self.current_frame}")
             # Update the info frame textboxes
             self.update_info_frame()
-            self.plot_frame.update_plot(
-                current_frame=self.current_frame, data=self.range_data
+            self.plot_frame.update_surface(
+                current_frame=self.current_frame, profile=profile, data=self.range_data
             )
         else:
             print("Data is not loaded")

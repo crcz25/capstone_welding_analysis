@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 # --------------------------------------------------------PLOT FRAME--------------------------------------------------------#
 class PlotFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
-        super().__init__(master, bg_color="transparent", fg_color="darkblue", **kwargs)
+        super().__init__(master, bg_color="transparent", **kwargs)
         self.grid(row=0, column=1, padx=(10, 10), pady=(10, 10), sticky="nsew")
 
         # Create the plot
@@ -19,14 +19,15 @@ class PlotFrame(ctk.CTkFrame):
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
-    def create_figure(self, current_frame=None, data=None):
-        if current_frame is None:
+    def create_figure(self, current_frame=0, profile=0, data=None):
+        if current_frame is None and data is None:
             current_frame = self.master.current_frame
-        if data is None:
             data = self.master.data
-
-        self.ax.imshow(data[current_frame], cmap="gray", vmin=0, vmax=255)
-        self.ax.set_title(f"Frame {current_frame}")
+        section = data[current_frame, profile, :]
+        print(f"Section shape: {section.shape}")
+        print(f"Section: {section}")
+        self.ax.plot(section)
+        self.ax.set_title(f"Frame {current_frame + 1}")
         self.ax.set_axis_off()
 
         self.fig.tight_layout()
@@ -39,7 +40,11 @@ class PlotFrame(ctk.CTkFrame):
         )
         super().update()
 
-    def update_surface(self, surface):
+    def update_surface(self, current_frame=0, profile=0, data=None):
         self.ax.clear()
-        self.ax.imshow(surface, cmap="gray", vmin=0, vmax=255)
+        self.ax.set_title(f"Frame {current_frame + 1}, Profile {profile + 1}")
+        section = data[current_frame, profile, :]
+        print(f"Section shape: {section.shape}")
+        self.ax.plot(section)
+        self.master.plot_control_frame.slider.set(profile)
         self.update_window()
