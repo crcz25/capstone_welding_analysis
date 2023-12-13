@@ -50,12 +50,13 @@ class Recorder(Node):
         print("Saving data")
         print(f"File path: {file_path}")
         with self.lock:
+            now = datetime.now()
             if len(self.data_npy) > 0 and len(self.timestamps) > 0:
                 # Convert timestamp to human readable
                 timestamp = datetime.fromtimestamp(
                     float(self.timestamps[0]) // 1000000000
                 )
-                timestamp = timestamp.strftime("%d-%m-%Y-%H-%M-%S")
+                timestamp = now.strftime("%d-%m-%Y-%H-%M-%S")
                 timestamp_arr = np.asarray(self.timestamps, dtype=str)
                 np.savetxt(
                     f"{file_path}/timestamps_ns_{timestamp}.csv",
@@ -64,6 +65,9 @@ class Recorder(Node):
                     fmt="%s",
                 )
                 np.save(f"{file_path}/ranges_{timestamp}", self.data_npy)
+                print("Data saved")
+            else:
+                print("No data to save")
 
 
 def main(args=None):

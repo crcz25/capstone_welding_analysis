@@ -116,12 +116,13 @@ class App(ctk.CTk):
 
     def stop_scan(self):
         if self.scanning_in_progress:
+            # Stop the node
             self.scanning_in_progress = False
             self.ros_node_thread.stop_event.set()
             self.ros_node_thread.join()
-            # Save the data
+            ## Save the data ##
+            # Ask the user where to save the data
             self.csv_file_path = filedialog.askdirectory()
-            # Check if the extension is correct if not add it
             print(f"Saving data to {self.csv_file_path}")
             self.ros_node_thread.save_data(self.csv_file_path)
 

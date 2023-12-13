@@ -65,4 +65,5 @@ class ROSNodeThread(threading.Thread):
             print("Closing ROS Node Thread")
             # Destroy the node if it is not None
             if self.ros_node is not None:
+                print("Destroying ROS Node")
                 self.ros_node.destroy_node()
