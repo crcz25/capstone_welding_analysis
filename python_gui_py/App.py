@@ -153,13 +153,17 @@ class App(ctk.CTk):
     def update_info_frame(self):
         # Check if the data is loaded
         if self.range_file is not None and self.timestamp_file is not None:
+            # Enable the textbox
             self.info_frame.textbox_info.configure(state="normal")
+            # Delete the current text
             self.info_frame.textbox_info.delete("1.0", "end")
+            # Insert the new text
             txt = f"""Scan: {self.range_file[0].split("/")[-1]} \
                 \nTime: {self.timestamp_data[self.current_frame]} \
                 \nFrame: {self.current_frame + 1} \
                 \nProfile: {int(self.plot_control_frame.slider.get()) + 1}"""
             self.info_frame.textbox_info.insert("0.0", txt)
+            # Disable the textbox
             self.info_frame.textbox_info.configure(state="disabled")
         else:
             print("Data is not loaded")
