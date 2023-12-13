@@ -1,5 +1,4 @@
 import datetime
-import os
 
 import customtkinter as ctk
 import numpy as np
@@ -146,6 +145,11 @@ class App(ctk.CTk):
         # Update the info frame textboxes
         self.update_info_frame()
 
+        # Update the plot
+        self.plot_frame.create_figure(
+            current_frame=self.current_frame, data=self.range_data
+        )
+
     def update_info_frame(self):
         # Check if the data is loaded
         if self.range_file is not None and self.timestamp_file is not None:
@@ -171,6 +175,9 @@ class App(ctk.CTk):
             print(f"New frame: {self.current_frame}")
             # Update the info frame textboxes
             self.update_info_frame()
+            self.plot_frame.update_plot(
+                current_frame=self.current_frame, data=self.range_data
+            )
         else:
             print("Data is not loaded")
 
