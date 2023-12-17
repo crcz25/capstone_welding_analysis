@@ -39,7 +39,28 @@ cd <path_to_ros2_ws>
 colcon build --symlink-install --merge-install
 ```
 
+# To run the client (GUI):
+
+1. Open a _Developer Command Prompt for VS 2019_ terminal and load the environment using the script `setup.bat`. This script will load the ROS2 environment, the local setup of the workspace, set the RMW Implementation, set the ROS Domain ID and add the site-packages directory of the virtual environment to the PYTHONPATH.
+
+- For Windows:
+  ```bash
+  call setup.bat
+  ```
+- For Linux (not tested):
+  ```bash
+  source setup.sh
+  ```
+
+2. Run the client using:
+
+```bash
+python python_gui_py/App.py
+```
+
 # To run the Scan Node:
+
+This node is used to control the SICK Ranger E55 camera and the laser. It publishes two topics `/range` and `/intensity` which are of type `interfaces/msg/Scan`. It only works when the device is connected to the camera via ethernet.
 
 1. Open a _Developer Command Prompt for VS 2019_ terminal and load the environment using the script `setup.bat`. This script will load the ROS2 environment, the local setup of the workspace, set the RMW Implementation, set the ROS Domain ID and add the site-packages directory of the virtual environment to the PYTHONPATH.
 
@@ -49,7 +70,7 @@ colcon build --symlink-install --merge-install
   call setup.bat
   ```
 
-- For Linux:
+- For Linux (not tested):
   ```bash
   source setup.sh
   ```
@@ -68,7 +89,20 @@ ros2 run ranger scan <ip_address> <file_path> <type>
 
   **Note:** For now, the scan node only supports the `Measurement` scan type.
 
-# To run the client (GUI):
+# To save a rosbag:
+
+We recommend to record a rosbag to test the code without the need of the camera. The rosbag can then be played back to test the GUI and the processing code.
+
+1. Once the scan node is running, open a new terminal and load the environment using the script `setup.bat`. This script will load the ROS2 environment, the local setup of the workspace, set the RMW Implementation, set the ROS Domain ID and add the site-packages directory of the virtual environment to the PYTHONPATH.
+2. Run the following command to save the rosbag:
+
+```bash
+ros2 bag record -a
+```
+
+3. To stop the recording, press `Ctrl + C` in the terminal where the rosbag is being recorded.
+
+# To play a rosbag:
 
 1. Open a _Developer Command Prompt for VS 2019_ terminal and load the environment using the script `setup.bat`. This script will load the ROS2 environment, the local setup of the workspace, set the RMW Implementation, set the ROS Domain ID and add the site-packages directory of the virtual environment to the PYTHONPATH.
 
@@ -76,16 +110,20 @@ ros2 run ranger scan <ip_address> <file_path> <type>
   ```bash
   call setup.bat
   ```
-- For Linux:
+- For Linux (not tested):
   ```bash
   source setup.sh
   ```
 
-2. Run the client using:
+2. Run the following command to play the rosbag:
 
 ```bash
-python python_gui_py/App.py
+ros2 bag play <path_to_rosbag> -l
 ```
+
+- The flag `-l` is used to loop the rosbag indefinitely.
+
+3. To stop the playback, press `Ctrl + C` in the terminal where the rosbag is being played.
 
 # Common Issues:
 
