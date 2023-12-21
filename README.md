@@ -21,12 +21,17 @@ The necessary documentation and/or executables are provided in Seafile under our
 2. Install Visual Studio 2010 (some dll files are required that are only available with this version) (how_to_install_vs_studio_2010.pdf).
 3. Install ROS2 Foxy Fitzroy
    - Follow the instructions using this tutorial from MS IOT - ROS on Windows: https://ms-iot.github.io/ROSOnWindows/GettingStarted/SetupRos2.html
-   - **NB:** The tutorial also includes instructions on how to install Visual Studio 2019 Community Edition.
 4. Install SICK Ranger Studio 5.1 and eBus Driver (how_to_install_sick_api.pdf & how_to_connect_to_camera.pdf).
-5. Install python < 3.12.
-6. Create a virtual environment in the root of the repository with the necessary packages using the `requirements.txt` file provided.
+5. Install python 3.8.3 (how_to_install_python_3.8.3.pdf)
+6. Create a virtual environment:
+   1. Open a x64 Native Tools Command Prompt for VS 2019 terminal as administrator.
+   3. Create a virtual environment in the root's repo using ```virtualenv -p python3 venv```.
+   5. Activate the virtual environment using ```call venv\Scripts\activate.bat```.
+   6. Install the necessary packages using ```python -m pip install -r requirements.txt```
+7. Now you can build your workspace and run your python node that depends on packages installed in your virtual environment.
 
-## Prepare the environment:
+
+## Build the ROS environment:
 
 1. Navigate to the ros2_ws directory where you cloned the repository.
 
@@ -129,3 +134,8 @@ ros2 bag play <path_to_rosbag> -l
 # Common Issues:
 
 - Verify that the paths set in the `setup.bat` and `setup.sh` scripts are correct and correspond to the paths in your system.
+- If you get the error `ImportError: Matplotlib requires numpy>=1.20; you have 1.19.2'`, load only the ROS2 environment and issue the next command to upgrade numpy:
+
+```bash
+python -m pip install --upgrade numpy==1.24.4
+```
