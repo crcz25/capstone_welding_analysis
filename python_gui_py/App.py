@@ -113,7 +113,13 @@ class App(ctk.CTk):
         
         # Insert colored text to console
         self.plot_control_frame.console_entry.configure(state=ctk.NORMAL)
-        self.plot_control_frame.console_entry.insert(ctk.END, text + "\n", tags)
+        if tags == "error":
+            self.plot_control_frame.console_entry.insert(ctk.END, "ERROR: " + text + "\n", tags)
+        elif tags == "success":
+            self.plot_control_frame.console_entry.insert(ctk.END, "SUCCESS: " + text + "\n", tags)
+        else:
+            self.plot_control_frame.console_entry.insert(ctk.END, "INFORMATION: " + text + "\n", tags)
+        
         self.plot_control_frame.console_entry.configure(state=ctk.DISABLED)
 
         # Keep focus on the end line
@@ -195,7 +201,7 @@ class App(ctk.CTk):
             # Disable the textbox
             self.info_frame.textbox_info.configure(state="disabled")
         else:
-            self.change_console_text("ERROR: Data is not loaded", 'error')
+            self.change_console_text("Data is not loaded", 'error')
 
     def change_plot(self, change, profile=0):
         # Check if the data is loaded
@@ -215,7 +221,7 @@ class App(ctk.CTk):
                 current_frame=self.current_frame, profile=profile, data=self.range_data
             )
         else:
-            self.change_console_text("ERROR: Data is not loaded", 'error')
+            self.change_console_text("Data is not loaded", 'error')
 
     def call_scan(self):
         self.plot_control_frame.take_stop_scan()
@@ -225,9 +231,9 @@ class App(ctk.CTk):
             self.scanning_in_progress = True
             self.ros_node_thread = ROSNodeThread()
             self.ros_node_thread.start()
-            self.change_console_text("INFORMATION: Scan started", 'info')
+            self.change_console_text("Scan started", 'info')
         else:
-            self.change_console_text("ERROR: Scan did not start", 'info')
+            self.change_console_text("Scan did not start", 'info')
 
     def stop_scan(self):
         if self.scanning_in_progress:
@@ -235,7 +241,7 @@ class App(ctk.CTk):
             self.scanning_in_progress = False
             self.ros_node_thread.stop_event.set()
             self.ros_node_thread.join()
-            self.change_console_text("INFORMATION: Scan stopped", 'info')
+            self.change_console_text("Scan stopped", 'info')
             ## Save the data ##
             # Ask the user where to save the data
             self.csv_file_path = filedialog.askdirectory()
