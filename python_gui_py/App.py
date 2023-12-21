@@ -88,11 +88,20 @@ class App(ctk.CTk):
         button.configure(text=new_state)
     
     def change_console_text(self, text, tags=None):
+        """
+            Function to log text to the UI console.
+
+            Parameters:
+            - text (text to be shown).
+            - tag (info: green, error: red, success: green)
+
+        """
         print(text) # Kept this to print to terminal
 
         ap_mode = ctk.get_appearance_mode()
 
         # In light mode white color is not visible in the console
+        # Create tags
         if ap_mode == "Dark":
             self.plot_control_frame.console_entry.tag_config("info", foreground="white")
         else:
@@ -102,6 +111,7 @@ class App(ctk.CTk):
         self.plot_control_frame.console_entry.tag_config("error", foreground="red")
         self.plot_control_frame.console_entry.tag_config("success", foreground="green")
         
+        # Insert colored text to console
         self.plot_control_frame.console_entry.configure(state=ctk.NORMAL)
         self.plot_control_frame.console_entry.insert(ctk.END, text + "\n", tags)
         self.plot_control_frame.console_entry.configure(state=ctk.DISABLED)

@@ -30,7 +30,6 @@ class InfoFrame(ctk.CTkFrame):
         # Initialize defects_found_text
         self.defects_found_text = ctk.StringVar()
 
-
         # Labels
         defect_settings_label = ctk.CTkLabel(labels_dropdown_frame, text="Defect settings")
         defect_settings_label.grid(row=0, column=0, columnspan=2, padx=(10, 10), pady=(10, 10), sticky="nsew")
@@ -66,13 +65,22 @@ class InfoFrame(ctk.CTkFrame):
         # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
         def change_defects_found(choice):
+            """
+            Change the data in the defects panel according to what is selected from the defect type menu.
+
+            Parameters:
+            - choice (str).
+
+            """
             for defect_category in self.data.get("weld_defects", []):
                 for defect in defect_category.get("defects", []):
                     if defect.get("name") == choice:
                         defects_found = defect.get("defects_found", [])
             
+            # Format the read JSON data
             formatted_defects = "\n".join([f"ID: {defect['id']}\nTimestamp: {defect['timestamp']}\n" for defect in defects_found])
-            #self.defects_found_text.set(formatted_defects)
+
+            # Set data to the textbox
             self.textbox_alerts.configure(state="normal")
             self.textbox_alerts.delete("0.0", ctk.END)
             self.textbox_alerts.insert(ctk.END, formatted_defects)
