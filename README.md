@@ -23,7 +23,8 @@ The necessary documentation and/or executables are provided in Seafile under our
    - Follow the instructions using this tutorial from MS IOT - ROS on Windows: https://ms-iot.github.io/ROSOnWindows/GettingStarted/SetupRos2.html
    - **NB:** The tutorial also includes instructions on how to install Visual Studio 2019 Community Edition.
 4. Install SICK Ranger Studio 5.1 and eBus Driver (how_to_install_sick_api.pdf & how_to_connect_to_camera.pdf).
-5. Create a virtual environment with the necessary packages, this can be done using the `requirements.txt` file provided in the repository.
+5. Install python < 3.12.
+6. Create a virtual environment in the root of the repository with the necessary packages using the `requirements.txt` file provided.
 
 ## Prepare the environment:
 
