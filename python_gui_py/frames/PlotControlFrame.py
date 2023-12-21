@@ -11,6 +11,9 @@ class PlotControlFrame(ctk.CTkFrame):
         self.grid_columnconfigure(3, weight=1)
         self.grid_rowconfigure(4, weight=1)
 
+        # Default text color
+        self.color = "white"
+
         # Create Slider
         self.slider_value = tkinter.IntVar(master=self.master, value=0)
         self.slider = ctk.CTkSlider(
@@ -44,18 +47,21 @@ class PlotControlFrame(ctk.CTkFrame):
         self.load_button.grid(row=1, column=3, padx=10, pady=10, sticky="w")
 
         # Dropdown menus
-        self.scan_type_menu = ctk.CTkOptionMenu(
-            self,
-            values=["Single scan", "Continuous scan"],
-            anchor="center",
-            command=self.filter_menu,
+        self.filter_label = ctk.CTkLabel(self, text="Apply filter:")
+        self.filter_label.grid(
+            row=2, column=0, padx=(10, 10), pady=(10, 10), sticky="we"
         )
-        self.scan_type_menu.grid(row=2, column=0, padx=10, pady=10, sticky="w")
-
         self.filter_menu = ctk.CTkOptionMenu(
             self, values=["Gaussian"], anchor="center", command=self.filter_menu
         )
         self.filter_menu.grid(row=2, column=1, padx=10, pady=10, sticky="w")
+        self.filter_menu.set("Filter")
+
+        self.export_menu = ctk.CTkOptionMenu(
+            self, values=[".ply", ".npy"], anchor="center", command=self.export_menu
+        )
+        self.export_menu.grid(row=2, column=2, padx=10, pady=10, sticky="w")
+        self.export_menu.set("Export")
 
         # Console
         self.console_label = ctk.CTkLabel(self, text="Console")
@@ -63,12 +69,8 @@ class PlotControlFrame(ctk.CTkFrame):
             row=3, column=0, padx=(10, 10), pady=(10, 10), sticky="ws"
         )
 
-        self.console_entry = ctk.CTkEntry(self)
-        self.console_entry.grid(
-            row=4,
-            column=0,
-            columnspan=4,
-            rowspan=2,
+        self.console_entry = ctk.CTkTextbox(self, width=250, height=150, text_color=self.color)
+        self.console_entry.grid(row=4, column=0,columnspan=4,rowspan=4,
             padx=(10, 10),
             pady=(10, 10),
             sticky="nsew",
@@ -91,8 +93,8 @@ class PlotControlFrame(ctk.CTkFrame):
     def import_scan(self):
         self.master.import_files()
 
-    def scan_type_menu(self, choice):
-        pass
-
     def filter_menu(self, choice):
         pass
+
+    def export_menu(self, choice):
+        self.export_menu.set("Export")
