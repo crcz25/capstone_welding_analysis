@@ -93,7 +93,7 @@ class App(ctk.CTk):
 
             Parameters:
             - text (text to be shown).
-            - tag (info: green, error: red, success: green)
+            - tag (INFO: white, ERROR: red, SUCCESS: green)
 
         """
         print(text) # Kept this to print to terminal
@@ -103,23 +103,17 @@ class App(ctk.CTk):
         # In light mode white color is not visible in the console
         # Create tags
         if ap_mode == "Dark":
-            self.plot_control_frame.console_entry.tag_config("info", foreground="white")
+            self.plot_control_frame.console_entry.tag_config("INFORMATION", foreground="white")
         else:
-            self.plot_control_frame.console_entry.tag_config("info", foreground="black")
+            self.plot_control_frame.console_entry.tag_config("INFORMATION", foreground="black")
 
 
-        self.plot_control_frame.console_entry.tag_config("error", foreground="red")
-        self.plot_control_frame.console_entry.tag_config("success", foreground="green")
+        self.plot_control_frame.console_entry.tag_config("ERROR", foreground="red")
+        self.plot_control_frame.console_entry.tag_config("SUCCESS", foreground="green")
         
         # Insert colored text to console
         self.plot_control_frame.console_entry.configure(state=ctk.NORMAL)
-        if tags == "error":
-            self.plot_control_frame.console_entry.insert(ctk.END, "ERROR: " + text + "\n", tags)
-        elif tags == "success":
-            self.plot_control_frame.console_entry.insert(ctk.END, "SUCCESS: " + text + "\n", tags)
-        else:
-            self.plot_control_frame.console_entry.insert(ctk.END, "INFORMATION: " + text + "\n", tags)
-        
+        self.plot_control_frame.console_entry.insert(ctk.END, tags + ": " + text + "\n", tags)
         self.plot_control_frame.console_entry.configure(state=ctk.DISABLED)
 
         # Keep focus on the end line
@@ -155,15 +149,15 @@ class App(ctk.CTk):
             ),
         )
 
-        self.change_console_text(f"Files to import: {self.files}", 'info')
+        self.change_console_text(f"Files to import: {self.files}", 'INFORMATION')
 
         # Separate the files into timestamps and ranges
         # ranges are the npy files
         self.range_file = [f for f in self.files if f.endswith(".npy")]
         # open the npy file
         self.range_data = np.load(self.range_file[0])
-        self.change_console_text(f"Range file to open: {self.range_file}", 'info')
-        self.change_console_text(f"Size of range data: {self.range_data.shape}", 'info')
+        self.change_console_text(f"Range file to open: {self.range_file}", 'INFORMATION')
+        self.change_console_text(f"Size of range data: {self.range_data.shape}", 'INFORMATION')
 
         # Set the max frames
         self.max_frames = self.range_data.shape[0] - 1
@@ -174,8 +168,8 @@ class App(ctk.CTk):
         self.timestamp_file = [f for f in self.files if f.endswith(".csv")]
         # open the csv file
         self.timestamp_data = np.genfromtxt(self.timestamp_file[0], delimiter=",")
-        self.change_console_text(f"Timestamp file to open: {self.timestamp_file}", 'info')
-        self.change_console_text(f"Size of timestamp data: {self.timestamp_data.shape}", 'info')
+        self.change_console_text(f"Timestamp file to open: {self.timestamp_file}", 'INFORMATION')
+        self.change_console_text(f"Size of timestamp data: {self.timestamp_data.shape}", 'INFORMATION')
 
         # Update the info frame textboxes
         self.update_info_frame()
@@ -201,7 +195,7 @@ class App(ctk.CTk):
             # Disable the textbox
             self.info_frame.textbox_info.configure(state="disabled")
         else:
-            self.change_console_text("Data is not loaded", 'error')
+            self.change_console_text("Data is not loaded", 'ERROR')
 
     def change_plot(self, change, profile=0):
         # Check if the data is loaded
@@ -221,7 +215,7 @@ class App(ctk.CTk):
                 current_frame=self.current_frame, profile=profile, data=self.range_data
             )
         else:
-            self.change_console_text("Data is not loaded", 'error')
+            self.change_console_text("Data is not loaded", 'ERROR')
 
     def call_scan(self):
         self.plot_control_frame.take_stop_scan()
@@ -231,9 +225,9 @@ class App(ctk.CTk):
             self.scanning_in_progress = True
             self.ros_node_thread = ROSNodeThread()
             self.ros_node_thread.start()
-            self.change_console_text("Scan started", 'info')
+            self.change_console_text("Scan started", 'INFORMATION')
         else:
-            self.change_console_text("Scan did not start", 'info')
+            self.change_console_text("Scan did not start", 'INFORMATION')
 
     def stop_scan(self):
         if self.scanning_in_progress:
@@ -241,11 +235,11 @@ class App(ctk.CTk):
             self.scanning_in_progress = False
             self.ros_node_thread.stop_event.set()
             self.ros_node_thread.join()
-            self.change_console_text("Scan stopped", 'info')
+            self.change_console_text("Scan stopped", 'INFORMATION')
             ## Save the data ##
             # Ask the user where to save the data
             self.csv_file_path = filedialog.askdirectory()
-            self.change_console_text(f"Saving data to {self.csv_file_path}", 'success')
+            self.change_console_text(f"Saving data to {self.csv_file_path}", 'SUCCESS')
             self.ros_node_thread.save_data(self.csv_file_path)
 
 

@@ -46,8 +46,8 @@ class PlotFrame(ctk.CTkFrame):
             current_frame: The index of the current frame.
             profile: The index of the current profile.
             data: The data to plot.
-
         """
+        
         # Get the section to plot
         section = data[current_frame, profile, :]
         print(f"Section shape: {section.shape}")
@@ -57,6 +57,24 @@ class PlotFrame(ctk.CTkFrame):
         # Set the plot title
         self.ax.set_title(f"Frame {current_frame + 1}")
         self.update_window()
+    
+    def create_line_plot_figure(self, current_frame=0, profile=0, data=None, choice=None):
+        """
+        Displays a line plot in the UI.
+
+        Args:
+            current_frame: The index of the current frame.
+            profile: The index of the current profile.
+            data: The data to plot.
+            choice: Filter type
+
+        """
+        self.ax.clear()
+        self.ax.set_ylim(0, 70)
+        self.ax.set_title(f"Frame {current_frame + 1}, Profile {profile + 1}, Filter {choice}")
+        self.ax.plot(data)
+        self.update_window()
+
 
     def update_window(self):
         """
