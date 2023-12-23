@@ -134,29 +134,32 @@ class PlotControlFrame(ctk.CTkFrame):
             # Get the current opened .npy
             file_path = self.master.range_file
 
-            #Extract data
+            # Extract data
             data = np.load(file_path[0])
 
             self.max_frames = data.shape[0]
             self.max_profiles = data.shape[1]
 
-            self.something = data[2]
-
             current_frame = self.master.current_frame
-            profile = self.slider_value.get()
+            profile = int(self.master.plot_control_frame.slider.get())
 
-            # Call the plot function from PlotFrame, with current frame and profile
-            if 0 <= current_frame < self.max_frames and 0 <= profile < self.max_profiles:
-                frames_data = self.something[1]
+            print(profile, self.max_profiles)
 
-                data_filtered_smoothed = self.interpolate_and_filter(frames_data, choice)
+            # Loop through frames
+            if current_frame < self.max_frames:
+                # Loop through profiles
+                if profile < self.max_profiles:
+                    frames_data = data[current_frame, profile, :]
 
-                if data_filtered_smoothed is not None:
-                    self.plot_frame.create_line_plot_figure(
-                        current_frame=current_frame, profile=profile, data=data_filtered_smoothed, choice=choice
-                    )
+                    data_filtered_smoothed = self.interpolate_and_filter(frames_data, choice)
+
+                    if data_filtered_smoothed is not None:
+                        self.plot_frame.create_line_plot_figure(
+                            current_frame=current_frame, profile=profile, data=data_filtered_smoothed, choice=choice
+                        )
         except Exception:
             self.master.change_console_text("Data is not loaded", "ERROR")
+
 
 
 
