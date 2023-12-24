@@ -47,11 +47,16 @@ class PlotControlFrame(ctk.CTkFrame):
         self.load_button = ctk.CTkButton(
             self, text="Import scan", command=self.import_scan
         )
+        self.clear_point_of_interest = ctk.CTkButton(
+            self, text="Reset cursors", command=self.reset_cursors
+        )
 
         self.scan_button.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
         self.previous_button.grid(row=1, column=1, padx=10, pady=10, sticky="ew")
         self.next_button.grid(row=1, column=2, padx=10, pady=10, sticky="ew")
         self.load_button.grid(row=1, column=3, padx=10, pady=10, sticky="w")
+        self.clear_point_of_interest.grid(row=2, column=3, padx=10, pady=10, sticky="w")
+
 
         # Dropdown menus
         self.filter_label = ctk.CTkLabel(self, text="Apply filter:")
@@ -162,6 +167,8 @@ class PlotControlFrame(ctk.CTkFrame):
 
 
 
-
+    def reset_cursors(self):
+        self.plot_frame.x_1.reset_cursors()
+    
     def export_menu(self, choice):
         self.export_menu.set("Export")

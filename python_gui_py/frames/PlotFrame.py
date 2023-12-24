@@ -5,6 +5,7 @@ import seaborn as sns
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+from frames.cursors import PlotCursor
 
 
 # --------------------------------------------------------PLOT FRAME--------------------------------------------------------#
@@ -36,7 +37,29 @@ class PlotFrame(ctk.CTkFrame):
         self.fig, self.ax = plt.subplots()
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
 
+        # Store references to lines and cursors
+        self.lines = []
+        self.cursor_limits = {"x_min": 0, "x_max": 1600, "y_min": 0, "y_max": 70}
+        self.create_cursors()
+
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
+    def create_cursors(self):
+        self.y_1 = PlotCursor(self.ax, "y", self.cursor_limits["y_max"], "Y - Max")
+        self.y_2 = PlotCursor(self.ax, "y", self.cursor_limits["y_min"], "Y - Min")
+        self.x_1 = PlotCursor(self.ax, "x", self.cursor_limits["x_min"], "X - Min")
+        self.x_2 = PlotCursor(self.ax, "x", self.cursor_limits["x_max"], "X - Max")
+        print(self.x_1.line,self.x_2,self.y_1,self.y_2)
+        self.update_cursor_limits()
+
+        
+
+    def update_cursor_limits(self):
+        self.cursor_limits["x_min"] = self.x_1.axis
+        self.cursor_limits["x_max"] = self.x_2.axis
+        self.cursor_limits["y_min"] = self.y_2.axis
+        self.cursor_limits["y_max"] = self.y_1.axis
+        print(self.cursor_limits)
+
 
     def create_figure(self, current_frame=0, profile=0, data=None):
         """
@@ -49,6 +72,8 @@ class PlotFrame(ctk.CTkFrame):
         """
         
         # Get the section to plot
+        self.ax.clear()
+        self.create_cursors()
         section = data[current_frame, profile, :]
         print(f"Section shape: {section.shape}")
         print(f"Section: {section}")
@@ -56,6 +81,7 @@ class PlotFrame(ctk.CTkFrame):
         self.ax.plot(section)
         # Set the plot title
         self.ax.set_title(f"Frame {current_frame + 1}")
+        self.update_cursor_limits()
         self.update_window()
     
     def create_line_plot_figure(self, current_frame=0, profile=0, data=None, choice=None):
@@ -70,9 +96,11 @@ class PlotFrame(ctk.CTkFrame):
 
         """
         self.ax.clear()
+        self.create_cursors()
         self.ax.set_ylim(0, 70)
         self.ax.set_title(f"Frame {current_frame + 1}, Profile {profile + 1}, Filter {choice}")
         self.ax.plot(data)
+        self.update_cursor_limits()
         self.update_window()
 
 
@@ -86,6 +114,7 @@ class PlotFrame(ctk.CTkFrame):
         # Set the plot position to fill the frame and expand to fill the frame
         self.canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
         # Update the frame
+        self.update_cursor_limits()
         super().update()
 
     def update_surface(self, current_frame=0, profile=0, data=None):
@@ -99,16 +128,18 @@ class PlotFrame(ctk.CTkFrame):
 
         """
         # Get the section to plot
+        # Clear the plot
+        self.ax.clear()
+        self.create_cursors()
         section = data[current_frame, profile, :]
         print(f"Section shape: {section.shape}")
         print(f"Section: {section}")
-        # Clear the plot
-        self.ax.clear()
         # Set the plot title
         self.ax.set_title(f"Frame {current_frame + 1}, Profile {profile + 1}")
         # Add the section to the plot
         self.ax.plot(section)
         # Set the slider position to the current profile
         self.master.plot_control_frame.slider.set(profile)
+        self.update_cursor_limits()
         # Update the plot window
         self.update_window()
