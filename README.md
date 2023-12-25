@@ -25,25 +25,32 @@ The necessary documentation and/or executables are provided in Seafile under our
 5. Install python 3.8.3 (how_to_install_python_3.8.3.pdf)
 6. Create a virtual environment:
    1. Open a x64 Native Tools Command Prompt for VS 2019 terminal as administrator.
-   3. Create a virtual environment in the root's repo using ```virtualenv -p python3 venv```.
-   5. Activate the virtual environment using ```call venv\Scripts\activate.bat```.
-   6. Install the necessary packages using ```python -m pip install -r requirements.txt```
-7. Now you can build your workspace and run your python node that depends on packages installed in your virtual environment.
+   2. Create a virtual environment in the root's repo using ```virtualenv -p python3 venv```.
+   3. Activate the virtual environment using ```call venv\Scripts\activate.bat```.
+   4. Install the necessary packages using ```python -m pip install -r requirements.txt```
+7. Verify the installation of the python environments by executing the script `setup.bat` in the root's repo. Then issue the command `where python` to verify that the python executables are in the correct order. Notice the first python executable should be the virtual environment, then the global python installation and finally the ROS2 python installation. The output should be similar to this:
+    ```bash
+    (venv) C:\Users\crcz\Documents\repos\capstone_welding_analysis>where python
+    C:\Users\crcz\Documents\repos\capstone_welding_analysis\venv\Scripts\python.exe
+    C:\Python38\python.exe
+    c:\opt\ros\foxy\x64\python.exe
+    C:\Users\crcz\AppData\Local\Microsoft\WindowsApps\python.exe
+    ```
+
+8. Now you can build your workspace and run your python node that depends on packages installed in your virtual environment.
 
 
 ## Build the ROS environment:
 
-1. Navigate to the ros2_ws directory where you cloned the repository.
-
-```bash
-cd <path_to_ros2_ws>
-```
-
-2. Compile the workspace using:
-
-```bash
-colcon build --symlink-install --merge-install
-```
+1. Open a _Developer Command Prompt for VS 2019_ terminal and load the environment using the script `setup.bat`. This script will load the ROS2 environment, the local setup of the workspace, set the RMW Implementation, set the ROS Domain ID and add the site-packages directory of the virtual environment to the PYTHONPATH.
+2. Navigate to the ros2_ws directory where you cloned the repository.
+    ```bash
+    cd <path_to_ros2_ws>
+    ```
+3. Compile the workspace using:
+    ```bash
+    colcon build --symlink-install --merge-install
+    ```
 
 # To run the client (GUI):
 
@@ -60,32 +67,29 @@ colcon build --symlink-install --merge-install
 
 2. Run the client using:
 
-```bash
-python python_gui_py/App.py
-```
+    ```bash
+    python python_gui_py/App.py
+    ```
 
 # To run the Scan Node:
 
 This node is used to control the SICK Ranger E55 camera and the laser. It publishes two topics `/range` and `/intensity` which are of type `interfaces/msg/Scan`. It only works when the device is connected to the camera via ethernet.
 
-1. Open a _Developer Command Prompt for VS 2019_ terminal and load the environment using the script `setup.bat`. This script will load the ROS2 environment, the local setup of the workspace, set the RMW Implementation, set the ROS Domain ID and add the site-packages directory of the virtual environment to the PYTHONPATH.
-
-- For Windows:
+1. Open a _Developer Command Prompt for VS 2019_ terminal, load the ROS2 Environment, and set the RMW Implementation and the ROS Domain ID using the following commands:
+    ```bash
+    call c:\opt\ros\foxy\x64\setup.bat
+    set ROS_DOMAIN_ID=20
+    set "RMW_IMPLEMENTATION=rmw_cyclonedds_cpp"
+    ```
+2. Load the workspace using the following command:
+    ```bash
+    call ros2_ws\install\setup.bat
+    ```
+3. Test the connection to the camera and run the node using:
 
   ```bash
-  call setup.bat
+  ros2 run ranger scan <ip_address> <file_path> <type>
   ```
-
-- For Linux (not tested):
-  ```bash
-  source setup.sh
-  ```
-
-2. Test the connection to the camera and run the node using:
-
-```bash
-ros2 run ranger scan <ip_address> <file_path> <type>
-```
 
 - Where:
 
@@ -99,37 +103,45 @@ ros2 run ranger scan <ip_address> <file_path> <type>
 
 We recommend to record a rosbag to test the code without the need of the camera. The rosbag can then be played back to test the GUI and the processing code.
 
-1. Once the scan node is running, open a new terminal and load the environment using the script `setup.bat`. This script will load the ROS2 environment, the local setup of the workspace, set the RMW Implementation, set the ROS Domain ID and add the site-packages directory of the virtual environment to the PYTHONPATH.
-2. Run the following command to save the rosbag:
+1. Open a _Developer Command Prompt for VS 2019_ terminal, load the ROS2 Environment, and set the RMW Implementation and the ROS Domain ID using the following commands:
+    ```bash
+    call c:\opt\ros\foxy\x64\setup.bat
+    set ROS_DOMAIN_ID=20
+    set "RMW_IMPLEMENTATION=rmw_cyclonedds_cpp"
+    ```
+2. Load the workspace using the following command:
+    ```bash
+    call ros2_ws\install\setup.bat
+    ```
+3. Run the following command to save the rosbag:
 
-```bash
-ros2 bag record -a
-```
+    ```bash
+    ros2 bag record -a
+    ```
 
 3. To stop the recording, press `Ctrl + C` in the terminal where the rosbag is being recorded.
 
 # To play a rosbag:
 
-1. Open a _Developer Command Prompt for VS 2019_ terminal and load the environment using the script `setup.bat`. This script will load the ROS2 environment, the local setup of the workspace, set the RMW Implementation, set the ROS Domain ID and add the site-packages directory of the virtual environment to the PYTHONPATH.
+1. Open a _Developer Command Prompt for VS 2019_ terminal, load the ROS2 Environment, and set the RMW Implementation and the ROS Domain ID using the following commands:
+    ```bash
+    call c:\opt\ros\foxy\x64\setup.bat
+    set ROS_DOMAIN_ID=20
+    set "RMW_IMPLEMENTATION=rmw_cyclonedds_cpp"
+    ```
+2. Load the workspace using the following command:
+    ```bash
+    call call ros2_ws\install\setup.bat
+    ```
+3. Run the following command to play the rosbag:
 
-- For Windows:
-  ```bash
-  call setup.bat
-  ```
-- For Linux (not tested):
-  ```bash
-  source setup.sh
-  ```
-
-2. Run the following command to play the rosbag:
-
-```bash
-ros2 bag play <path_to_rosbag> -l
-```
+    ```bash
+    ros2 bag play <path_to_rosbag> -l
+    ```
 
 - The flag `-l` is used to loop the rosbag indefinitely.
 
-3. To stop the playback, press `Ctrl + C` in the terminal where the rosbag is being played.
+4. To stop the playback, press `Ctrl + C` in the terminal where the rosbag is being played.
 
 # Common Issues:
 
