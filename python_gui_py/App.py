@@ -21,8 +21,8 @@ class App(ctk.CTk):
         super().__init__()
 
         self.title("GUI for SICK E55 Weld Monitoring")
-        self.geometry(f"{1200}x{600}")
-        self.minsize(1200, 600)
+        self.geometry(f"{1350}x{800}")
+        self.minsize(1350, 800)
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=0)
@@ -42,13 +42,6 @@ class App(ctk.CTk):
         self.menu_frame.scaling_optionmenu.set("100%")
         self.plot_control_frame.slider.set(0)
         self.settings_frame.grid_remove()
-
-        # These are here for example now
-        scan_name = "Test1"
-        scan_time = datetime.datetime.now()
-
-        # Insert data to textboxes
-        self.info_frame.textbox_alerts.insert("0.0", "Defects:")
 
         # These disable writing in the right frame textboxes
         self.info_frame.textbox_info.configure(state="disabled")
@@ -72,7 +65,8 @@ class App(ctk.CTk):
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def change_appearance_mode_event(self, new_appearance_mode: str):
         ctk.set_appearance_mode(new_appearance_mode)
-        self.show_default_frames()
+        self.show_default_frames() 
+        self.change_console_text(self) # Make sure that text colors change when theme is changed
 
     def change_scaling_event(self, new_scaling: str):
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
@@ -92,6 +86,39 @@ class App(ctk.CTk):
             self.stop_scan()
 
         button.configure(text=new_state)
+    
+    def change_console_text(self, text, tags=None):
+        """
+            Function to log text to the UI console.
+
+            Parameters:
+            - text (text to be shown).
+            - tag (INFO: white, ERROR: red, SUCCESS: green)
+
+        """
+        print(text) # Kept this to print to terminal
+
+        ap_mode = ctk.get_appearance_mode()
+
+        # In light mode white color is not visible in the console
+        # Create tags
+        if ap_mode == "Dark":
+            self.plot_control_frame.console_entry.tag_config("INFORMATION", foreground="white")
+        else:
+            self.plot_control_frame.console_entry.tag_config("INFORMATION", foreground="black")
+
+
+        self.plot_control_frame.console_entry.tag_config("ERROR", foreground="red")
+        self.plot_control_frame.console_entry.tag_config("SUCCESS", foreground="green")
+        
+        # Insert colored text to console
+        self.plot_control_frame.console_entry.configure(state=ctk.NORMAL)
+        self.plot_control_frame.console_entry.insert(ctk.END, tags + ": " + text + "\n", tags)
+        self.plot_control_frame.console_entry.configure(state=ctk.DISABLED)
+
+        # Keep focus on the end line
+        self.plot_control_frame.console_entry.see("end")
+    
 
     def menu_button(self, frame_type):
         if frame_type == "home":
@@ -121,15 +148,17 @@ class App(ctk.CTk):
                 ("Numpy files", "*.npy"),
             ),
         )
-        print(f"Files to import: {self.files}")
+
+        self.change_console_text(f"Files to import: {self.files}", 'INFORMATION')
 
         # Separate the files into timestamps and ranges
         # ranges are the npy files
         self.range_file = [f for f in self.files if f.endswith(".npy")]
         # open the npy file
         self.range_data = np.load(self.range_file[0])
-        print(f"Range file to open: {self.range_file}")
-        print(f"Size of range data: {self.range_data.shape}")
+        self.change_console_text(f"Range file to open: {self.range_file}", 'INFORMATION')
+        self.change_console_text(f"Size of range data: {self.range_data.shape}", 'INFORMATION')
+
         # Set the max frames
         self.max_frames = self.range_data.shape[0] - 1
         # Set the slider to the max number of scans
@@ -139,8 +168,8 @@ class App(ctk.CTk):
         self.timestamp_file = [f for f in self.files if f.endswith(".csv")]
         # open the csv file
         self.timestamp_data = np.genfromtxt(self.timestamp_file[0], delimiter=",")
-        print(f"Timestamp file to open: {self.timestamp_file}")
-        print(f"Size of timestamp data: {self.timestamp_data.shape}")
+        self.change_console_text(f"Timestamp file to open: {self.timestamp_file}", 'INFORMATION')
+        self.change_console_text(f"Size of timestamp data: {self.timestamp_data.shape}", 'INFORMATION')
 
         # Update the info frame textboxes
         self.update_info_frame()
@@ -166,7 +195,7 @@ class App(ctk.CTk):
             # Disable the textbox
             self.info_frame.textbox_info.configure(state="disabled")
         else:
-            print("Data is not loaded")
+            self.change_console_text("Data is not loaded", 'ERROR')
 
     def change_plot(self, change, profile=0):
         # Check if the data is loaded
@@ -186,7 +215,7 @@ class App(ctk.CTk):
                 current_frame=self.current_frame, profile=profile, data=self.range_data
             )
         else:
-            print("Data is not loaded")
+            self.change_console_text("Data is not loaded", 'ERROR')
 
     def call_scan(self):
         self.plot_control_frame.take_stop_scan()
@@ -196,6 +225,9 @@ class App(ctk.CTk):
             self.scanning_in_progress = True
             self.ros_node_thread = ROSNodeThread()
             self.ros_node_thread.start()
+            self.change_console_text("Scan started", 'INFORMATION')
+        else:
+            self.change_console_text("Scan did not start", 'INFORMATION')
 
     def stop_scan(self):
         if self.scanning_in_progress:
@@ -203,10 +235,11 @@ class App(ctk.CTk):
             self.scanning_in_progress = False
             self.ros_node_thread.stop_event.set()
             self.ros_node_thread.join()
+            self.change_console_text("Scan stopped", 'INFORMATION')
             ## Save the data ##
             # Ask the user where to save the data
             self.csv_file_path = filedialog.askdirectory()
-            print(f"Saving data to {self.csv_file_path}")
+            self.change_console_text(f"Saving data to {self.csv_file_path}", 'SUCCESS')
             self.ros_node_thread.save_data(self.csv_file_path)
 
 

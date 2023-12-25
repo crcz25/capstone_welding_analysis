@@ -15,13 +15,13 @@ class MenuFrame(ctk.CTkFrame):
         self.sidebar_button_2 = ctk.CTkButton(self, text="Settings", command= lambda: master.menu_button("settings"))
         self.sidebar_button_2.grid(row=2, column=0, padx=20, pady=10)
 
-        self.appearance_mode_label = ctk.CTkLabel(self, text="Appearance Mode:", anchor="w")
+        self.appearance_mode_label = ctk.CTkLabel(self, text="Appearance Mode", anchor="w")
         self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(10, 0))
         self.appearance_mode_optionmenu = ctk.CTkOptionMenu(self, values=["Light", "Dark", "System"],
                                                              command=master.change_appearance_mode_event)
         self.appearance_mode_optionmenu.grid(row=6, column=0, padx=20, pady=(10, 10))
 
-        self.scaling_label = ctk.CTkLabel(self, text="UI Scaling:", anchor="w")
+        self.scaling_label = ctk.CTkLabel(self, text="UI Scaling", anchor="w")
         self.scaling_label.grid(row=7, column=0, padx=20, pady=(10, 0))
         self.scaling_optionmenu = ctk.CTkOptionMenu(self, values=["80%", "90%", "100%", "110%"],
                                                      command=master.change_scaling_event)
