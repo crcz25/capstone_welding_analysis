@@ -2,10 +2,10 @@ import tkinter
 
 import customtkinter as ctk
 import numpy as np
-from scipy.ndimage import median_filter, gaussian_filter, uniform_filter1d
-import matplotlib.pyplot as plt
+import open3d as o3d
 import pandas as pd
-import seaborn as sns
+from scipy.ndimage import gaussian_filter, median_filter, uniform_filter1d
+
 
 # --------------------------------------------------------SLIDER/MAIN CONTROL FRAME--------------------------------------------------------#
 class PlotControlFrame(ctk.CTkFrame):
@@ -59,7 +59,10 @@ class PlotControlFrame(ctk.CTkFrame):
             row=2, column=0, padx=(10, 10), pady=(10, 10), sticky="we"
         )
         self.filter_menu = ctk.CTkOptionMenu(
-            self, values=["Gaussian", "Median"], anchor="center", command=self.filter_menu
+            self,
+            values=["Gaussian", "Median"],
+            anchor="center",
+            command=self.filter_menu,
         )
         self.filter_menu.grid(row=2, column=1, padx=10, pady=10, sticky="w")
         self.filter_menu.set("Filter")
@@ -76,13 +79,19 @@ class PlotControlFrame(ctk.CTkFrame):
             row=3, column=0, padx=(10, 10), pady=(10, 10), sticky="ws"
         )
 
-        self.console_entry = ctk.CTkTextbox(self, width=250, height=150, text_color=self.color)
-        self.console_entry.grid(row=4, column=0,columnspan=4,rowspan=4,
+        self.console_entry = ctk.CTkTextbox(
+            self, width=250, height=150, text_color=self.color
+        )
+        self.console_entry.grid(
+            row=4,
+            column=0,
+            columnspan=4,
+            rowspan=4,
             padx=(10, 10),
             pady=(10, 10),
             sticky="nsew",
         )
-        
+
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def slider_event(self, other=None):
         print(f"Slider event: {self.slider_value.get()}")
@@ -111,13 +120,19 @@ class PlotControlFrame(ctk.CTkFrame):
         np.set_printoptions(threshold=np.inf)
 
         # Interpolate missing values
-        data_filtered = pd.Series(np.where(first_row == 0, np.nan, first_row)).interpolate()
+        data_filtered = pd.Series(
+            np.where(first_row == 0, np.nan, first_row)
+        ).interpolate()
 
         # Apply filters
         if choice == "Gaussian":
-            data_filtered_smoothed = gaussian_filter(data_filtered, sigma=10, mode='nearest')
+            data_filtered_smoothed = gaussian_filter(
+                data_filtered, sigma=10, mode="nearest"
+            )
         elif choice == "Median":
-            data_filtered_smoothed = median_filter(data_filtered, size=10, mode='nearest')
+            data_filtered_smoothed = median_filter(
+                data_filtered, size=10, mode="nearest"
+            )
         else:
             return None  # Do nothing if nothing selected
 
@@ -151,17 +166,86 @@ class PlotControlFrame(ctk.CTkFrame):
                 if profile < self.max_profiles:
                     frames_data = data[current_frame, profile, :]
 
-                    data_filtered_smoothed = self.interpolate_and_filter(frames_data, choice)
+                    data_filtered_smoothed = self.interpolate_and_filter(
+                        frames_data, choice
+                    )
 
                     if data_filtered_smoothed is not None:
                         self.plot_frame.create_line_plot_figure(
-                            current_frame=current_frame, profile=profile, data=data_filtered_smoothed, choice=choice
+                            current_frame=current_frame,
+                            profile=profile,
+                            data=data_filtered_smoothed,
+                            choice=choice,
                         )
         except Exception:
             self.master.change_console_text("Data is not loaded", "ERROR")
 
-
-
-
     def export_menu(self, choice):
         self.export_menu.set("Export")
+        try:
+            self.master.change_console_text("Exporting point cloud", "INFO")
+            # Set the pixel size
+            pixel_size = {"x": 0.1122161041015625, "y": 1.0, "z": 1.0}
+            origin: {"y": 0, "x": 0.0100641, "z": 0.0}
+            # Get data
+            ranges = self.master.range_data[0]
+            # Reshape data to be (x, 1536) where x is the number of frames
+            if len(ranges.shape) == 3:
+                ranges = ranges.reshape(-1, ranges.shape[2])
+            # Generate mesh grid
+            mesh_x, mesh_y = np.meshgrid(
+                np.arange(0, ranges.shape[1]) * pixel_size["x"],
+                np.arange(0, ranges.shape[0]) * pixel_size["y"],
+            )
+            # Flatten mesh grid
+            # mesh_x = mesh_x.flatten()
+            # mesh_y = mesh_y.flatten()
+            # ranges = ranges.flatten()
+            # Create point cloud
+            # xyz = np.vstack((mesh_x, mesh_y, ranges)).T
+            xyz = np.zeros((np.size(mesh_x), 3))
+            xyz[:, 0] = np.reshape(mesh_x, -1)
+            xyz[:, 1] = np.reshape(mesh_y, -1)
+            xyz[:, 2] = np.reshape(ranges, -1)
+            # Create point cloud
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(xyz)
+            # Export point cloud
+            if choice == ".ply":
+                # Ask for the file name to save the point cloud
+                file_name = tkinter.filedialog.asksaveasfilename(
+                    title="Save point cloud as",
+                    filetypes=(("PLY files", "*.ply"), ("All files", "*.*")),
+                )
+                # Verify the extension is .ply
+                if not file_name.endswith(".ply"):
+                    file_name += ".ply"
+                # Print the file name and path
+                self.master.change_console_text(
+                    f"Saving point cloud as {file_name}", "INFO"
+                )
+                # Export point cloud
+                o3d.io.write_point_cloud(file_name, pcd)
+                # Print success message
+                self.master.change_console_text("PLY file generated", "SUCCESS")
+            elif choice == ".npy":
+                # Ask for the file name to save the point cloud
+                file_name = tkinter.filedialog.asksaveasfilename(
+                    title="Save point cloud as",
+                    filetypes=(("NPY files", "*.npy"), ("All files", "*.*")),
+                )
+                # Verify the extension is .npy
+                if not file_name.endswith(".npy"):
+                    file_name += ".npy"
+                # Print the file name and path
+                self.master.change_console_text(
+                    f"Saving point cloud as {file_name}", "INFO"
+                )
+                # Export point cloud
+                np.save(file_name, xyz)
+            else:
+                return None  # Do nothing if nothing selected
+
+        except Exception as e:
+            print("Error exporting")
+            print(e)
