@@ -138,7 +138,22 @@ class App(ctk.CTk):
         self.plot_frame.grid()
         self.plot_control_frame.grid()
 
+    def reset_imported_files(self):
+        self.range_file = None
+        self.timestamp_file = None
+        self.range_data = np.array([])
+        self.timestamp_data = np.array([])
+        self.current_frame = 0
+        self.max_frames = 0
+        self.plot_control_frame.slider.set(0)
+        self.plot_frame.clean_plot()
+        self.update_info_frame()
+
     def import_files(self):
+        # If there is a scan already imported, replace it with the new one and clean the plot frame
+        if self.range_file is not None and self.timestamp_file is not None:
+            self.reset_imported_files()
+
         # Ask the user for the files to import timestamps and ranges (.csv and .npy)
         self.files = filedialog.askopenfilenames(
             title="Select files to import",

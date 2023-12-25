@@ -112,3 +112,11 @@ class PlotFrame(ctk.CTkFrame):
         self.master.plot_control_frame.slider.set(profile)
         # Update the plot window
         self.update_window()
+
+    def clean_plot(self):
+        """
+        Clean the plot.
+
+        """
+        self.ax.clear()
+        self.update_window()
