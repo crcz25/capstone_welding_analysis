@@ -1,5 +1,3 @@
-import datetime
-
 import customtkinter as ctk
 import numpy as np
 import rclpy
@@ -150,10 +148,6 @@ class App(ctk.CTk):
         self.update_info_frame()
 
     def import_files(self):
-        # If there is a scan already imported, replace it with the new one and clean the plot frame
-        if self.range_file is not None and self.timestamp_file is not None:
-            self.reset_imported_files()
-
         # Ask the user for the files to import timestamps and ranges (.csv and .npy)
         self.files = filedialog.askopenfilenames(
             title="Select files to import",
@@ -163,8 +157,17 @@ class App(ctk.CTk):
                 ("Numpy files", "*.npy"),
             ),
         )
+        # Check if the user selected files
+        if len(self.files) == 0:
+            self.change_console_text("No files selected", "ERROR")
+            return
 
-        self.change_console_text(f"Files to import: {self.files}", 'INFORMATION')
+        # If there is a scan already imported, replace it with the new one and clean the plot frame
+        if self.range_file is not None and self.timestamp_file is not None:
+            self.reset_imported_files()
+            self.change_console_text("Replacing imported files", "INFORMATION")
+
+        self.change_console_text(f"Files to import: {self.files}", "INFORMATION")
 
         # Separate the files into timestamps and ranges
         # ranges are the npy files
