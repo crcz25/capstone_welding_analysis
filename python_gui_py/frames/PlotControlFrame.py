@@ -6,6 +6,8 @@ import open3d as o3d
 import pandas as pd
 from scipy.ndimage import gaussian_filter, median_filter, uniform_filter1d
 
+from .ExportPLYFrame import ExportPLYWindow
+
 
 # --------------------------------------------------------SLIDER/MAIN CONTROL FRAME--------------------------------------------------------#
 class PlotControlFrame(ctk.CTkFrame):
@@ -72,6 +74,7 @@ class PlotControlFrame(ctk.CTkFrame):
         )
         self.export_menu.grid(row=2, column=2, padx=10, pady=10, sticky="w")
         self.export_menu.set("Export")
+        self.export_window = None
 
         # Console
         self.console_label = ctk.CTkLabel(self, text="Console")
@@ -180,72 +183,53 @@ class PlotControlFrame(ctk.CTkFrame):
         except Exception:
             self.master.change_console_text("Data is not loaded", "ERROR")
 
+    def create_pcd_array(self, pixel_size=(1.0, 1.0, 1.0)):
+        # Get data from master
+        ranges = self.master.range_data
+        # Reshape data to be (x, 1536) where x is the number of frames
+        if len(ranges.shape) == 3:
+            ranges = ranges.reshape(-1, ranges.shape[2])
+            # Generate mesh grid
+            mesh_x, mesh_y = np.meshgrid(
+                np.arange(0, ranges.shape[1]) * pixel_size[0],
+                np.arange(0, ranges.shape[0]) * pixel_size[1],
+            )
+        # Create point cloud array
+        xyz = np.zeros((np.size(mesh_x), 3))
+        xyz[:, 0] = np.reshape(mesh_x, -1)
+        xyz[:, 1] = np.reshape(mesh_y, -1)
+        xyz[:, 2] = np.reshape(ranges, -1)
+        return xyz
+
+    def write_ply(self, file_name, pixel_size=(1.0, 1.0, 1.0)):
+        # Create point cloud array
+        xyz = self.create_pcd_array(pixel_size)
+        # Create point cloud
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(xyz)
+        # Write point cloud to file
+        o3d.io.write_point_cloud(file_name, pcd)
+
+    def write_npy(self, file_name, pixel_size=(1.0, 1.0, 1.0)):
+        # Create point cloud array
+        xyz = self.create_pcd_array(pixel_size)
+        # Write point cloud to file
+        np.save(file_name, xyz)
+
     def export_menu(self, choice):
         self.export_menu.set("Export")
         try:
-            self.master.change_console_text("Exporting point cloud", "INFO")
-            # Set the pixel size
-            pixel_size = {"x": 0.1122161041015625, "y": 1.0, "z": 1.0}
-            origin: {"y": 0, "x": 0.0100641, "z": 0.0}
-            # Get data
-            ranges = self.master.range_data[0]
-            # Reshape data to be (x, 1536) where x is the number of frames
-            if len(ranges.shape) == 3:
-                ranges = ranges.reshape(-1, ranges.shape[2])
-            # Generate mesh grid
-            mesh_x, mesh_y = np.meshgrid(
-                np.arange(0, ranges.shape[1]) * pixel_size["x"],
-                np.arange(0, ranges.shape[0]) * pixel_size["y"],
-            )
-            # Flatten mesh grid
-            # mesh_x = mesh_x.flatten()
-            # mesh_y = mesh_y.flatten()
-            # ranges = ranges.flatten()
-            # Create point cloud
-            # xyz = np.vstack((mesh_x, mesh_y, ranges)).T
-            xyz = np.zeros((np.size(mesh_x), 3))
-            xyz[:, 0] = np.reshape(mesh_x, -1)
-            xyz[:, 1] = np.reshape(mesh_y, -1)
-            xyz[:, 2] = np.reshape(ranges, -1)
-            # Create point cloud
-            pcd = o3d.geometry.PointCloud()
-            pcd.points = o3d.utility.Vector3dVector(xyz)
-            # Export point cloud
-            if choice == ".ply":
-                # Ask for the file name to save the point cloud
-                file_name = tkinter.filedialog.asksaveasfilename(
-                    title="Save point cloud as",
-                    filetypes=(("PLY files", "*.ply"), ("All files", "*.*")),
-                )
-                # Verify the extension is .ply
-                if not file_name.endswith(".ply"):
-                    file_name += ".ply"
-                # Print the file name and path
-                self.master.change_console_text(
-                    f"Saving point cloud as {file_name}", "INFO"
-                )
-                # Export point cloud
-                o3d.io.write_point_cloud(file_name, pcd)
-                # Print success message
-                self.master.change_console_text("PLY file generated", "SUCCESS")
-            elif choice == ".npy":
-                # Ask for the file name to save the point cloud
-                file_name = tkinter.filedialog.asksaveasfilename(
-                    title="Save point cloud as",
-                    filetypes=(("NPY files", "*.npy"), ("All files", "*.*")),
-                )
-                # Verify the extension is .npy
-                if not file_name.endswith(".npy"):
-                    file_name += ".npy"
-                # Print the file name and path
-                self.master.change_console_text(
-                    f"Saving point cloud as {file_name}", "INFO"
-                )
-                # Export point cloud
-                np.save(file_name, xyz)
+            # Check if there is data to export
+            if self.master.range_data.size > 0:
+                self.master.change_console_text("Exporting point cloud", "INFO")
+                # Create the window to export the point cloud, if it doesn't exist
+                if self.export_window is None or not self.export_window.winfo_exists():
+                    self.export_window = ExportPLYWindow(self.master, choice)
+                    # Set the focus to the window and on top of all other windows
+                    self.export_window.focus()
+                    self.export_window.grab_set()
             else:
-                return None  # Do nothing if nothing selected
-
+                self.master.change_console_text("Data is not loaded", "ERROR")
         except Exception as e:
             print("Error exporting")
             print(e)

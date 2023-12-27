@@ -1,10 +1,6 @@
 import customtkinter as ctk
 import matplotlib.pyplot as plt
-import numpy as np
-import seaborn as sns
-from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
 
 
 # --------------------------------------------------------PLOT FRAME--------------------------------------------------------#
