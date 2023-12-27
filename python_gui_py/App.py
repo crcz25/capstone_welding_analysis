@@ -148,6 +148,10 @@ class App(ctk.CTk):
         self.update_info_frame()
 
     def import_files(self):
+        # If there is a scan already imported, replace it with the new one and clean the plot frame
+        if self.range_file is not None and self.timestamp_file is not None:
+            self.reset_imported_files()
+
         # Ask the user for the files to import timestamps and ranges (.csv and .npy)
         self.files = filedialog.askopenfilenames(
             title="Select files to import",
