@@ -171,35 +171,11 @@ class App(ctk.CTk):
         self.change_console_text(f"Timestamp file to open: {self.timestamp_file}", 'INFORMATION')
         self.change_console_text(f"Size of timestamp data: {self.timestamp_data.shape}", 'INFORMATION')
 
-        # Update the info frame textboxes
-        self.update_info_frame()
-
         # Update the plot
         self.plot_frame.create_figure(
             current_frame=self.current_frame, profile=0, data=self.range_data
         )
 
-    def update_info_frame(self):
-        # Check if the data is loaded
-        if self.range_file is not None and self.timestamp_file is not None:
-            # Enable the textbox
-            self.info_frame.textbox_info.configure(state="normal")
-            # Delete the current text
-            self.info_frame.textbox_info.delete("1.0", "end")
-            # Insert the new text
-            txt = f"""Scan: {self.range_file[0].split("/")[-1]} \
-                \nTime: {self.timestamp_data[self.current_frame]} \
-                \nFrame: {self.current_frame + 1} \
-                \nProfile: {int(self.plot_control_frame.slider.get()) + 1} \
-                \nX-Min: {self.plot_frame.x_1.axis} \
-                \nX-Max: {self.plot_frame.x_2.axis} \
-                \nY-Min: {self.plot_frame.y_2.axis} \
-                \nY-Max: {self.plot_frame.y_1.axis}"""
-            self.info_frame.textbox_info.insert("0.0", txt)
-            # Disable the textbox
-            self.info_frame.textbox_info.configure(state="disabled")
-        else:
-            self.change_console_text("Data is not loaded", 'ERROR')
 
     def change_plot(self, change, profile=0):
         # Check if the data is loaded
@@ -214,7 +190,6 @@ class App(ctk.CTk):
                 self.current_frame = self.max_frames
             print(f"New frame: {self.current_frame}")
             # Update the info frame textboxes
-            self.update_info_frame()
             self.plot_frame.update_surface(
                 current_frame=self.current_frame, profile=profile, data=self.range_data
             )
@@ -256,6 +231,7 @@ if __name__ == "__main__":
         app.destroy()
         rclpy.shutdown()
     finally:
+        app.plot_frame.stop_update_info_frame()
         print("Exiting")
         rclpy.shutdown()
         exit()
