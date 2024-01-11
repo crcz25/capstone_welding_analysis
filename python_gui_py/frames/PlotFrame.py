@@ -53,7 +53,12 @@ class PlotFrame(ctk.CTkFrame):
         
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
-    def update_loop(self):
+    def update_info_frame(self):
+        """
+
+        Update the info frame with the newest info every second
+
+        """
         while self.not_stopped_thread:
             # Check if the update is in progress and acquire the lock
             if not self.master.info_frame.update_in_progress and self.master.info_frame.update_lock.acquire(blocking=False):
@@ -94,14 +99,25 @@ class PlotFrame(ctk.CTkFrame):
 
 
     def start_update_info_frame(self):
+        """
+
+        Start the function update_info_frame() on a thread
+
+        """
         self.not_stopped_thread = True
         # Create a separate thread for your update loop
-        self.update_thread = threading.Thread(target=self.update_loop)
+        self.update_thread = threading.Thread(target=self.update_info_frame)
 
         # Start the thread
         self.update_thread.start()
     
     def stop_update_info_frame(self):
+        """
+
+        Stop the thread
+
+        """
+
         self.not_stopped_thread = False
         self.update_thread.join()
 

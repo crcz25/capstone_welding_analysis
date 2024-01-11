@@ -3,14 +3,14 @@ import matplotlib.lines as lines
 
 # --------------------------------------------------------CURSORS--------------------------------------------------------#
 class PlotCursor():
-    def __init__(self, ax, axis_name, axis, label):
+    def __init__(self, ax, axis_name, axis, label, minimum_x=0, minimum_y=0, maximum_x=1600, maximum_y=70):
         # Get canvas and assign basic variables
         self.ax = ax
         self.canvas = ax.get_figure().canvas
         self.axis_name = axis_name
         self.axis = axis
-        self.minimum_x, self.minimum_y = 0, 0
-        self.maximum_x, self.maximum_y = 1600, 70
+        self.minimum_x, self.minimum_y = minimum_x, minimum_y
+        self.maximum_x, self.maximum_y = maximum_x, maximum_y
 
         # Define axis size
         if axis_name == "y":
