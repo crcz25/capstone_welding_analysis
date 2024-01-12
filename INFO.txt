@@ -1,0 +1,3 @@
+cd C:\Users\Miika\source\repos\capstone_welding_analysis
+call setup.bat
+python python_gui_py/App.py
