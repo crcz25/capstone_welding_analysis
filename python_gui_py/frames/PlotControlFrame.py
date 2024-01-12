@@ -64,10 +64,9 @@ class PlotControlFrame(ctk.CTkFrame):
             row=2, column=0, padx=(10, 10), pady=(10, 10), sticky="we"
         )
         self.filter_menu = ctk.CTkOptionMenu(
-            self, values=["Gaussian", "Median"], anchor="center", command=self.filter_menu
+            self, values=["No Filter","Gaussian", "Median"], anchor="center", command=self.filter_menu
         )
         self.filter_menu.grid(row=2, column=1, padx=10, pady=10, sticky="w")
-        self.filter_menu.set("Filter")
 
         self.export_menu = ctk.CTkOptionMenu(
             self, values=[".ply", ".npy"], anchor="center", command=self.export_menu
@@ -87,7 +86,8 @@ class PlotControlFrame(ctk.CTkFrame):
             pady=(10, 10),
             sticky="nsew",
         )
-        
+        self.choice = None
+               
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def slider_event(self, other=None):
         print(f"Slider event: {self.slider_value.get()}")
@@ -123,8 +123,8 @@ class PlotControlFrame(ctk.CTkFrame):
             data_filtered_smoothed = gaussian_filter(data_filtered, sigma=10, mode='nearest')
         elif choice == "Median":
             data_filtered_smoothed = median_filter(data_filtered, size=10, mode='nearest')
-        else:
-            return None  # Do nothing if nothing selected
+        elif choice == "No Filter":
+            return None
 
         return data_filtered_smoothed
 
@@ -157,16 +157,18 @@ class PlotControlFrame(ctk.CTkFrame):
                     data_filtered_smoothed = self.interpolate_and_filter(frames_data, choice)
 
                     if data_filtered_smoothed is not None:
-                        self.plot_frame.create_line_plot_figure(
+                        self.plot_frame.create_figure(
                             current_frame=current_frame, profile=profile, data=data_filtered_smoothed, choice=choice
                         )
+
+            self.choice = choice
         except Exception:
             self.master.change_console_text("Data is not loaded", "ERROR")
 
 
     def reset_cursors_and_plot(self):
         try:
-            self.plot_frame.reset_cursors(self.master.current_frame, int(self.master.plot_control_frame.slider.get()), np.load(self.master.range_file[0]))
+            self.plot_frame.reset_cursors(self.master.current_frame, int(self.master.plot_control_frame.slider.get()), np.load(self.master.range_file[0]), self.choice)
         except Exception:
             self.master.change_console_text("Data is not loaded", 'ERROR')
 

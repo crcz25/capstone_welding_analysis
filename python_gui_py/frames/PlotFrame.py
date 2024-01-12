@@ -50,6 +50,7 @@ class PlotFrame(ctk.CTkFrame):
         self.x_2 = PlotCursor(self.ax, "x", self.cursor_limits["x_max"], "X - Max")
 
         self.not_stopped_thread = True
+        self.data = None
         
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
@@ -142,11 +143,12 @@ class PlotFrame(ctk.CTkFrame):
         self.x_2 = PlotCursor(self.ax, "x", self.cursor_limits["x_max"], "X - Max")
 
 
-    def reset_cursors(self, current_frame, profile, data):
+    def reset_cursors(self, current_frame, profile, data, choice):
         """
         Resets the cursors to their initial limits.
 
         """
+        self.update_cursor_limits()
         if self.cursor_limits != self.initial_cursor_limits:
             # Update the cursor limits with the initial limits
             self.cursor_limits = self.initial_cursor_limits.copy()
@@ -160,7 +162,7 @@ class PlotFrame(ctk.CTkFrame):
             # Redraw the canvas
             self.canvas.draw_idle()
             self.stop_update_info_frame()
-            self.update_surface(current_frame, profile, data)
+            self.create_figure(current_frame, profile, data)
             self.start_update_info_frame()
             self.master.change_console_text("Plot and cursors reset", 'INFORMATION')
         else:
@@ -180,45 +182,33 @@ class PlotFrame(ctk.CTkFrame):
         self.cursor_limits["y_min"] = self.y_2.line.get_ydata()[0]
     
 
-    def create_figure(self, current_frame=0, profile=0, data=None):
+    def create_figure(self, current_frame=0, profile=0, data=None, choice=None):
         """
-
         Creates a new plot figure.
 
         Args:
             current_frame: The index of the current frame.
             profile: The index of the current profile.
             data: The data to plot.
+            choice: Filter type
         """
-        # Get the section to plot
         self.ax.clear()
         self.create_cursors()
         self.start_update_info_frame()
-        section = data[current_frame, profile, :]
+
+        if choice is None or choice == "No Filter":
+            section = data[current_frame, profile, :]
+            self.ax.plot(section)
+            plot_title = f"Frame {current_frame + 1}, Profile {profile + 1}"
+        else:
+            section = data
+            self.ax.plot(section)
+            plot_title = f"Frame {current_frame + 1}, Profile {profile + 1}, Filter {choice}"
         print(f"Section shape: {section.shape}")
         print(f"Section: {section}")
-        # Add the section to the plot
-        self.ax.plot(section)
+
         # Set the plot title
-        self.ax.set_title(f"Frame {current_frame + 1}, Profile {profile + 1}")
-        self.update_window()
-    
-    def create_line_plot_figure(self, current_frame=0, profile=0, data=None, choice=None):
-        """
-
-        Displays a line plot in the UI.
-
-        Args:
-            current_frame: The index of the current frame.
-            profile: The index of the current profile.
-            data: The data to plot.
-            choice: Filter type
-
-        """
-        self.ax.clear()
-        self.create_cursors()
-        self.ax.set_title(f"Frame {current_frame + 1}, Profile {profile + 1}, Filter {choice}")
-        self.ax.plot(data)
+        self.ax.set_title(plot_title)
         self.update_window()
 
 
@@ -235,42 +225,46 @@ class PlotFrame(ctk.CTkFrame):
         # Update the frame
         super().update()
 
+
     def update_surface(self, current_frame=0, profile=0, data=None):
-        """
-        Updates the plot surface.
-        Args:
-            current_frame: The index of the current frame.
-            profile: The index of the current profile.
-            data: The data to plot.
-        """
-        
-        self.ax.clear()
+        choice = self.master.plot_control_frame.choice
 
-        # Set the plot title
-        self.ax.set_title(f"Frame {current_frame + 1}, Profile {profile + 1}")
+        # Get the first color in the default color cycle (keep the color always the default blue)
+        default_color = plt.rcParams['axes.prop_cycle'].by_key()['color'][0]
 
-        # Get the section to plot
-        section = data[current_frame, profile, :]
-        print(f"Section shape: {section.shape}")
-        print(f"Section: {section}")
+        # Remove the old plot line without clearing the axes
+        for line in self.ax.lines:
+            if line.get_label() == '_line0' or line.get_label().startswith("_child"):
+                line.remove()
 
-        # Add the section to the plot
-        self.ax.plot(section)
-
-        # Add the cursor lines back to the plot
+        # Remove the old cursor lines from the plot
         for cursor in [self.y_1, self.y_2, self.x_1, self.x_2]:
-            self.ax.add_line(cursor.line)
+            if cursor.line is not None:
+                cursor.line.remove()
+
+        if choice is None or choice == "No Filter":
+            plot_title = f"Frame {current_frame + 1}, Profile {profile + 1}"
+            section = data[current_frame, profile, :]
+            self.ax.plot(section, label='_line0', color=default_color)
+        else:
+            section = data[current_frame, profile, :]
+            data_filtered_smoothed = self.master.plot_control_frame.interpolate_and_filter(section, choice)
+            plot_title = f"Frame {current_frame + 1}, Profile {profile + 1}, Filter {choice}"
+            self.ax.plot(data_filtered_smoothed, label='_line0', color=default_color)
+
 
         self.update_cursor_limits()
 
-        # Update cursor positions based on the current limits
-        self.y_1.line.set_ydata([self.cursor_limits["y_max"], self.cursor_limits["y_max"]])
-        self.y_2.line.set_ydata([self.cursor_limits["y_min"], self.cursor_limits["y_min"]])
-        self.x_1.line.set_xdata([self.cursor_limits["x_min"], self.cursor_limits["x_min"]])
-        self.x_2.line.set_xdata([self.cursor_limits["x_max"], self.cursor_limits["x_max"]])
+        # Add the cursor lines back to the plot
+        for cursor in [self.y_1, self.y_2, self.x_1, self.x_2]:
+            if cursor.line is not None:
+                self.ax.add_line(cursor.line)
 
         # Set the slider position to the current profile
         self.master.plot_control_frame.slider.set(profile)
+
+        # Set the plot title
+        self.ax.set_title(plot_title)
 
         # Redraw the canvas
         self.canvas.draw_idle()
