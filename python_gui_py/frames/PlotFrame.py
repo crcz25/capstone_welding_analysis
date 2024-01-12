@@ -111,6 +111,7 @@ class PlotFrame(ctk.CTkFrame):
         # Start the thread
         self.update_thread.start()
     
+
     def stop_update_info_frame(self):
         """
 
@@ -120,6 +121,7 @@ class PlotFrame(ctk.CTkFrame):
 
         self.not_stopped_thread = False
         self.update_thread.join()
+        time.sleep(0.25)
 
     def create_cursors(self):
         """
@@ -138,6 +140,7 @@ class PlotFrame(ctk.CTkFrame):
         self.y_2 = PlotCursor(self.ax, "y", self.cursor_limits["y_min"], "Y - Min")
         self.x_1 = PlotCursor(self.ax, "x", self.cursor_limits["x_min"], "X - Min")
         self.x_2 = PlotCursor(self.ax, "x", self.cursor_limits["x_max"], "X - Max")
+
 
     def reset_cursors(self, current_frame, profile, data):
         """
@@ -178,7 +181,6 @@ class PlotFrame(ctk.CTkFrame):
         self.cursor_limits["y_max"] = self.y_1.line.get_ydata()[0]
         self.cursor_limits["y_min"] = self.y_2.line.get_ydata()[0]
     
-
 
     def create_figure(self, current_frame=0, profile=0, data=None):
         """
@@ -275,7 +277,6 @@ class PlotFrame(ctk.CTkFrame):
         self.master.plot_control_frame.slider.set(profile)
 
         self.update_cursor_limits()
-
 
         # Redraw the canvas
         self.canvas.draw_idle()

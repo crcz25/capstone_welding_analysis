@@ -26,6 +26,8 @@ class PlotCursor():
         self.ax.add_line(self.line)
         self.canvas.draw_idle()
         self.line_id = self.canvas.mpl_connect('pick_event', self.click_on_line)
+        self.follower = None
+        self.releaser = None
     
 # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def click_on_line(self, event):
@@ -53,7 +55,15 @@ class PlotCursor():
         if hasattr(self, 'follower'):
             self.canvas.mpl_disconnect(self.follower)
 
+        self.remove_label()
         self.canvas.draw_idle()
+    
+
+    def remove_label(self):
+        if hasattr(self, 'text_label') and self.text_label is not None:
+            self.text_label.remove()
+            self.text_label = None
+
 
     def follow_mouse(self, event):
         """
@@ -65,11 +75,8 @@ class PlotCursor():
         # Check if the mouse position is valid
         if event.xdata is None or event.ydata is None:
             return
-
-        # Remove the previous text label and create a new one
-        if hasattr(self, 'text_label') and self.text_label is not None:
-            self.text_label.remove()
-        
+  
+        self.remove_label()
 
         if self.axis_name == "y":
             ydata = event.ydata
@@ -119,14 +126,14 @@ class PlotCursor():
             # Set Y - axis maximum
             if self.line in self.ax.get_lines():
                 if self.line.get_label() == "Y - Max":
-                    if self.minimum_y <= ydata[0] <= self.maximum_y:
+                    if self.minimum_y < ydata[0] <= self.maximum_y:
                         self.ax.set_ylim(self.ax.get_ylim()[0], ydata[0])
                     else:
                         self.reset_cursors()
 
                 # Set Y - axis minimum
                 elif self.line.get_label() == "Y - Min":
-                    if self.maximum_y >= ydata[0] >= self.minimum_y:
+                    if self.maximum_y > ydata[0] >= self.minimum_y:
                         self.ax.set_ylim(ydata[0], self.ax.get_ylim()[1])
                     else:
                         self.reset_cursors()
@@ -137,14 +144,14 @@ class PlotCursor():
 
                 # Set X - axis minimum
                 if self.line.get_label() == "X - Min":  # Fourth line is for "x1 minimum"
-                    if self.maximum_x >= xdata[0] >= self.minimum_x:
+                    if self.maximum_x > xdata[0] >= self.minimum_x:
                         self.ax.set_xlim(xdata[0], self.ax.get_xlim()[1])
                     else:
                         self.reset_cursors()
 
                 # Set X - axis maximum
                 elif self.line.get_label() == "X - Max":  # Third line is for "x2 maximum"
-                    if self.maximum_x >= xdata[0] >= self.minimum_x:
+                    if self.maximum_x >= xdata[0] > self.minimum_x:
                         self.ax.set_xlim(self.ax.get_xlim()[0], xdata[0])
                     else:
                         self.reset_cursors()

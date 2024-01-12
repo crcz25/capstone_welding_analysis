@@ -148,8 +148,6 @@ class PlotControlFrame(ctk.CTkFrame):
             current_frame = self.master.current_frame
             profile = int(self.master.plot_control_frame.slider.get())
 
-            print(profile, self.max_profiles)
-
             # Loop through frames
             if current_frame < self.max_frames:
                 # Loop through profiles
@@ -170,7 +168,7 @@ class PlotControlFrame(ctk.CTkFrame):
         try:
             self.plot_frame.reset_cursors(self.master.current_frame, int(self.master.plot_control_frame.slider.get()), np.load(self.master.range_file[0]))
         except Exception:
-            self.master.change_console_text("No data loaded", 'ERROR')
+            self.master.change_console_text("Data is not loaded", 'ERROR')
 
     def export_menu(self, choice):
         self.export_menu.set("Export")
