@@ -147,27 +147,25 @@ class PlotFrame(ctk.CTkFrame):
         Resets the cursors to their initial limits.
 
         """
-        try:
-            if self.cursor_limits == self.initial_cursor_limits:
-                # Update the cursor limits with the initial limits
-                self.cursor_limits = self.initial_cursor_limits.copy()
+        if self.cursor_limits != self.initial_cursor_limits:
+            # Update the cursor limits with the initial limits
+            self.cursor_limits = self.initial_cursor_limits.copy()
 
-                # Update cursors based on the initial limits
-                self.y_1.line.set_ydata([self.cursor_limits["y_max"], self.cursor_limits["y_max"]])
-                self.y_2.line.set_ydata([self.cursor_limits["y_min"], self.cursor_limits["y_min"]])
-                self.x_1.line.set_xdata([self.cursor_limits["x_min"], self.cursor_limits["x_min"]])
-                self.x_2.line.set_xdata([self.cursor_limits["x_max"], self.cursor_limits["x_max"]])
+            # Update cursors based on the initial limits
+            self.y_1.line.set_ydata([self.cursor_limits["y_max"], self.cursor_limits["y_max"]])
+            self.y_2.line.set_ydata([self.cursor_limits["y_min"], self.cursor_limits["y_min"]])
+            self.x_1.line.set_xdata([self.cursor_limits["x_min"], self.cursor_limits["x_min"]])
+            self.x_2.line.set_xdata([self.cursor_limits["x_max"], self.cursor_limits["x_max"]])
 
-                # Redraw the canvas
-                self.canvas.draw_idle()
-                self.stop_update_info_frame()
-                self.update_surface(current_frame, profile, data)
-                self.start_update_info_frame()
-                self.master.change_console_text("Plot and cursors reset", 'INFORMATION')
-
-        except Exception:
+            # Redraw the canvas
+            self.canvas.draw_idle()
+            self.stop_update_info_frame()
+            self.update_surface(current_frame, profile, data)
+            self.start_update_info_frame()
+            self.master.change_console_text("Plot and cursors reset", 'INFORMATION')
+        else:
             self.master.change_console_text("Cursors are already in their initial positions", 'ERROR')
-        
+    
 
     def update_cursor_limits(self):
         """
@@ -247,18 +245,9 @@ class PlotFrame(ctk.CTkFrame):
         """
         
         self.ax.clear()
-        # Add the cursor lines back to the plot
-        for cursor in [self.y_1, self.y_2, self.x_1, self.x_2]:
-            cursor.line.remove()
 
         # Set the plot title
         self.ax.set_title(f"Frame {current_frame + 1}, Profile {profile + 1}")
-
-        # Update cursor positions based on the current limits
-        self.y_1.line.set_ydata([self.cursor_limits["y_max"], self.cursor_limits["y_max"]])
-        self.y_2.line.set_ydata([self.cursor_limits["y_min"], self.cursor_limits["y_min"]])
-        self.x_1.line.set_xdata([self.cursor_limits["x_min"], self.cursor_limits["x_min"]])
-        self.x_2.line.set_xdata([self.cursor_limits["x_max"], self.cursor_limits["x_max"]])
 
         # Get the section to plot
         section = data[current_frame, profile, :]
@@ -267,16 +256,21 @@ class PlotFrame(ctk.CTkFrame):
 
         # Add the section to the plot
         self.ax.plot(section)
-        
 
         # Add the cursor lines back to the plot
         for cursor in [self.y_1, self.y_2, self.x_1, self.x_2]:
             self.ax.add_line(cursor.line)
 
+        self.update_cursor_limits()
+
+        # Update cursor positions based on the current limits
+        self.y_1.line.set_ydata([self.cursor_limits["y_max"], self.cursor_limits["y_max"]])
+        self.y_2.line.set_ydata([self.cursor_limits["y_min"], self.cursor_limits["y_min"]])
+        self.x_1.line.set_xdata([self.cursor_limits["x_min"], self.cursor_limits["x_min"]])
+        self.x_2.line.set_xdata([self.cursor_limits["x_max"], self.cursor_limits["x_max"]])
+
         # Set the slider position to the current profile
         self.master.plot_control_frame.slider.set(profile)
-
-        self.update_cursor_limits()
 
         # Redraw the canvas
         self.canvas.draw_idle()
