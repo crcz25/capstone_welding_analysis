@@ -1,5 +1,4 @@
-import datetime
-
+import sys
 import customtkinter as ctk
 import numpy as np
 import rclpy
@@ -234,4 +233,4 @@ if __name__ == "__main__":
         app.plot_frame.stop_update_info_frame()
         print("Exiting")
         rclpy.shutdown()
-        exit()
+        sys.exit(0)

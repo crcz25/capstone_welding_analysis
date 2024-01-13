@@ -113,6 +113,7 @@ class PlotControlFrame(ctk.CTkFrame):
             choice: filter type.
             first_row: first points
         """
+
         np.set_printoptions(threshold=np.inf)
 
         # Interpolate missing values
@@ -135,6 +136,7 @@ class PlotControlFrame(ctk.CTkFrame):
         Args:
             choice: filter type.
         """
+
         try:
             # Get the current opened .npy
             file_path = self.master.range_file
@@ -148,29 +150,41 @@ class PlotControlFrame(ctk.CTkFrame):
             current_frame = self.master.current_frame
             profile = int(self.master.plot_control_frame.slider.get())
 
-            # Loop through frames
-            if current_frame < self.max_frames:
-                # Loop through profiles
-                if profile < self.max_profiles:
-                    frames_data = data[current_frame, profile, :]
+            if current_frame < self.max_frames and profile < self.max_profiles:
+                # Current profile
+                frames_data = data[current_frame, profile, :]
 
-                    data_filtered_smoothed = self.interpolate_and_filter(frames_data, choice)
+                # If filter selected then apply filter
+                if choice is not None and choice != "No Filter":
+                    # Recompute frames_data based on the current choice
+                    frames_data = self.interpolate_and_filter(frames_data, choice)
+                else:
+                    frames_data = data
 
-                    if data_filtered_smoothed is not None:
-                        self.plot_frame.create_figure(
-                            current_frame=current_frame, profile=profile, data=data_filtered_smoothed, choice=choice
-                        )
+                self.plot_frame.create_figure(
+                    current_frame=current_frame, 
+                    profile=profile, 
+                    data=frames_data, 
+                    choice=choice
+                )
 
             self.choice = choice
-        except Exception:
-            self.master.change_console_text("Data is not loaded", "ERROR")
+
+        except Exception as e:
+            self.master.change_console_text(f"Error in filter_menu: {e}", "ERROR")
 
 
     def reset_cursors_and_plot(self):
+        """
+        Calls plot frame reset_cursors()
+
+        """
+
         try:
             self.plot_frame.reset_cursors(self.master.current_frame, int(self.master.plot_control_frame.slider.get()), np.load(self.master.range_file[0]), self.choice)
         except Exception:
             self.master.change_console_text("Data is not loaded", 'ERROR')
 
+         
     def export_menu(self, choice):
         self.export_menu.set("Export")

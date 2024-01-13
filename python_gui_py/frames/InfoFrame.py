@@ -63,7 +63,6 @@ class InfoFrame(ctk.CTkFrame):
         height_of_weld_entry.grid(row=5, column=1, padx=(10,10), pady=(5,5), sticky="we")
 
         self.update_in_progress = False
-        self.update_lock = threading.Lock()
 
         # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
