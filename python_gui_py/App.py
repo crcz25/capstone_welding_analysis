@@ -1,4 +1,3 @@
-import sys
 import customtkinter as ctk
 import numpy as np
 import rclpy
@@ -230,7 +229,6 @@ if __name__ == "__main__":
         app.destroy()
         rclpy.shutdown()
     finally:
-        app.plot_frame.stop_update_info_frame()
         print("Exiting")
         rclpy.shutdown()
-        sys.exit(0)
+        exit()

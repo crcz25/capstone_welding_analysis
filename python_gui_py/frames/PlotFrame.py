@@ -118,7 +118,7 @@ class PlotFrame(ctk.CTkFrame):
         # Set the flag
         self.thread_not_stopped = True
         # Create a separate thread for your update loop
-        self.update_thread = threading.Thread(target=self.update_info_frame)
+        self.update_thread = threading.Thread(target=self.update_info_frame, daemon=True)
         # Start the thread
         self.update_thread.start()
     
