@@ -26,10 +26,11 @@ class PlotFrame(ctk.CTkFrame):
         initial_cursor_limits: Stores the original min,max values for each axis
         cursor_limits: Stores the current min,max values
         thread_not_stopped: Flag to know if the thread is stopped or not
-        self.y_1 = Y - max cursor
-        self.y_2 = Y - min cursor
-        self.x_1 = X - min cursor
-        self.x_2 = X - max cursor
+        y_1 = Y - max cursor
+        y_2 = Y - min cursor
+        x_1 = X - min cursor
+        x_2 = X - max cursor
+        invert_plot: Flag to invert the plot
 
 
     Methods:
@@ -55,16 +56,16 @@ class PlotFrame(ctk.CTkFrame):
 
         # Default cursor limits
         self.initial_cursor_limits = {"x_min": 0, "x_max": 1600, "y_min": 0, "y_max": 70}
+        # Current cursor limits
         self.cursor_limits = self.initial_cursor_limits.copy()
-
         # Inital cursors
-        self.y_1 = PlotCursor(self.ax, "y", self.cursor_limits["y_max"], "Y - Max")
-        self.y_2 = PlotCursor(self.ax, "y", self.cursor_limits["y_min"], "Y - Min")
-        self.x_1 = PlotCursor(self.ax, "x", self.cursor_limits["x_min"], "X - Min")
-        self.x_2 = PlotCursor(self.ax, "x", self.cursor_limits["x_max"], "X - Max")
+        self.create_cursors()
 
+        # Flag for thread
         self.thread_not_stopped = True
-        
+        # Flag for inverting the plot
+        self.invert_plot = False
+
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def update_info_frame(self):
@@ -96,7 +97,8 @@ class PlotFrame(ctk.CTkFrame):
                         \nX-Min: {self.x_1.line.get_xdata()[0]} \
                         \nX-Max: {self.x_2.line.get_xdata()[0]} \
                         \nY-Min: {self.y_2.line.get_ydata()[0]} \
-                        \nY-Max: {self.y_1.line.get_ydata()[0]}"""
+                        \nY-Max: {self.y_1.line.get_ydata()[0]} \
+                        \nInverted: {self.invert_plot}"""
                     self.master.info_frame.textbox_info.insert("0.0", txt)
 
                     # Disable the textbox
@@ -117,7 +119,7 @@ class PlotFrame(ctk.CTkFrame):
         """
         # Set the flag
         self.thread_not_stopped = True
-        # Create a separate thread for your update loop
+        # Create a separate thread for the update loop
         self.update_thread = threading.Thread(target=self.update_info_frame, daemon=True)
         # Start the thread
         self.update_thread.start()
@@ -166,6 +168,7 @@ class PlotFrame(ctk.CTkFrame):
         try:
             # Check if the cursor limits have change
             self.update_cursor_limits()
+            # Update the filter menu to the current choice
             if self.cursor_limits != self.initial_cursor_limits:
 
                 # Stop the updating of the infobox
@@ -184,18 +187,14 @@ class PlotFrame(ctk.CTkFrame):
                 self.canvas.draw_idle()
 
                 # Reset the figure to the original one
-                self.create_figure(current_frame, profile, data)
+                self.create_figure(current_frame, profile, data, choice)
 
-                self.master.change_console_text("Plot and cursors reset", 'INFORMATION')
+                self.master.change_console_text(f"Plot and cursors reset frame: {current_frame}, and profile, {profile}", 'INFORMATION')
             else:
                 self.master.change_console_text("Cursors are already in their initial positions", 'ERROR')
 
         except Exception as e:
             self.master.change_console_text(f"Error during cursor reset: {str(e)}", 'ERROR')
-
-        finally:
-             # Start the updating the textbox again
-             self.start_update_info_frame()
 
     
 
@@ -237,7 +236,17 @@ class PlotFrame(ctk.CTkFrame):
         # Depending on the choice plot differently
         if choice is None or choice == "No Filter":
             section = data[current_frame, profile, :]
-            self.ax.plot(section)
+
+            # Invert plot if flag is set from the button
+            if self.invert_plot:
+                # Invert the data
+                inverted_section = -section
+                # Move the inverted data back to zero
+                min_value = np.min(inverted_section)
+                shifted_inverted_section = inverted_section - min_value
+                self.ax.plot(shifted_inverted_section)
+            else:
+                self.ax.plot(section)
 
             # Set the axes limits based on cursor positions
             self.ax.set_xlim(self.cursor_limits["x_min"], self.cursor_limits["x_max"])
@@ -305,7 +314,14 @@ class PlotFrame(ctk.CTkFrame):
         if choice is None or choice == "No Filter":
             plot_title = f"Frame {current_frame + 1}, Profile {profile + 1}"
             section = data[current_frame, profile, :]
-            self.ax.plot(section, label='_line0', color=default_color)
+            if self.invert_plot:
+                inverted_section = -section
+                # Move the inverted data back to zero
+                min_value = np.min(inverted_section)
+                shifted_section = inverted_section - min_value
+                self.ax.plot(shifted_section, label='_line0', color=default_color)
+            else:
+                self.ax.plot(section, label='_line0', color=default_color)
         else:
             section = data[current_frame, profile, :]
             data_filtered_smoothed = self.master.plot_control_frame.interpolate_and_filter(section, choice)
@@ -322,6 +338,9 @@ class PlotFrame(ctk.CTkFrame):
 
         # Set the slider position to the current profile
         self.master.plot_control_frame.slider.set(profile)
+        
+        # Be sure that the filter is aplied and the data passes to master
+        self.master.plot_control_frame.filter_menu(choice)
 
         # Set the plot title
         self.ax.set_title(plot_title)

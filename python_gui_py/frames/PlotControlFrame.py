@@ -12,80 +12,60 @@ class PlotControlFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, bg_color="transparent", **kwargs)
         self.grid(row=1, column=1, padx=(10, 10), pady=(10, 10), sticky="nsew")
-        self.grid_columnconfigure(3, weight=1)
-        self.grid_rowconfigure(4, weight=1)
 
-        # PlotFrame intance
-        self.plot_frame = self.master.plot_frame
+        # Configure weights for columns and rows
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=1)
+        self.grid_columnconfigure(3, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(3, weight=1)
 
         # Default text color
         self.color = "white"
 
         # Create Slider
         self.slider_value = tkinter.IntVar(master=self.master, value=0)
-        self.slider = ctk.CTkSlider(
-            self,
-            from_=0,
-            to=512,
-            number_of_steps=511,
-            variable=self.slider_value,
-            command=self.slider_event,
-        )
-        self.slider.grid(
-            row=0, columnspan=4, padx=(10, 10), pady=(10, 10), sticky="nsew"
-        )
+        self.slider = ctk.CTkSlider(self, from_=0, to=512, number_of_steps=511, variable=self.slider_value, command=self.slider_event)
+        self.slider.grid(row=0, columnspan=4, padx=(10, 10), pady=(10, 10), sticky="ew")
         self.slider.set(0)
 
         # Create main control buttons
-        self.scan_button = ctk.CTkButton(
-            self, text="Take scan", command=self.take_stop_scan
-        )
-        self.previous_button = ctk.CTkButton(
-            self, text="Previous", command=self.previous_plot
-        )
+        self.scan_button = ctk.CTkButton(self, text="Take scan", command=self.take_stop_scan)
+        self.previous_button = ctk.CTkButton(self, text="Previous", command=self.previous_plot)
         self.next_button = ctk.CTkButton(self, text="Next", command=self.next_plot)
-        self.load_button = ctk.CTkButton(
-            self, text="Import scan", command=self.import_scan
-        )
-        self.clear_point_of_interest = ctk.CTkButton(
-            self, text="Reset cursors", command=self.reset_cursors_and_plot
-        )
+        self.load_button = ctk.CTkButton(self, text="Import scan", command=self.import_scan)
+        self.clear_point_of_interest = ctk.CTkButton(self, text="Reset cursors", command=self.reset_cursors_and_plot)
+        self.invert_button = ctk.CTkButton(self, text="Invert plot", command=self.invert)
 
-        self.scan_button.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
-        self.previous_button.grid(row=1, column=1, padx=10, pady=10, sticky="ew")
-        self.next_button.grid(row=1, column=2, padx=10, pady=10, sticky="ew")
-        self.load_button.grid(row=1, column=3, padx=10, pady=10, sticky="w")
-        self.clear_point_of_interest.grid(row=2, column=3, padx=10, pady=10, sticky="w")
+        # Grid buttons
+        self.scan_button.grid(row=1, column=0, padx=10, pady=10, sticky="new")
+        self.previous_button.grid(row=1, column=1, padx=10, pady=10, sticky="new")
+        self.next_button.grid(row=1, column=2, padx=10, pady=10, sticky="new")
+        self.load_button.grid(row=1, column=3, padx=10, pady=10, sticky="new")
+        self.clear_point_of_interest.grid(row=2, column=2, padx=10, pady=10, sticky="new")
+        self.invert_button.grid(row=2, column=1, padx=10, pady=10, sticky="new")
 
 
         # Dropdown menus
-        self.filter_label = ctk.CTkLabel(self, text="Apply filter:")
-        self.filter_label.grid(
-            row=2, column=0, padx=(10, 10), pady=(10, 10), sticky="we"
-        )
-        self.filter_menu = ctk.CTkOptionMenu(
-            self, values=["No Filter","Gaussian", "Median"], anchor="center", command=self.filter_menu
-        )
-        self.filter_menu.grid(row=2, column=1, padx=10, pady=10, sticky="w")
+        self.filter_menu_dropdown = ctk.CTkOptionMenu(self, values=["No Filter","Gaussian", "Median"], anchor="center", command=self.filter_menu)
+        self.filter_menu_dropdown.grid(row=2, column=0, padx=10, pady=10, sticky="new")
+        self.filter_menu_dropdown.set("No Filter")
 
-        self.export_menu = ctk.CTkOptionMenu(
-            self, values=[".ply", ".npy"], anchor="center", command=self.export_menu
-        )
-        self.export_menu.grid(row=2, column=2, padx=10, pady=10, sticky="w")
-        self.export_menu.set("Export")
+        self.export_menu_dropdown = ctk.CTkOptionMenu(self, values=[".ply", ".npy"], anchor="center", command=self.export_menu)
+        self.export_menu_dropdown.grid(row=2, column=3, padx=10, pady=10, sticky="new")
+        self.export_menu_dropdown.set("Export")
 
         # Console
         self.console_label = ctk.CTkLabel(self, text="Console")
-        self.console_label.grid(
-            row=3, column=0, padx=(10, 10), pady=(10, 10), sticky="ws"
-        )
+        self.console_label.grid(row=3, column=0, padx=(20, 10), pady=(10, 10), sticky="w")
 
         self.console_entry = ctk.CTkTextbox(self, width=250, height=150, text_color=self.color)
-        self.console_entry.grid(row=4, column=0,columnspan=4,rowspan=4,
-            padx=(10, 10),
-            pady=(10, 10),
-            sticky="nsew",
-        )
+        self.console_entry.grid(row=4, column=0,columnspan=4,rowspan=4,padx=(10, 10),pady=(10, 10),sticky="nsew")
+
+        # Other variables
         self.choice = None
                
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
@@ -104,6 +84,17 @@ class PlotControlFrame(ctk.CTkFrame):
 
     def import_scan(self):
         self.master.import_files()
+        
+        # Default to no filter when files are imported
+        self.filter_menu("No Filter")
+    
+    def invert(self):
+        # Change the flag True/False
+        self.master.plot_frame.invert_plot ^= True
+        
+        # Default plot
+        if self.choice == "No Filter":
+            self.master.plot_frame.create_figure(self.master.current_frame, int(self.master.plot_control_frame.slider.get()), np.load(self.master.range_file[0]), self.choice)
 
     def interpolate_and_filter(self, first_row, choice):
         """
@@ -152,26 +143,25 @@ class PlotControlFrame(ctk.CTkFrame):
 
             if current_frame < self.max_frames and profile < self.max_profiles:
                 # Current profile
-                frames_data = data[current_frame, profile, :]
+                self.frames_data = data[current_frame, profile, :]
 
                 # If filter selected then apply filter
                 if choice is not None and choice != "No Filter":
                     # Recompute frames_data based on the current choice
-                    frames_data = self.interpolate_and_filter(frames_data, choice)
+                    self.frames_data = self.interpolate_and_filter(self.frames_data, choice)
                 else:
-                    frames_data = data
+                    self.frames_data = data
 
-                self.plot_frame.create_figure(
+                self.master.plot_frame.create_figure(
                     current_frame=current_frame, 
                     profile=profile, 
-                    data=frames_data, 
+                    data=self.frames_data, 
                     choice=choice
                 )
-
-            self.choice = choice
+                self.choice = choice
 
         except Exception as e:
-            self.master.change_console_text(f"Error in filter_menu: {e}", "ERROR")
+            self.master.change_console_text(f"Data is not loaded", "ERROR")
 
 
     def reset_cursors_and_plot(self):
@@ -181,7 +171,10 @@ class PlotControlFrame(ctk.CTkFrame):
         """
 
         try:
-            self.plot_frame.reset_cursors(self.master.current_frame, int(self.master.plot_control_frame.slider.get()), np.load(self.master.range_file[0]), self.choice)
+            if self.choice == "No filter" or self.choice is None:
+                self.master.plot_frame.reset_cursors(self.master.current_frame, int(self.master.plot_control_frame.slider.get()), np.load(self.master.range_file[0]))
+            else:
+                self.master.plot_frame.reset_cursors(self.master.current_frame, int(self.master.plot_control_frame.slider.get()), self.frames_data, self.choice)
         except Exception:
             self.master.change_console_text("Data is not loaded", 'ERROR')
 

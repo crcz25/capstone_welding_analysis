@@ -19,8 +19,8 @@ class App(ctk.CTk):
         super().__init__()
 
         self.title("GUI for SICK E55 Weld Monitoring")
-        self.geometry(f"{1350}x{800}")
-        self.minsize(1350, 800)
+        self.geometry(f"{1400}x{900}")
+        self.minsize(1400, 900)
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=0)
@@ -187,7 +187,7 @@ class App(ctk.CTk):
             elif self.current_frame > self.max_frames:
                 self.current_frame = self.max_frames
             print(f"New frame: {self.current_frame}")
-            # Update the info frame textboxes
+            # Update the plot surface
             self.plot_frame.update_surface(
                 current_frame=self.current_frame, profile=profile, data=self.range_data
             )
