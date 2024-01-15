@@ -25,7 +25,7 @@ class PlotFrame(ctk.CTkFrame):
         canvas: The canvas object for displaying the plot.
         initial_cursor_limits: Stores the original min,max values for each axis
         cursor_limits: Stores the current min,max values
-        thread_not_stopped: Flag to know if the thread is stopped or not
+        stop_event: Safe thread start/stop
         y_1 = Y - max cursor
         y_2 = Y - min cursor
         x_1 = X - min cursor
@@ -43,6 +43,7 @@ class PlotFrame(ctk.CTkFrame):
         create_cursors: Creates 4 cursors for the plot
         reset_cursors: Resets the cursors and plot to the initial way
         update_cursor_limits: Updates the cursor limits
+        set_axes_limits: Update the axes limits of the plot
 
     """
 
@@ -61,8 +62,9 @@ class PlotFrame(ctk.CTkFrame):
         # Inital cursors
         self.create_cursors()
 
-        # Flag for thread
-        self.thread_not_stopped = True
+
+        # Ensure safe thread stop
+        self.stop_event = threading.Event()
         # Flag for inverting the plot
         self.invert_plot = False
 
@@ -74,7 +76,7 @@ class PlotFrame(ctk.CTkFrame):
         Update the info frame with the newest info every second
 
         """
-        while self.thread_not_stopped:
+        while not self.stop_event.is_set():
             # Check if the update is in progress
             if not self.master.info_frame.update_in_progress:
                 try:
@@ -84,10 +86,8 @@ class PlotFrame(ctk.CTkFrame):
                     # Enable the textbox
                     self.master.info_frame.textbox_info.configure(state="normal")
 
-                    # Check if there is existing text
-                    if len(self.master.info_frame.textbox_info.get("1.0", "end-1c")) > 0:
-                        # Delete the current text
-                        self.master.info_frame.textbox_info.delete("1.0", "end")
+                    # Delete the current text
+                    self.master.info_frame.textbox_info.delete("1.0", "end")
 
                     # Insert the new text to the textbox
                     txt = f"""Scan: {self.master.range_file[0].split("/")[-1]} \
@@ -117,8 +117,8 @@ class PlotFrame(ctk.CTkFrame):
         Start the function update_info_frame() on a thread
 
         """
-        # Set the flag
-        self.thread_not_stopped = True
+        # Clear the event
+        self.stop_event.clear()
         # Create a separate thread for the update loop
         self.update_thread = threading.Thread(target=self.update_info_frame, daemon=True)
         # Start the thread
@@ -132,8 +132,8 @@ class PlotFrame(ctk.CTkFrame):
 
         """
 
-        # Set the flag
-        self.thread_not_stopped = False
+        # Set the event
+        self.stop_event.set()
         # Kill the thread
         self.update_thread.join()
 
@@ -189,7 +189,7 @@ class PlotFrame(ctk.CTkFrame):
                 # Reset the figure to the original one
                 self.create_figure(current_frame, profile, data, choice)
 
-                self.master.change_console_text(f"Plot and cursors reset frame: {current_frame}, and profile, {profile}", 'INFORMATION')
+                self.master.change_console_text(f"Plot and cursors reset frame: {current_frame + 1}, and profile, {profile + 1}", 'INFORMATION')
             else:
                 self.master.change_console_text("Cursors are already in their initial positions", 'ERROR')
 
@@ -249,22 +249,29 @@ class PlotFrame(ctk.CTkFrame):
                 self.ax.plot(section)
 
             # Set the axes limits based on cursor positions
-            self.ax.set_xlim(self.cursor_limits["x_min"], self.cursor_limits["x_max"])
-            self.ax.set_ylim(self.cursor_limits["y_min"], self.cursor_limits["y_max"])
+            self.set_axes_limits()
             plot_title = f"Frame {current_frame + 1}, Profile {profile + 1}"
         else:
             section = data
             self.ax.plot(section)
 
             # Set the axes limits based on cursor positions
-            self.ax.set_xlim(self.cursor_limits["x_min"], self.cursor_limits["x_max"])
-            self.ax.set_ylim(self.cursor_limits["y_min"], self.cursor_limits["y_max"])
+            self.set_axes_limits()
             plot_title = f"Frame {current_frame + 1}, Profile {profile + 1}, Filter {choice}"
 
         # Set the plot title
         self.ax.set_title(plot_title)
         # Update the plot window
         self.update_window()
+
+    def set_axes_limits(self):
+        """
+        Update the axes limits of the plot
+        
+        """
+
+        self.ax.set_xlim(self.cursor_limits["x_min"], self.cursor_limits["x_max"])
+        self.ax.set_ylim(self.cursor_limits["y_min"], self.cursor_limits["y_max"])
 
 
     def update_window(self):
@@ -338,12 +345,12 @@ class PlotFrame(ctk.CTkFrame):
 
         # Set the slider position to the current profile
         self.master.plot_control_frame.slider.set(profile)
-        
-        # Be sure that the filter is aplied and the data passes to master
-        self.master.plot_control_frame.filter_menu(choice)
 
         # Set the plot title
         self.ax.set_title(plot_title)
+        
+        # Be sure that the current filter is applied and the data passes to master
+        self.master.plot_control_frame.filter_menu(choice)
 
         # Redraw the canvas
         self.canvas.draw_idle()
