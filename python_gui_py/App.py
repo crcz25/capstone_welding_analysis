@@ -196,10 +196,9 @@ class App(ctk.CTk):
         # Update the info frame textboxes
         self.update_info_frame()
 
-        # Update the plot
+        # Create the plot
         self.plot_frame.create_figure(
-            current_frame=self.current_frame, profile=0, data=self.range_data
-        )
+            current_frame=self.current_frame, profile=0, data=self.range_data)
 
     def update_info_frame(self):
         # Check if the data is loaded
@@ -234,8 +233,7 @@ class App(ctk.CTk):
             # Update the info frame textboxes
             self.update_info_frame()
             self.plot_frame.update_surface(
-                current_frame=self.current_frame, profile=profile, data=self.range_data
-            )
+                current_frame=self.current_frame, profile=profile, data=self.range_data)
         else:
             self.change_console_text("Data is not loaded", 'ERROR')
 
