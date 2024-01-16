@@ -19,8 +19,8 @@ class App(ctk.CTk):
         super().__init__()
 
         self.title("GUI for SICK E55 Weld Monitoring")
-        self.geometry(f"{1350}x{800}")
-        self.minsize(1350, 800)
+        self.geometry(f"{1400}x{900}")
+        self.minsize(1400, 900)
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=0)
@@ -145,7 +145,7 @@ class App(ctk.CTk):
         self.max_frames = 0
         self.plot_control_frame.slider.set(0)
         self.plot_frame.clean_plot()
-        self.update_info_frame()
+        # self.update_info_frame()
 
     def import_files(self):
         # If there is a scan already imported, replace it with the new one and clean the plot frame
@@ -193,10 +193,7 @@ class App(ctk.CTk):
         self.change_console_text(f"Timestamp file to open: {self.timestamp_file}", 'INFORMATION')
         self.change_console_text(f"Size of timestamp data: {self.timestamp_data.shape}", 'INFORMATION')
 
-        # Update the info frame textboxes
-        self.update_info_frame()
-
-        # Create the plot
+        # Update the plot
         self.plot_frame.create_figure(
             current_frame=self.current_frame, profile=0, data=self.range_data)
 
@@ -231,7 +228,7 @@ class App(ctk.CTk):
                 self.current_frame = self.max_frames
             print(f"New frame: {self.current_frame}")
             # Update the info frame textboxes
-            self.update_info_frame()
+            # self.update_info_frame()
             self.plot_frame.update_surface(
                 current_frame=self.current_frame, profile=profile, data=self.range_data)
         else:

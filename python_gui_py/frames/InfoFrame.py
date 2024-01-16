@@ -1,5 +1,6 @@
 import customtkinter as ctk
 import json
+import threading
 
 #--------------------------------------------------------RIGHT INFO/DEFECTS FRAME--------------------------------------------------------#
 class InfoFrame(ctk.CTkFrame):
@@ -61,6 +62,7 @@ class InfoFrame(ctk.CTkFrame):
         height_of_weld_entry = ctk.CTkEntry(labels_dropdown_frame, textvariable=self.height_of_weld)
         height_of_weld_entry.grid(row=5, column=1, padx=(10,10), pady=(5,5), sticky="we")
 
+        self.update_in_progress = False
 
         # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
