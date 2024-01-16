@@ -459,6 +459,11 @@ class PlotFrame(ctk.CTkFrame):
         # Recreate the figure
         # Default color
         default_color = plt.rcParams["axes.prop_cycle"].by_key()["color"][0]
+        # Save the positions of the cursors to recreate them later
+        x_1_pos = self.x_1.line.get_xdata()[0]
+        x_2_pos = self.x_2.line.get_xdata()[0]
+        y_1_pos = self.y_1.line.get_ydata()[0]
+        y_2_pos = self.y_2.line.get_ydata()[0]
         # Clean the plot
         self.ax.clear()
         # Remove and re-add the cursors to the plot
@@ -466,8 +471,13 @@ class PlotFrame(ctk.CTkFrame):
             if cursor.line is not None:
                 cursor.line.remove()
                 cursor.line = None
+        # Crete the cursors in their previous positions
+        self.y_1 = PlotCursor(self.ax, "y", y_1_pos, "Y - Max")
+        self.y_2 = PlotCursor(self.ax, "y", y_2_pos, "Y - Min")
+        self.x_1 = PlotCursor(self.ax, "x", x_1_pos, "X - Min")
+        self.x_2 = PlotCursor(self.ax, "x", x_2_pos, "X - Max")
         # Create the cursors
-        self.create_cursors()
+        # self.create_cursors()
         # Update cursor limits
         self.update_cursor_limits()
         # Set the axes limits based on cursor positions
