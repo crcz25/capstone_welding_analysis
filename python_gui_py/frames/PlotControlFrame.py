@@ -136,7 +136,9 @@ class PlotControlFrame(ctk.CTkFrame):
     def invert(self):
         # Change the flag True/False
         self.master.plot_frame.invert_plot ^= True
-        self.master.plot_frame.update_surface(profile=self.master.current_profile)
+        self.master.plot_frame.update_surface(
+            profile=self.master.current_profile, choice=self.choice
+        )
         # Change the background color of the button to indicate the state active/inactive
         if self.master.plot_frame.invert_plot:
             self.invert_button.configure(fg_color="Light Green", text_color="black")
