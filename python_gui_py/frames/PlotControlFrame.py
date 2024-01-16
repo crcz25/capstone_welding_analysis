@@ -53,7 +53,7 @@ class PlotControlFrame(ctk.CTkFrame):
             self, text="Import scan", command=self.import_scan
         )
         self.clear_point_of_interest = ctk.CTkButton(
-            self, text="Reset cursors", command=self.reset_cursors_and_plot
+            self, text="Reset plot", command=self.reset_cursors_and_plot
         )
         self.invert_button = ctk.CTkButton(
             self, text="Invert plot", command=self.invert
