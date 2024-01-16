@@ -95,10 +95,10 @@ class PlotFrame(ctk.CTkFrame):
                     self.master.info_frame.textbox_info.delete("1.0", "end")
 
                     # Insert the new text to the textbox
-                    txt = f"""Scan: {self.master.range_file[0].split("/")[-1]} \
-                        \nTime: {self.master.timestamp_data[self.master.current_frame]} \
-                        \nFrame: {self.master.current_frame + 1} \
-                        \nProfile: {int(self.master.plot_control_frame.slider.get()) + 1} \
+                    txt = f"""Scan: {self.master.range_file} \
+                        # \nTime: {self.master.timestamp_data[self.master.current_profile]} \
+                        # \nFrame: {self.master.current_profile + 1} \
+                        \nProfile: {int(self.master.current_profile) + 1} \
                         \nX-Min: {self.x_1.line.get_xdata()[0]} \
                         \nX-Max: {self.x_2.line.get_xdata()[0]} \
                         \nY-Min: {self.y_2.line.get_ydata()[0]} \
@@ -148,7 +148,6 @@ class PlotFrame(ctk.CTkFrame):
         Creates 4 cursors. Calls the PlotCursor class
 
         Args:
-            current_frame: The index of the current frame.
             profile: The index of the current profile.
             data: The data to plot.
         """
@@ -158,20 +157,20 @@ class PlotFrame(ctk.CTkFrame):
         self.x_1 = PlotCursor(self.ax, "x", self.cursor_limits["x_min"], "X - Min")
         self.x_2 = PlotCursor(self.ax, "x", self.cursor_limits["x_max"], "X - Max")
 
-    def reset_cursors(self, current_frame, profile, data, choice):
+    def reset_cursors(self, profile, data, choice):
         """
 
         Resets the cursors to their initial limits.
 
         """
-
+        print(f"Resetting cursors for profile {profile + 1}...")
         try:
             # Check if the cursor limits have change
             self.update_cursor_limits()
             # Update the filter menu to the current choice
             if self.cursor_limits != self.initial_cursor_limits:
                 # Stop the updating of the infobox
-                self.stop_update_info_frame()
+                # self.stop_update_info_frame()
 
                 # Update the cursor limits with the initial limits
                 self.cursor_limits = self.initial_cursor_limits.copy()
@@ -194,10 +193,10 @@ class PlotFrame(ctk.CTkFrame):
                 self.canvas.draw_idle()
 
                 # Reset the figure to the original one
-                self.create_figure(current_frame, profile, data, choice)
+                self.create_figure(profile, data, choice)
 
                 self.master.change_console_text(
-                    f"Plot and cursors reset frame: {current_frame + 1}, and profile, {profile + 1}",
+                    f"Plot and cursors reset frame: profile, {profile + 1}",
                     "INFORMATION",
                 )
             else:
@@ -223,13 +222,12 @@ class PlotFrame(ctk.CTkFrame):
         self.cursor_limits["y_max"] = self.y_1.line.get_ydata()[0]
         self.cursor_limits["y_min"] = self.y_2.line.get_ydata()[0]
 
-    def create_figure(self, current_frame=0, profile=0, data=None, choice=None):
+    def create_figure(self, profile=0, data=None, choice=None):
         """
 
         Creates a new plot figure.
 
         Args:
-            current_frame: The index of the current frame.
             profile: The index of the current profile.
             data: The data to plot.
             choice: Filter type
@@ -240,57 +238,37 @@ class PlotFrame(ctk.CTkFrame):
         self.ax.clear()
 
         # Update cursor limits, create them and start the info_frame thread
-        self.update_cursor_limits()
         self.create_cursors()
-        self.start_update_info_frame()
+        self.update_cursor_limits()
+        # self.start_update_info_frame()
 
         # Depending on the choice plot differently
-        if choice is None or choice == "No Filter":
-            section = data[current_frame, profile, :]
+        section = data[profile, :]
+        self.ax.plot(section)
+        plot_title = f"Profile {profile + 1}, Filter {choice}"
 
-            # Invert plot if flag is set from the button
-            if self.invert_plot:
-                # Invert the data
-                inverted_section = -section
-                # Move the inverted data back to zero
-                min_value = np.min(inverted_section)
-                shifted_inverted_section = inverted_section - min_value
-                self.ax.plot(shifted_inverted_section)
-            else:
-                self.ax.plot(section)
-
-            # Set the axes limits based on cursor positions
-            self.set_axes_limits()
-            plot_title = f"Frame {current_frame + 1}, Profile {profile + 1}"
-        else:
-            section = data
-            self.ax.plot(section)
-
-            # Set the axes limits based on cursor positions
-            self.set_axes_limits()
-            plot_title = (
-                f"Frame {current_frame + 1}, Profile {profile + 1}, Filter {choice}"
-            )
+        # Set the axes limits based on cursor positions
+        self.set_axes_limits()
 
         # Add guide lines to the plot
-        self.add_guides(current_frame, profile, data)
+        self.add_guides(profile, data)
         # Set the plot title
         self.ax.set_title(plot_title)
         # Update the plot window
         self.update_window()
 
-    def add_guides(self, current_frame=0, profile=0, data=None):
+    def add_guides(self, profile=0, data=None):
         """
         Adds guide lines to the figure.
 
         Args:
-            current_frame: The index of the current frame.
+            current_profile: The index of the current frame.
             profile: The index of the current profile.
             data: The data to plot.
         """
 
         # Get the section to plot
-        section = data[current_frame, profile, :]
+        section = data[profile, :]
 
         # Weld width lines
 
@@ -426,62 +404,6 @@ class PlotFrame(ctk.CTkFrame):
         # Update the frame
         super().update()
 
-    def create_line_plot_figure(
-        self, current_frame=0, profile=0, data=None, choice=None
-    ):
-        """
-
-        Creates a new plot figure.
-
-        Args:
-            current_frame: The index of the current frame.
-            profile: The index of the current profile.
-            data: The data to plot.
-            choice: Filter type
-
-        """
-
-        # Clear the previous plot
-        self.ax.clear()
-
-        # Update cursor limits, create them and start the info_frame thread
-        self.update_cursor_limits()
-        self.create_cursors()
-        self.start_update_info_frame()
-
-        # Depending on the choice plot differently
-        if choice is None or choice == "No Filter":
-            section = data[current_frame, profile, :]
-
-            # Invert plot if flag is set from the button
-            if self.invert_plot:
-                # Invert the data
-                inverted_section = -section
-                # Move the inverted data back to zero
-                min_value = np.min(inverted_section)
-                shifted_inverted_section = inverted_section - min_value
-                self.ax.plot(shifted_inverted_section)
-            else:
-                self.ax.plot(section)
-
-            # Set the axes limits based on cursor positions
-            self.set_axes_limits()
-            plot_title = f"Frame {current_frame + 1}, Profile {profile + 1}"
-        else:
-            section = data
-            self.ax.plot(section)
-
-            # Set the axes limits based on cursor positions
-            self.set_axes_limits()
-            plot_title = (
-                f"Frame {current_frame + 1}, Profile {profile + 1}, Filter {choice}"
-            )
-
-        # Set the plot title
-        self.ax.set_title(plot_title)
-        # Update the plot window
-        self.update_window()
-
     def update_window(self):
         """
 
@@ -496,73 +418,65 @@ class PlotFrame(ctk.CTkFrame):
         # Update the frame
         super().update()
 
-    def update_surface(self, current_frame=0, profile=0, data=None):
+    def apply_filter(self, data=None, choice=None):
+        print(f"Applying filter {choice}...")
+        # Get the section to plot
+        section = data
+        # Invert the plot if the flag is set
+        if self.invert_plot:
+            inverted_section = -section
+            # Move the inverted data back to zero
+            min_value = np.min(inverted_section)
+            section = inverted_section - min_value
+
+        # Depending on the choice filter differently
+        if choice != None or choice != "No Filter":
+            section = self.master.plot_control_frame.interpolate_and_filter(
+                section, choice
+            )
+
+        return section
+
+    def update_surface(self, profile=0, data=None, choice=None):
         """
 
         Updates the plot surface.
 
         Args:
-            current_frame: The index of the current frame.
+            current_profile: The index of the current frame.
             profile: The index of the current profile.
             data: The data to plot.
 
         """
-
+        print(f"\nUpdating plot surface for profile {profile}...")
+        data = self.master.range_data
         # Get the choice from the control frame
-        choice = self.master.plot_control_frame.choice
-
-        # Get the first color in the default color cycle (basically keeps the color always the default blue)
+        print(f"Choice: {choice}")
+        # Apply the filter
+        section = self.apply_filter(data[profile, :], choice)
+        # Recreate the figure
+        # Default color
         default_color = plt.rcParams["axes.prop_cycle"].by_key()["color"][0]
-
-        # Remove the old plot line without clearing the axes
-        for line in self.ax.lines:
-            if line.get_label() == "_line0" or line.get_label().startswith("_child"):
-                line.remove()
-
-        # Remove the cursor lines from the plot
+        # Clean the plot
+        self.ax.clear()
+        # Remove and re-add the cursors to the plot
         for cursor in [self.y_1, self.y_2, self.x_1, self.x_2]:
             if cursor.line is not None:
                 cursor.line.remove()
-
-        # Depending on the choice plot differently
-        if choice is None or choice == "No Filter":
-            plot_title = f"Frame {current_frame + 1}, Profile {profile + 1}"
-            section = data[current_frame, profile, :]
-            if self.invert_plot:
-                inverted_section = -section
-                # Move the inverted data back to zero
-                min_value = np.min(inverted_section)
-                shifted_section = inverted_section - min_value
-                self.ax.plot(shifted_section, label="_line0", color=default_color)
-            else:
-                self.ax.plot(section, label="_line0", color=default_color)
-        else:
-            section = data[current_frame, profile, :]
-            data_filtered_smoothed = (
-                self.master.plot_control_frame.interpolate_and_filter(section, choice)
-            )
-            plot_title = (
-                f"Frame {current_frame + 1}, Profile {profile + 1}, Filter {choice}"
-            )
-            self.ax.plot(data_filtered_smoothed, label="_line0", color=default_color)
-
+                cursor.line = None
+        # Create the cursors
+        self.create_cursors()
         # Update cursor limits
         self.update_cursor_limits()
-
-        # Add the cursor lines back to the plot
-        for cursor in [self.y_1, self.y_2, self.x_1, self.x_2]:
-            if cursor.line is not None:
-                self.ax.add_line(cursor.line)
-
-        # Set the slider position to the current profile
-        self.master.plot_control_frame.slider.set(profile)
-
-        # Set the plot title
+        # Set the axes limits based on cursor positions
+        self.set_axes_limits()
+        # Plot the data
+        self.ax.plot(section, color=default_color)
+        # Add guide lines to the plot
+        self.add_guides(profile, data)
+        # Set the title of the plot
+        plot_title = f"Profile {profile + 1}, Filter {choice}"
         self.ax.set_title(plot_title)
-
-        # Be sure that the current filter is applied and the data passes to master
-        self.master.plot_control_frame.filter_menu(choice)
-
         # Redraw the canvas
         self.canvas.draw_idle()
         # Update the plot window

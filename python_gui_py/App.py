@@ -1,3 +1,6 @@
+import sys
+from pathlib import Path
+
 import customtkinter as ctk
 import numpy as np
 import rclpy
@@ -50,21 +53,23 @@ class App(ctk.CTk):
         self.scanning_in_progress = False
 
         # Import files
-        self.files = None
+        self.directory = None
         self.range_file = None
         self.timestamp_file = None
         self.range_data = np.array([])
         self.timestamp_data = np.array([])
 
         # Visualization
-        self.current_frame = 0
-        self.max_frames = 0
+        self.current_profile = 0
+        self.max_profiles = 0
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def change_appearance_mode_event(self, new_appearance_mode: str):
         ctk.set_appearance_mode(new_appearance_mode)
-        self.show_default_frames() 
-        self.change_console_text(self) # Make sure that text colors change when theme is changed
+        self.show_default_frames()
+        self.change_console_text(
+            self
+        )  # Make sure that text colors change when theme is changed
 
     def change_scaling_event(self, new_scaling: str):
         new_scaling_float = int(new_scaling.replace("%", "")) / 100
@@ -84,39 +89,43 @@ class App(ctk.CTk):
             self.stop_scan()
 
         button.configure(text=new_state)
-    
+
     def change_console_text(self, text, tags=None):
         """
-            Function to log text to the UI console.
+        Function to log text to the UI console.
 
-            Parameters:
-            - text (text to be shown).
-            - tag (INFO: white, ERROR: red, SUCCESS: green)
+        Parameters:
+        - text (text to be shown).
+        - tag (INFO: white, ERROR: red, SUCCESS: green)
 
         """
-        print(text) # Kept this to print to terminal
+        print(text)  # Kept this to print to terminal
 
         ap_mode = ctk.get_appearance_mode()
 
         # In light mode white color is not visible in the console
         # Create tags
         if ap_mode == "Dark":
-            self.plot_control_frame.console_entry.tag_config("INFORMATION", foreground="white")
+            self.plot_control_frame.console_entry.tag_config(
+                "INFORMATION", foreground="white"
+            )
         else:
-            self.plot_control_frame.console_entry.tag_config("INFORMATION", foreground="black")
-
+            self.plot_control_frame.console_entry.tag_config(
+                "INFORMATION", foreground="black"
+            )
 
         self.plot_control_frame.console_entry.tag_config("ERROR", foreground="red")
         self.plot_control_frame.console_entry.tag_config("SUCCESS", foreground="green")
-        
+
         # Insert colored text to console
         self.plot_control_frame.console_entry.configure(state=ctk.NORMAL)
-        self.plot_control_frame.console_entry.insert(ctk.END, tags + ": " + text + "\n", tags)
+        self.plot_control_frame.console_entry.insert(
+            ctk.END, tags + ": " + text + "\n", tags
+        )
         self.plot_control_frame.console_entry.configure(state=ctk.DISABLED)
 
         # Keep focus on the end line
         self.plot_control_frame.console_entry.see("end")
-    
 
     def menu_button(self, frame_type):
         if frame_type == "home":
@@ -141,8 +150,8 @@ class App(ctk.CTk):
         self.timestamp_file = None
         self.range_data = np.array([])
         self.timestamp_data = np.array([])
-        self.current_frame = 0
-        self.max_frames = 0
+        self.current_profile = 0
+        self.max_profiles = 0
         self.plot_control_frame.slider.set(0)
         self.plot_frame.clean_plot()
         # self.update_info_frame()
@@ -152,50 +161,86 @@ class App(ctk.CTk):
         if self.range_file is not None and self.timestamp_file is not None:
             self.reset_imported_files()
 
-        # Ask the user for the files to import timestamps and ranges (.csv and .npy)
-        self.files = filedialog.askopenfilenames(
-            title="Select files to import",
-            filetypes=(
-                ("all files", "*.*"),
-                ("CSV files", "*.csv"),
-                ("Numpy files", "*.npy"),
-            ),
+        # Ask the user for the directory to import timestamps and ranges (.csv and .npy)
+        self.directory = filedialog.askdirectory(
+            title="Select directory to import",
+            initialdir=f"{sys.path[0]}",
         )
-        # Check if the user selected files
-        if len(self.files) == 0:
-            self.change_console_text("No files selected", "ERROR")
+        # Check if the user selected a directory
+        if len(self.directory) == 0:
+            self.change_console_text("No directory selected", "ERROR")
             return
+        # Convert to absolute path
+        self.directory = Path(self.directory).resolve()
 
         # If there is a scan already imported, replace it with the new one and clean the plot frame
         if self.range_file is not None and self.timestamp_file is not None:
             self.reset_imported_files()
             self.change_console_text("Replacing imported files", "INFORMATION")
 
-        self.change_console_text(f"Files to import: {self.files}", "INFORMATION")
-
-        # Separate the files into timestamps and ranges
-        # ranges are the npy files
-        self.range_file = [f for f in self.files if f.endswith(".npy")]
-        # open the npy file
-        self.range_data = np.load(self.range_file[0])
-        self.change_console_text(f"Range file to open: {self.range_file}", 'INFORMATION')
-        self.change_console_text(f"Size of range data: {self.range_data.shape}", 'INFORMATION')
-
+        self.change_console_text(
+            f"Directory to import: {self.directory}", "INFORMATION"
+        )
+        # Get the files in the directory and filter those that are .npy and .csv
+        files = []
+        for ext in ["*.npy", "*.csv"]:
+            files.extend(self.directory.glob(ext))
+        # Check that there are files in the directory
+        if len(files) == 0:
+            self.change_console_text("No files found, check the directory", "ERROR")
+            return
+        elif len(files) == 1:
+            self.change_console_text(
+                "Only one file found, check the directory", "ERROR"
+            )
+            return
+        elif len(files) >= 2:
+            # Print the files in the directory
+            self.change_console_text(f"Files in directory: {files}", "INFORMATION")
+            for f in files:
+                if f.suffix == ".npy":
+                    self.range_file = f
+                elif f.suffix == ".csv":
+                    self.timestamp_file = f
+        # Open the npy file
+        self.range_data = np.load(self.range_file)
+        self.change_console_text(
+            f"Range file to open: {self.range_file}", "INFORMATION"
+        )
+        self.change_console_text(
+            f"Size of range data: {self.range_data.shape}", "INFORMATION"
+        )
+        # Make sure there are only two dimensions in the range data, if not, reshape it
+        if len(self.range_data.shape) > 2:
+            self.change_console_text(f"Reshaping range data", "INFORMATION")
+            total_profiles = self.range_data.shape[0] * self.range_data.shape[1]
+            self.range_data = self.range_data.reshape(
+                total_profiles, self.range_data.shape[2]
+            )
+        # Set the current frame to 0
+        self.current_profile = 0
         # Set the max frames
-        self.max_frames = self.range_data.shape[0] - 1
+        self.max_profiles = self.range_data.shape[0] - 1
         # Set the slider to the max number of scans
-        self.plot_control_frame.slider.configure(to=self.range_data.shape[1] - 1)
+        # Calculate number of steps in which the slider can be positioned (one step per profile)
+        self.plot_control_frame.slider.configure(
+            to=self.max_profiles,
+            number_of_steps=self.max_profiles,
+        )
 
-        # timestamps are the csv files
-        self.timestamp_file = [f for f in self.files if f.endswith(".csv")]
         # open the csv file
-        self.timestamp_data = np.genfromtxt(self.timestamp_file[0], delimiter=",")
-        self.change_console_text(f"Timestamp file to open: {self.timestamp_file}", 'INFORMATION')
-        self.change_console_text(f"Size of timestamp data: {self.timestamp_data.shape}", 'INFORMATION')
+        self.timestamp_data = np.genfromtxt(self.timestamp_file, delimiter=",")
+        self.change_console_text(
+            f"Timestamp file to open: {self.timestamp_file}", "INFORMATION"
+        )
+        self.change_console_text(
+            f"Size of timestamp data: {self.timestamp_data.shape}", "INFORMATION"
+        )
 
         # Update the plot
         self.plot_frame.create_figure(
-            current_frame=self.current_frame, profile=0, data=self.range_data)
+            profile=self.current_profile, data=self.range_data
+        )
 
     def update_info_frame(self):
         # Check if the data is loaded
@@ -205,34 +250,41 @@ class App(ctk.CTk):
             # Delete the current text
             self.info_frame.textbox_info.delete("1.0", "end")
             # Insert the new text
-            txt = f"""Scan: {self.range_file[0].split("/")[-1]} \
-                \nTime: {self.timestamp_data[self.current_frame]} \
-                \nFrame: {self.current_frame + 1} \
-                \nProfile: {int(self.plot_control_frame.slider.get()) + 1}"""
+            txt = f"""Scan: {self.range_file} \
+                \nTime: {self.timestamp_data[self.current_profile]} \
+                \nProfile: {self.current_profile + 1}"""
             self.info_frame.textbox_info.insert("0.0", txt)
             # Disable the textbox
             self.info_frame.textbox_info.configure(state="disabled")
         else:
-            self.change_console_text("Data is not loaded", 'ERROR')
+            self.change_console_text("Data is not loaded", "ERROR")
 
     def change_plot(self, change, profile=0):
         # Check if the data is loaded
-        if self.range_file is not None and self.timestamp_file is not None:
-            print(f"Current frame: {self.current_frame}, Max frames: {self.max_frames}")
-            print(f"Change: {change}")
-            self.current_frame += change
+        if self.range_data.size > 0 and self.timestamp_data.size > 0:
+            print("Current profile: ", self.current_profile)
+            self.current_profile += change
+            print("new profile: ", self.current_profile)
             # Check if the frame is out of bounds
-            if self.current_frame < 0:
-                self.current_frame = 0
-            elif self.current_frame > self.max_frames:
-                self.current_frame = self.max_frames
-            print(f"New frame: {self.current_frame}")
+            if self.current_profile < 0:
+                self.current_profile = 0
+            elif self.current_profile > self.max_profiles:
+                self.current_profile = self.max_profiles
+            # Check if the profile is out of bounds
+            if profile < 0:
+                profile = 0
+            elif profile > self.max_profiles:
+                profile = self.max_profiles
             # Update the info frame textboxes
             # self.update_info_frame()
+            # Update the plot
             self.plot_frame.update_surface(
-                current_frame=self.current_frame, profile=profile, data=self.range_data)
+                profile=profile,
+                data=self.range_data,
+                choice=self.plot_control_frame.choice,
+            )
         else:
-            self.change_console_text("Data is not loaded", 'ERROR')
+            self.change_console_text("Data is not loaded", "ERROR")
 
     def call_scan(self):
         self.plot_control_frame.take_stop_scan()
@@ -242,9 +294,9 @@ class App(ctk.CTk):
             self.scanning_in_progress = True
             self.ros_node_thread = ROSNodeThread()
             self.ros_node_thread.start()
-            self.change_console_text("Scan started", 'INFORMATION')
+            self.change_console_text("Scan started", "INFORMATION")
         else:
-            self.change_console_text("Scan did not start", 'INFORMATION')
+            self.change_console_text("Scan did not start", "INFORMATION")
 
     def stop_scan(self):
         if self.scanning_in_progress:
@@ -252,11 +304,11 @@ class App(ctk.CTk):
             self.scanning_in_progress = False
             self.ros_node_thread.stop_event.set()
             self.ros_node_thread.join()
-            self.change_console_text("Scan stopped", 'INFORMATION')
+            self.change_console_text("Scan stopped", "INFORMATION")
             ## Save the data ##
             # Ask the user where to save the data
             self.csv_file_path = filedialog.askdirectory()
-            self.change_console_text(f"Saving data to {self.csv_file_path}", 'SUCCESS')
+            self.change_console_text(f"Saving data to {self.csv_file_path}", "SUCCESS")
             self.ros_node_thread.save_data(self.csv_file_path)
 
 
