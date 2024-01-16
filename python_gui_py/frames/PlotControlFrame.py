@@ -166,12 +166,10 @@ class PlotControlFrame(ctk.CTkFrame):
 
         # Apply filters
         if choice == "Gaussian":
-            print("Calling gaussian filter")
             data_filtered_smoothed = gaussian_filter(
                 data_filtered, sigma=10, mode="nearest"
             )
         elif choice == "Median":
-            print("Calling median filter")
             data_filtered_smoothed = median_filter(
                 data_filtered, size=10, mode="nearest"
             )
@@ -187,9 +185,6 @@ class PlotControlFrame(ctk.CTkFrame):
         Args:
             choice: filter type.
         """
-        print()
-        print("Filter menu")
-        print("Choice: ", choice)
         # Set the dropdown menu to the selected choice
         self.choice = choice
         self.master.plot_frame.update_surface(
@@ -201,7 +196,6 @@ class PlotControlFrame(ctk.CTkFrame):
         Calls plot frame reset_cursors()
 
         """
-        print("Reset cursors")
         # try:
         if self.choice == "No filter" or self.choice is None:
             self.master.plot_frame.reset_cursors(

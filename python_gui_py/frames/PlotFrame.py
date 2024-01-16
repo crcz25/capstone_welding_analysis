@@ -163,7 +163,6 @@ class PlotFrame(ctk.CTkFrame):
         Resets the cursors to their initial limits.
 
         """
-        print(f"Resetting cursors for profile {profile + 1}...")
         try:
             # Check if the cursor limits have change
             self.update_cursor_limits()
@@ -375,11 +374,14 @@ class PlotFrame(ctk.CTkFrame):
         )
 
         # Print the information
-        print(
-            f"The weld starts at x = {weld_start:.2f} and ends at x = {weld_end:.2f}."
+        txt = (
+            f"\nThe weld starts at x = {weld_start:.2f} and ends at x = {weld_end:.2f}."
         )
-        print(f"The weld starts at z = {weld_bot:.2f} and ends at z = {weld_top:.2f}.")
-        print(f"The weld angle is alpha = {angle_deg:.2f} degrees.")
+        txt += (
+            f"\nThe weld starts at z = {weld_bot:.2f} and ends at z = {weld_top:.2f}."
+        )
+        txt += f"\nThe weld angle is alpha = {angle_deg:.2f} degrees.\n"
+        self.master.change_console_text(txt, "INFORMATION")
 
     def set_axes_limits(self):
         """
@@ -419,12 +421,10 @@ class PlotFrame(ctk.CTkFrame):
         super().update()
 
     def apply_filter(self, data=None, choice=None):
-        print(f"Applying filter {choice}...")
         # Get the section to plot
         section = data
         # Invert the plot if the flag is set
         if self.invert_plot:
-            print("Inverting plot...")
             inverted_section = -section
             # Move the inverted data back to zero
             min_value = np.min(inverted_section)
@@ -432,7 +432,6 @@ class PlotFrame(ctk.CTkFrame):
 
         # Depending on the choice filter differently
         if choice != None or choice != "No Filter":
-            print(f"Applying filter {choice}...")
             section = self.master.plot_control_frame.interpolate_and_filter(
                 section, choice
             )
@@ -450,10 +449,7 @@ class PlotFrame(ctk.CTkFrame):
             data: The data to plot.
 
         """
-        print(f"\nUpdating plot surface for profile {profile}...")
         data = self.master.range_data
-        # Get the choice from the control frame
-        print(f"Choice: {choice}")
         # Apply the filter
         section = self.apply_filter(data[profile, :], choice)
         # Recreate the figure

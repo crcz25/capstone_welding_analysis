@@ -79,13 +79,12 @@ class App(ctk.CTk):
     def change_button_text(self, button, text_1, text_2):
         current_state = button.cget("text")
         new_state = text_2 if current_state == text_1 else text_1
-        print(f"Changing button text from {current_state} to {new_state}")
         # Check if it is time to start or stop the scan
         if current_state == "Take scan":
-            print("Starting scan")
+            self.change_console_text("Taking scan", "INFORMATION")
             self.start_scan()
         elif current_state == "Stop scan":
-            print("Stopping scan")
+            self.change_console_text("Stopping scan", "INFORMATION")
             self.stop_scan()
 
         button.configure(text=new_state)
@@ -267,7 +266,7 @@ class App(ctk.CTk):
                 filename,
                 tstamp,
                 profile,
-                self.max_profiles,
+                self.max_profiles + 1,
                 x_min,
                 x_max,
                 y_min,
