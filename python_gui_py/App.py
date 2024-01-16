@@ -255,11 +255,6 @@ class App(ctk.CTk):
             filename = self.range_file.name
             tstamp = "N/A"
             if self.current_profile < len(self.timestamp_data):
-                print(
-                    f"len(self.timestamp_data): {len(self.timestamp_data)}",
-                    "vs",
-                    f"self.current_profile: {self.current_profile}",
-                )
                 tstamp = self.timestamp_data[self.current_profile]
             profile = self.current_profile + 1
             x_min = self.plot_frame.x_1.line.get_xdata()[0]
@@ -289,9 +284,7 @@ class App(ctk.CTk):
     def change_plot(self, change, profile=0):
         # Check if the data is loaded
         if self.range_data.size > 0 and self.timestamp_data.size > 0:
-            print("Current profile: ", self.current_profile)
             self.current_profile += change
-            print("new profile: ", self.current_profile)
             # Check if the frame is out of bounds
             if self.current_profile < 0:
                 self.current_profile = 0

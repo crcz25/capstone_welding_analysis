@@ -121,9 +121,13 @@ class PlotControlFrame(ctk.CTkFrame):
 
     def previous_plot(self):
         self.master.change_plot(change=-1, profile=self.master.current_profile - 1)
+        # Set the slider to the current profile
+        self.slider_value.set(self.master.current_profile)
 
     def next_plot(self):
         self.master.change_plot(change=1, profile=self.master.current_profile + 1)
+        # Set the slider to the current profile
+        self.slider_value.set(self.master.current_profile)
 
     def import_scan(self):
         self.master.import_files()
