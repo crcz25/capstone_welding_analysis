@@ -154,7 +154,7 @@ class App(ctk.CTk):
         self.max_profiles = 0
         self.plot_control_frame.slider.set(0)
         self.plot_frame.clean_plot()
-        # self.update_info_frame()
+        self.update_info_frame()
 
     def import_files(self):
         # If there is a scan already imported, replace it with the new one and clean the plot frame
@@ -241,6 +241,8 @@ class App(ctk.CTk):
         self.plot_frame.create_figure(
             profile=self.current_profile, data=self.range_data
         )
+        # Update the info frame textboxes
+        self.update_info_frame()
 
     def update_info_frame(self):
         # Check if the data is loaded
@@ -250,10 +252,35 @@ class App(ctk.CTk):
             # Delete the current text
             self.info_frame.textbox_info.delete("1.0", "end")
             # Insert the new text
-            txt = f"""Scan: {self.range_file} \
-                \nTime: {self.timestamp_data[self.current_profile]} \
-                \nProfile: {self.current_profile + 1}"""
-            self.info_frame.textbox_info.insert("0.0", txt)
+            filename = self.range_file.name
+            tstamp = "N/A"
+            if self.current_profile < len(self.timestamp_data):
+                print(
+                    f"len(self.timestamp_data): {len(self.timestamp_data)}",
+                    "vs",
+                    f"self.current_profile: {self.current_profile}",
+                )
+                tstamp = self.timestamp_data[self.current_profile]
+            profile = self.current_profile + 1
+            x_min = self.plot_frame.x_1.line.get_xdata()[0]
+            x_max = self.plot_frame.x_1.line.get_xdata()[1]
+            y_min = self.plot_frame.y_1.line.get_ydata()[0]
+            y_max = self.plot_frame.y_1.line.get_ydata()[1]
+            inverted = self.plot_frame.invert_plot
+            curr_filter = self.plot_control_frame.choice
+            template = "Scan: {}\nTime: {}\nProfile: {}/{}\nX-Min: {}\nX-Max: {}\nY-Min: {}\nY-Max: {}\nInverted: {}\nFilter: {}".format(
+                filename,
+                tstamp,
+                profile,
+                self.max_profiles,
+                x_min,
+                x_max,
+                y_min,
+                y_max,
+                inverted,
+                curr_filter,
+            )
+            self.info_frame.textbox_info.insert("0.0", template)
             # Disable the textbox
             self.info_frame.textbox_info.configure(state="disabled")
         else:
@@ -276,7 +303,7 @@ class App(ctk.CTk):
             elif profile > self.max_profiles:
                 profile = self.max_profiles
             # Update the info frame textboxes
-            # self.update_info_frame()
+            self.update_info_frame()
             # Update the plot
             self.plot_frame.update_surface(
                 profile=profile,
