@@ -1,3 +1,5 @@
+import threading
+
 import matplotlib.pyplot as plt
 import numpy as np
 import rclpy
@@ -16,9 +18,12 @@ class MinimalSubscriber(Node):
         # Variable to save the data in npz format
         self.data_npz = []
         # Initialize the matplotlib window
-        self.fig, self.ax = plt.subplots()
-        (self.line,) = self.ax.plot(np.random.randn(1536))
-        plt.show(block=False)
+        # self.fig, self.ax = plt.subplots()
+        # (self.line,) = self.ax.plot(np.random.randn(1536))
+        # plt.show(block=False)
+        # Queue to store the data
+        self.queue = None
+        self.lock = threading.Lock()
 
     def listener_callback(self, msg):
         id = msg.id
@@ -32,29 +37,41 @@ class MinimalSubscriber(Node):
         self.get_logger().info(f"ID: {id}")
         self.get_logger().info(f"height: {height}, width: {width}, step: {step}")
         self.get_logger().info(f"size: {len(data)}")
+
+        with self.lock:
+            self.data_npz.append(data)
+
+        # if self.queue is not None:
+        #     self.queue.put(data)
         # Normalize the data
-        data = data / np.max(data)
+        # data = data / np.max(data)
 
         # Plot the data as an image
         # fig, ax = plt.subplots()
         # ax.imshow(data, cmap="gray")
         # plt.show()
         # Itereate over the data as each row is one profile
-        for i in range(len(data)):
-            # print(np.array(data[i]))
-            # Update the plot
-            self.line.set_ydata(np.array(data[i]))
-            self.ax.relim()
-            self.ax.autoscale_view()
-            self.ax.draw_artist(self.ax.patch)
-            self.ax.draw_artist(self.line)
-            self.fig.canvas.update()
-            self.fig.canvas.flush_events()
-            # Wait 0.01 seconds to view the plot
-            plt.pause(0.01)
-        # Save the data
-        self.data_npz.append(data)
+        # for i in range(len(data)):
+        #     # print(np.array(data[i]))
+        #     # Update the plot
+        #     self.line.set_ydata(np.array(data[i]))
+        #     self.ax.relim()
+        #     self.ax.autoscale_view()
+        #     self.ax.draw_artist(self.ax.patch)
+        #     self.ax.draw_artist(self.line)
+        #     self.fig.canvas.update()
+        #     self.fig.canvas.flush_events()
+        #     # Wait 0.01 seconds to view the plot
+        #     plt.pause(0.01)
+        # # Save the data
+        # self.data_npz.append(data)
         # print(len(self.data_npz))
+
+    def save_data(self, file_path):
+        with self.lock:
+            if len(self.data_npz) > 0:
+                # Save the data in npz format
+                np.savez_compressed(file_path, self.data_npz)
 
 
 def main(args=None):

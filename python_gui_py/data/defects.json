@@ -1,0 +1,43 @@
+{
+    "weld_defects": [
+      {
+        "type": "Defect type",
+        "defects": [
+          {
+            "name": "Excessive",
+            "defects_found": [
+                {"id": "WELD001-EXC","timestamp": "2023-01-01T12:34:56Z"},
+                {"id": "WELD002-EXC","timestamp": "2023-02-01T12:34:56Z"},
+                {"id": "WELD003-EXC","timestamp": "2023-01-01T12:34:56Z"},
+                {"id": "WELD004-EXC","timestamp": "2023-02-01T12:34:56Z"},
+                {"id": "WELD005-EXC","timestamp": "2023-01-01T12:34:56Z"},
+                {"id": "WELD006-EXC","timestamp": "2023-02-01T12:34:56Z"},
+                {"id": "WELD007-EXC","timestamp": "2023-03-01T12:34:56Z"},
+                {"id": "WELD002-EXC","timestamp": "2023-02-01T12:34:56Z"},
+                {"id": "WELD003-EXC","timestamp": "2023-01-01T12:34:56Z"},
+                {"id": "WELD004-EXC","timestamp": "2023-02-01T12:34:56Z"},
+                {"id": "WELD005-EXC","timestamp": "2023-01-01T12:34:56Z"},
+                {"id": "WELD006-EXC","timestamp": "2023-02-01T12:34:56Z"},
+                {"id": "WELD007-EXC","timestamp": "2023-03-01T12:34:56Z"},
+                {"id": "WELD002-EXC","timestamp": "2023-02-01T12:34:56Z"},
+                {"id": "WELD003-EXC","timestamp": "2023-01-01T12:34:56Z"},
+                {"id": "WELD004-EXC","timestamp": "2023-02-01T12:34:56Z"},
+                {"id": "WELD005-EXC","timestamp": "2023-01-01T12:34:56Z"},
+                {"id": "WELD006-EXC","timestamp": "2023-02-01T12:34:56Z"},
+                {"id": "WELD007-EXC","timestamp": "2023-03-01T12:34:56Z"},
+                {"id": "WELD008-EXC","timestamp": "2023-03-01T12:34:56Z"}
+            ]
+        },
+          {
+            "name": "Sagging",
+            "defects_found": [
+                {"id": "WELD001-SAG","timestamp": "2023-01-01T12:34:56Z"},
+                {"id": "WELD002-SAG","timestamp": "2023-02-01T12:34:56Z"},
+                {"id": "WELD003-SAG","timestamp": "2023-03-01T12:34:56Z"}
+            ]
+          }
+        ]
+      }
+    ]
+}
+    
