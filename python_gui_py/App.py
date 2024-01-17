@@ -236,6 +236,17 @@ class App(ctk.CTk):
             f"Size of timestamp data: {self.timestamp_data.shape}", "INFORMATION"
         )
 
+        # Correct the dimensions of the data based on the pixel size from the settings frame
+        # Get the pixel size from the settings frame
+        pixel_size_x, pixel_size_y, pixel_size_z = self.settings_frame.get_pixel_size()
+        # Apply the pixel size to the range data
+        self.range_data[:, 0] *= float(pixel_size_x)
+        self.range_data[:, 1] *= float(pixel_size_y)
+        self.range_data[:, 2] *= float(pixel_size_z)
+
+        # Extrapolate the nan values in the range data with 0
+        self.range_data = np.nan_to_num(self.range_data, nan=0)
+
         # Update the plot
         self.plot_frame.create_figure(
             profile=self.current_profile, data=self.range_data
