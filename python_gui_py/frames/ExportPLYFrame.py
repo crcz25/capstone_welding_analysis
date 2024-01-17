@@ -10,12 +10,13 @@ class ExportPLYWindow(ctk.CTkToplevel):
 
         # Get the chosen option
         self.choice = choice
-        print(self.choice)
 
         # - Pixel size (x, y, z) The scale/size of the pixel in the x, y and z directions.
-        self.pixel_size_x = ctk.DoubleVar(value=0.1122161041015625)
-        self.pixel_size_y = ctk.DoubleVar(value=1.0)
-        self.pixel_size_z = ctk.DoubleVar(value=1.0)
+        # Get the pixel sizes from the settings window and apply them to the export window
+        pixel_size_x, pixel_size_y, pixel_size_z = self.master.settings_frame.get_pixel_size()
+        self.pixel_size_x = ctk.DoubleVar(value=pixel_size_x)
+        self.pixel_size_y = ctk.DoubleVar(value=pixel_size_y)
+        self.pixel_size_z = ctk.DoubleVar(value=pixel_size_z)
         # - File Path: Dialog to select the path and name of the PLY file.
         # - Export and Cancel buttons
 
@@ -140,7 +141,6 @@ class ExportPLYWindow(ctk.CTkToplevel):
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
     def browse_file_path(self):
-        print("Browse file path")
         # Check what option was selected if npy or ply
         if self.choice == ".ply":
             # Ask for the file name to save the point cloud
@@ -178,7 +178,6 @@ class ExportPLYWindow(ctk.CTkToplevel):
         )
 
     def export(self):
-        print("Export")
         # Check if the file name is valid
         if self.file_name is None:
             self.master.change_console_text("Invalid file name", "ERROR")
@@ -224,5 +223,4 @@ class ExportPLYWindow(ctk.CTkToplevel):
     #     print("checkbox toggled, current value:", value)
 
     def cancel(self):
-        print("Cancel")
         self.destroy()
