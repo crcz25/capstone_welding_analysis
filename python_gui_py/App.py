@@ -243,7 +243,7 @@ class App(ctk.CTk):
         # Update the info frame textboxes
         self.update_info_frame()
 
-    def update_info_frame(self):
+    def update_info_frame(self, new_limits=None):
         # Check if the data is loaded
         if self.range_file is not None and self.timestamp_file is not None:
             # Enable the textbox
@@ -256,10 +256,16 @@ class App(ctk.CTk):
             if self.current_profile < len(self.timestamp_data):
                 tstamp = self.timestamp_data[self.current_profile]
             profile = self.current_profile + 1
-            x_min = self.plot_frame.x_1.line.get_xdata()[0]
-            x_max = self.plot_frame.x_1.line.get_xdata()[1]
-            y_min = self.plot_frame.y_1.line.get_ydata()[0]
-            y_max = self.plot_frame.y_1.line.get_ydata()[1]
+            # Get the limits of the cursor
+            x_min = self.plot_frame.cursor_limits["x_min"]
+            x_max = self.plot_frame.cursor_limits["x_max"]
+            y_min = self.plot_frame.cursor_limits["y_min"]
+            y_max = self.plot_frame.cursor_limits["y_max"]
+            if len(self.plot_frame.cursor_limits) > 0 and new_limits is not None:
+                x_min = new_limits[0][0]
+                x_max = new_limits[0][1]
+                y_min = new_limits[1][0]
+                y_max = new_limits[1][1]
             inverted = self.plot_frame.invert_plot
             curr_filter = self.plot_control_frame.choice
             template = "Scan: {}\nTime: {}\nProfile: {}/{}\nX-Min: {}\nX-Max: {}\nY-Min: {}\nY-Max: {}\nInverted: {}\nFilter: {}".format(

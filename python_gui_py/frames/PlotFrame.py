@@ -152,10 +152,18 @@ class PlotFrame(ctk.CTkFrame):
             data: The data to plot.
         """
         # Initialize cursors with the stored initial limits
-        self.y_1 = PlotCursor(self.ax, "y", self.cursor_limits["y_max"], "Y - Max")
-        self.y_2 = PlotCursor(self.ax, "y", self.cursor_limits["y_min"], "Y - Min")
-        self.x_1 = PlotCursor(self.ax, "x", self.cursor_limits["x_min"], "X - Min")
-        self.x_2 = PlotCursor(self.ax, "x", self.cursor_limits["x_max"], "X - Max")
+        self.y_1 = PlotCursor(
+            self.master, self.ax, "y", self.cursor_limits["y_max"], "Y - Max"
+        )
+        self.y_2 = PlotCursor(
+            self.master, self.ax, "y", self.cursor_limits["y_min"], "Y - Min"
+        )
+        self.x_1 = PlotCursor(
+            self.master, self.ax, "x", self.cursor_limits["x_min"], "X - Min"
+        )
+        self.x_2 = PlotCursor(
+            self.master, self.ax, "x", self.cursor_limits["x_max"], "X - Max"
+        )
 
     def reset_cursors(self, profile, data, choice):
         """
@@ -468,10 +476,10 @@ class PlotFrame(ctk.CTkFrame):
                 cursor.line.remove()
                 cursor.line = None
         # Crete the cursors in their previous positions
-        self.y_1 = PlotCursor(self.ax, "y", y_1_pos, "Y - Max")
-        self.y_2 = PlotCursor(self.ax, "y", y_2_pos, "Y - Min")
-        self.x_1 = PlotCursor(self.ax, "x", x_1_pos, "X - Min")
-        self.x_2 = PlotCursor(self.ax, "x", x_2_pos, "X - Max")
+        self.y_1 = PlotCursor(self.master, self.ax, "y", y_1_pos, "Y - Max")
+        self.y_2 = PlotCursor(self.master, self.ax, "y", y_2_pos, "Y - Min")
+        self.x_1 = PlotCursor(self.master, self.ax, "x", x_1_pos, "X - Min")
+        self.x_2 = PlotCursor(self.master, self.ax, "x", x_2_pos, "X - Max")
         # Create the cursors
         # self.create_cursors()
         # Update cursor limits

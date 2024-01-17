@@ -1,9 +1,24 @@
-import matplotlib.pyplot as plt
+import customtkinter as ctk
 import matplotlib.lines as lines
+import matplotlib.pyplot as plt
+
 
 # --------------------------------------------------------CURSORS--------------------------------------------------------#
-class PlotCursor():
-    def __init__(self, ax, axis_name, axis, label, minimum_x=0, minimum_y=0, maximum_x=1600, maximum_y=70):
+class PlotCursor(ctk.CTkFrame):
+    def __init__(
+        self,
+        master,
+        ax,
+        axis_name,
+        axis,
+        label,
+        minimum_x=0,
+        minimum_y=0,
+        maximum_x=1600,
+        maximum_y=70,
+        **kwargs,
+    ):
+        super().__init__(master, bg_color="transparent", **kwargs)
         # Get canvas and assign basic variables
         self.ax = ax
         self.canvas = ax.get_figure().canvas
@@ -21,28 +36,33 @@ class PlotCursor():
             self.y = [self.minimum_y, self.maximum_y]
 
         # Create lines on the plot
-        self.label = (f"{label}")
-        self.line = lines.Line2D(self.x, self.y, picker=10, color="red", linewidth=2, label=label)
+        self.label = f"{label}"
+        self.line = lines.Line2D(
+            self.x, self.y, picker=10, color="red", linewidth=2, label=label
+        )
         self.ax.add_line(self.line)
         self.canvas.draw_idle()
-        self.line_id = self.canvas.mpl_connect('pick_event', self.click_on_line)
+        self.line_id = self.canvas.mpl_connect("pick_event", self.click_on_line)
         self.follower = None
         self.releaser = None
-    
-# --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
+
+    # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def click_on_line(self, event):
         """
 
         Create follower, releaser for the clicked line
-        
+
         """
         if event.artist == self.line:
             print("Selected line:", self.line)
-            self.follower = self.canvas.mpl_connect("motion_notify_event", self.follow_mouse)
-            self.releaser = self.canvas.mpl_connect("button_press_event", self.release_on_click)
+            self.follower = self.canvas.mpl_connect(
+                "motion_notify_event", self.follow_mouse
+            )
+            self.releaser = self.canvas.mpl_connect(
+                "button_press_event", self.release_on_click
+            )
         else:
             self.disconnect_and_redraw()
-
 
     def disconnect_and_redraw(self):
         """
@@ -50,20 +70,18 @@ class PlotCursor():
         Disconnect the line and then update the plot
 
         """
-        if hasattr(self, 'releaser'):
+        if hasattr(self, "releaser"):
             self.canvas.mpl_disconnect(self.releaser)
-        if hasattr(self, 'follower'):
+        if hasattr(self, "follower"):
             self.canvas.mpl_disconnect(self.follower)
 
         self.remove_label()
         self.canvas.draw_idle()
-    
 
     def remove_label(self):
-        if hasattr(self, 'text_label') and self.text_label is not None:
+        if hasattr(self, "text_label") and self.text_label is not None:
             self.text_label.remove()
             self.text_label = None
-
 
     def follow_mouse(self, event):
         """
@@ -71,20 +89,27 @@ class PlotCursor():
         Line follows the mouse position and updates the text label with the current position.
 
         """
-        
+
         # Check if the mouse position is valid
         if event.xdata is None or event.ydata is None:
             return
-  
+
         self.remove_label()
 
         if self.axis_name == "y":
             ydata = event.ydata
-            ydata = max(0, min(ydata, self.maximum_y))  # Ensure ydata stays within plot limits
+            ydata = max(
+                0, min(ydata, self.maximum_y)
+            )  # Ensure ydata stays within plot limits
 
             self.text_label = self.ax.text(
-                self.x[0], ydata, f"{self.line.get_label()} (mm): {ydata:.2f}",
-                color="black", fontsize=8, ha='center', va='center'
+                self.x[0],
+                ydata,
+                f"{self.line.get_label()} (mm): {ydata:.2f}",
+                color="black",
+                fontsize=8,
+                ha="center",
+                va="center",
             )
 
             # Set the line at the new mouse position
@@ -93,11 +118,18 @@ class PlotCursor():
             label_y = ydata  # Updated to use the new mouse position
         else:
             xdata = event.xdata
-            xdata = max(0, min(xdata, self.maximum_x))  # Ensure xdata stays within plot limits
+            xdata = max(
+                0, min(xdata, self.maximum_x)
+            )  # Ensure xdata stays within plot limits
 
             self.text_label = self.ax.text(
-                xdata, self.y[0], f"{self.line.get_label()} (mm): {xdata:.2f}",
-                color="black", fontsize=8, ha='center', va='center'
+                xdata,
+                self.y[0],
+                f"{self.line.get_label()} (mm): {xdata:.2f}",
+                color="black",
+                fontsize=8,
+                ha="center",
+                va="center",
             )
 
             # Set the line at the new mouse position
@@ -110,13 +142,11 @@ class PlotCursor():
         # Update info frame
         self.canvas.draw_idle()
 
-
-
     def release_on_click(self, event):
         """
 
         When released, plot limits are changed and lines are moved to the current mouse position.
-        
+
         """
 
         # Assuming self.line is the line that was clicked on
@@ -141,41 +171,47 @@ class PlotCursor():
             xdata = self.line.get_xdata()
 
             if self.line in self.ax.get_lines():
-
                 # Set X - axis minimum
-                if self.line.get_label() == "X - Min":  # Fourth line is for "x1 minimum"
+                if (
+                    self.line.get_label() == "X - Min"
+                ):  # Fourth line is for "x1 minimum"
                     if self.maximum_x > xdata[0] >= self.minimum_x:
                         self.ax.set_xlim(xdata[0], self.ax.get_xlim()[1])
                     else:
                         self.reset_cursors()
 
                 # Set X - axis maximum
-                elif self.line.get_label() == "X - Max":  # Third line is for "x2 maximum"
+                elif (
+                    self.line.get_label() == "X - Max"
+                ):  # Third line is for "x2 maximum"
                     if self.maximum_x >= xdata[0] > self.minimum_x:
                         self.ax.set_xlim(self.ax.get_xlim()[0], xdata[0])
                     else:
                         self.reset_cursors()
 
         self.disconnect_and_redraw()
-    
+
+        # Update info frame
+        new_limits = [self.ax.get_xlim(), self.ax.get_ylim()]
+        self.master.update_info_frame(new_limits=new_limits)
 
     def reset_cursors(self):
         """
 
         Plot and lines go to their initial positions/values.
-        
+
         """
         # Reset to the initial position
         if self.axis_name == "y":
             y_min, y_max = self.ax.get_ylim()
             self.ax.set_ylim(max(self.minimum_y, y_min), min(self.maximum_y, y_max))
-            
+
             # Update cursor positions
             self.line.set_ydata([y_max, y_max])
         else:
             x_min, x_max = self.ax.get_xlim()
             self.ax.set_xlim(max(self.minimum_x, x_min), min(self.maximum_x, x_max))
-            
+
             # Update cursor positions
             self.line.set_xdata([x_min, x_min])
 
