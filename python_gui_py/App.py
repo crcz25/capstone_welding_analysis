@@ -11,6 +11,7 @@ from frames.NodeThread import ROSNodeThread
 from frames.PlotControlFrame import PlotControlFrame
 from frames.PlotFrame import PlotFrame
 from frames.SettingsFrame import SettingsFrame
+from datetime import datetime
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("dark-blue")
@@ -231,6 +232,10 @@ class App(ctk.CTk):
 
         # open the csv file
         self.timestamp_data = np.genfromtxt(self.timestamp_file, delimiter=",")
+        
+        # Divide the timestamps for each profile
+        self.timestamp_divider()
+
         self.change_console_text(
             f"Timestamp file to open: {self.timestamp_file}", "INFORMATION"
         )
@@ -244,6 +249,28 @@ class App(ctk.CTk):
         )
         # Update the info frame textboxes
         self.update_info_frame()
+    
+    def timestamp_divider(self, profiles=5120):
+        divided_timestamps = []
+
+        if len(self.timestamp_data) > 0:
+            self.profile_times = []
+            # Calculate the time difference between consecutive profiles
+            # For now this only takes the first and last time stamp from the file
+            self.time_difference = (self. timestamp_data[0] - self.timestamp_data[-1]) / (profiles - 1)
+
+            # Divide timestamps
+            for j in range(profiles + 1):
+                timestamp = self.timestamp_data[0] + j * self.time_difference
+                divided_timestamps.append(timestamp)
+
+        # Convert and print times
+        for i in range(len(divided_timestamps)):
+            real_time = datetime.utcfromtimestamp(divided_timestamps[i] / 1e9).strftime("%Y-%m-%d %H:%M:%S")
+            #print(f"Profile {i}: {real_time} - Time Difference: {i * self.time_difference / 1e6:.3f} ms\n")
+            self.real_time_between_profile = (i * self.time_difference / 1e6)
+            self.profile_times.append(self.real_time_between_profile)
+
 
     def update_info_frame(self, new_limits=None):
         # Check if the data is loaded
@@ -254,25 +281,31 @@ class App(ctk.CTk):
             self.info_frame.textbox_info.delete("1.0", "end")
             # Insert the new text
             filename = self.range_file.name
-            tstamp = "N/A"
-            if self.current_profile < len(self.timestamp_data):
-                tstamp = self.timestamp_data[self.current_profile]
+            tstamp = f"{self.profile_times[self.current_profile]} ms"
+
+            if self.current_profile == 0:
+                time_difference = 0
+            else:
+                time_difference = (self.profile_times[self.current_profile] - self.profile_times[self.current_profile - 1])
+
+            tstampdif = f"{time_difference} ms"
             profile = self.current_profile + 1
             # Get the limits of the cursor
-            x_min = self.plot_frame.cursor_limits["x_min"]
-            x_max = self.plot_frame.cursor_limits["x_max"]
-            y_min = self.plot_frame.cursor_limits["y_min"]
-            y_max = self.plot_frame.cursor_limits["y_max"]
+            x_min = f"{self.plot_frame.cursor_limits['x_min']} mm"
+            x_max = f"{self.plot_frame.cursor_limits['x_max']} mm"
+            y_min = f"{self.plot_frame.cursor_limits['y_min']} mm"
+            y_max = f"{self.plot_frame.cursor_limits['y_max']} mm"
             if len(self.plot_frame.cursor_limits) > 0 and new_limits is not None:
-                x_min = new_limits[0][0]
-                x_max = new_limits[0][1]
-                y_min = new_limits[1][0]
-                y_max = new_limits[1][1]
+                x_min = f"{new_limits[0][0]} mm"
+                x_max = f"{new_limits[0][1]} mm"
+                y_min = f"{new_limits[1][0]} mm"
+                y_max = f"{new_limits[1][1]} mm"
             inverted = self.plot_frame.invert_plot
             curr_filter = self.plot_control_frame.choice
-            template = "Scan: {}\nTime: {}\nProfile: {}/{}\nX-Min: {}\nX-Max: {}\nY-Min: {}\nY-Max: {}\nInverted: {}\nFilter: {}".format(
+            template = "Scan: {}\nTime: {}\nTime difference to previous: {}\nProfile: {}/{}\nX-Min: {}\nX-Max: {}\nY-Min: {}\nY-Max: {}\nInverted: {}\nFilter: {}".format(
                 filename,
                 tstamp,
+                tstampdif,
                 profile,
                 self.max_profiles + 1,
                 x_min,

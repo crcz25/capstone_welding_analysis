@@ -301,23 +301,56 @@ class PlotControlFrame(ctk.CTkFrame):
 
         # Ensure that the focus is not on the searchbox
         self.master.focus_set()
-    
+
+    def find_closest_timestamp_index(self, target_timestamp):
+        # Find the closest timestamp index from the times list
+        if self.master.profile_times:
+            closest_index = min(range(len(self.master.profile_times)), key=lambda i: abs(self.master.profile_times[i] - target_timestamp))
+            closest_timestamp = min(self.master.profile_times, key=lambda x: abs(x - target_timestamp))
+            return closest_index, closest_timestamp
+        else:
+            return None
+        
     def search_profile(self):
         # Get the search term from the search box
         search_term = self.searchbox_entry.get("1.0", "end-1c").strip()
         try:
-            # Check if the search term is numeric (profile number)
+            # Check if the search term is numeric int (profile number)
             if search_term.isdigit() and self.master.range_file is not None:
-                # Minus one since the profiles start from 0
                 profile_number = int(search_term) - 1
-                # Searching by profile number --> set the slider and change plot
-                self.slider_value.set(profile_number)
+
+                # Check that the given profile number is in the range of profiles
+                if 0 <= profile_number < self.master.max_profiles + 1:
+                    # Searching by profile number --> set the slider and change plot
+                    self.slider_value.set(profile_number)
+                    self.master.current_profile = self.slider_value.get()
+                    self.master.change_plot(change=0, profile=self.slider_value.get())
+                    self.master.change_console_text(
+                        f"Found profile: {self.slider_value.get() + 1}.", "INFORMATION"
+                    )
+                else:
+                    self.master.change_console_text(
+                        f"Profile number out of range (1 - {self.master.max_profiles + 1} ).", "ERROR"
+                    )
+
+            # Check if the search term is numeric float (ms)   
+            elif search_term.replace('.', '', 1).isdigit() and self.master.range_file is not None:
+                # Check if the search term is a float
+                timestamp = float(search_term)
+                
+                # Find the closest timestamp in the list
+                closest_timestamp_index, closest_timestamp = self.find_closest_timestamp_index(timestamp)
+                self.slider_value.set(closest_timestamp_index)
                 self.master.current_profile = self.slider_value.get()
                 self.master.change_plot(change=0, profile=self.slider_value.get())
+
+                # Display to the user which profile was selected (closest to search)
+                self.master.change_console_text(
+                    f"Found the closest timestamp: {closest_timestamp}, profile: {closest_timestamp_index + 1}.", "INFORMATION"
+                    )
+
             else:
                 self.master.change_console_text(f"Could not find profile or timestamp: {search_term}, try again.", "ERROR")
-            
-                #TODO: when timestamps are implemented, search by timestamps also
 
             # Clear the search box after processing the search
             self.restore_searchbox_text()
