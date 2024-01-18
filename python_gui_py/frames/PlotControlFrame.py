@@ -28,6 +28,32 @@ class PlotControlFrame(ctk.CTkFrame):
         # Default text color
         self.color = "white"
 
+        # Create search box
+        self.searchbox_label= ctk.CTkLabel(
+            self, text="Search"
+        )
+        self.searchbox_label.grid(
+            row=0, columnspan=4, padx=(10, 10), pady=(10, 5), sticky="w")
+
+        self.searchbox_entry = ctk.CTkTextbox(
+            self,height=25, text_color=self.color, activate_scrollbars=False,
+        )
+        self.searchbox_entry.grid(
+            row=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew")
+        
+        # Set initial text to searchbox
+        self.searchbox_entry.insert("0.0","Search by timestamp or profile...")
+
+        # Remove the original text after you click the searchbox
+        self.searchbox_entry.bind("<Button-1>", lambda e: self.on_searchbox_click())
+
+        # Bind the search function to the search box when enter is pressed
+        self.searchbox_entry.bind("<Return>", lambda e: self.search_profile())
+
+        # Bind the function to restore the original text when the entry loses focus
+        self.searchbox_entry.bind("<FocusOut>", lambda e: self.restore_searchbox_text())
+
+
         # Create Slider
         self.slider_value = tkinter.IntVar(master=self.master, value=0)
         self.slider = ctk.CTkSlider(
@@ -38,7 +64,7 @@ class PlotControlFrame(ctk.CTkFrame):
             variable=self.slider_value,
             command=self.slider_event,
         )
-        self.slider.grid(row=0, columnspan=4, padx=(10, 10), pady=(10, 10), sticky="ew")
+        self.slider.grid(row=2, columnspan=4, padx=(10, 10), pady=(5, 5), sticky="ew")
         self.slider.set(0)
 
         # Create main control buttons
@@ -60,14 +86,14 @@ class PlotControlFrame(ctk.CTkFrame):
         )
 
         # Grid buttons
-        self.scan_button.grid(row=1, column=0, padx=10, pady=10, sticky="new")
-        self.previous_button.grid(row=1, column=1, padx=10, pady=10, sticky="new")
-        self.next_button.grid(row=1, column=2, padx=10, pady=10, sticky="new")
-        self.load_button.grid(row=1, column=3, padx=10, pady=10, sticky="new")
+        self.scan_button.grid(row=3, column=0, padx=10, pady=5, sticky="new")
+        self.previous_button.grid(row=3, column=1, padx=10, pady=5, sticky="new")
+        self.next_button.grid(row=3, column=2, padx=10, pady=5, sticky="new")
+        self.load_button.grid(row=3, column=3, padx=10, pady=5, sticky="new")
         self.clear_point_of_interest.grid(
-            row=2, column=2, padx=10, pady=10, sticky="new"
+            row=4, column=2, padx=10, pady=5, sticky="new"
         )
-        self.invert_button.grid(row=2, column=1, padx=10, pady=10, sticky="new")
+        self.invert_button.grid(row=4, column=1, padx=10, pady=5, sticky="new")
 
         # Dropdown menus
         self.filter_menu_dropdown = ctk.CTkOptionMenu(
@@ -76,32 +102,32 @@ class PlotControlFrame(ctk.CTkFrame):
             anchor="center",
             command=self.filter_menu,
         )
-        self.filter_menu_dropdown.grid(row=2, column=0, padx=10, pady=10, sticky="new")
+        self.filter_menu_dropdown.grid(row=4, column=0, padx=10, pady=5, sticky="new")
         self.filter_menu_dropdown.set("No Filter")
 
         self.export_menu_dropdown = ctk.CTkOptionMenu(
             self, values=[".ply", ".npy"], anchor="center", command=self.export_menu
         )
-        self.export_menu_dropdown.grid(row=2, column=3, padx=10, pady=10, sticky="new")
+        self.export_menu_dropdown.grid(row=4, column=3, padx=10, pady=5, sticky="new")
         self.export_menu_dropdown.set("Export")
         self.export_window = None
 
         # Console
         self.console_label = ctk.CTkLabel(self, text="Console")
         self.console_label.grid(
-            row=3, column=0, padx=(20, 10), pady=(10, 10), sticky="w"
+            row=5, column=0, padx=(10, 10), pady=(5, 5), sticky="w"
         )
 
         self.console_entry = ctk.CTkTextbox(
-            self, width=250, height=150, text_color=self.color
+            self, height=150, text_color=self.color
         )
         self.console_entry.grid(
-            row=4,
+            row=6,
             column=0,
             columnspan=4,
             rowspan=4,
             padx=(10, 10),
-            pady=(10, 10),
+            pady=(5, 10),
             sticky="nsew",
         )
 
@@ -262,3 +288,40 @@ class PlotControlFrame(ctk.CTkFrame):
         except Exception as e:
             print("Error exporting")
             print(e)
+
+    def on_searchbox_click(self):
+        # Ensure the entry widget is clicked and delete intial text
+        self.searchbox_entry.focus_set()
+        self.searchbox_entry.delete("1.0", ctk.END)
+
+    def restore_searchbox_text(self):
+        # Insert default text back again
+        self.searchbox_entry.delete("1.0", ctk.END)
+        self.searchbox_entry.insert("0.0", "Search by timestamp or profile...")
+
+        # Ensure that the focus is not on the searchbox
+        self.master.focus_set()
+    
+    def search_profile(self):
+        # Get the search term from the search box
+        search_term = self.searchbox_entry.get("1.0", "end-1c").strip()
+        try:
+            # Check if the search term is numeric (profile number)
+            if search_term.isdigit() and self.master.range_file is not None:
+                # Minus one since the profiles start from 0
+                profile_number = int(search_term) - 1
+                # Searching by profile number --> set the slider and change plot
+                self.slider_value.set(profile_number)
+                self.master.current_profile = self.slider_value.get()
+                self.master.change_plot(change=0, profile=self.slider_value.get())
+            else:
+                self.master.change_console_text(f"Could not find profile or timestamp: {search_term}, try again.", "ERROR")
+            
+                #TODO: when timestamps are implemented, search by timestamps also
+
+            # Clear the search box after processing the search
+            self.restore_searchbox_text()
+
+        except Exception:
+            self.master.change_console_text(f"Data is not loaded", "ERROR")
+

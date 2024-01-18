@@ -57,6 +57,10 @@ class PlotFrame(ctk.CTkFrame):
         self.fig, self.ax = plt.subplots()
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
 
+        # Scale the plot window a little
+        self.master.update()
+        self._set_dimensions(height=self.master.winfo_height() / 2.5)
+
         # Default cursor limits
         self.initial_cursor_limits = {
             "x_min": 0,

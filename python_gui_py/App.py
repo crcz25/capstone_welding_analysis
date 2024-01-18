@@ -105,10 +105,12 @@ class App(ctk.CTk):
         # In light mode white color is not visible in the console
         # Create tags
         if ap_mode == "Dark":
+            self.plot_control_frame.searchbox_entry.configure(text_color="white")
             self.plot_control_frame.console_entry.tag_config(
                 "INFORMATION", foreground="white"
             )
         else:
+            self.plot_control_frame.searchbox_entry.configure(text_color="black")
             self.plot_control_frame.console_entry.tag_config(
                 "INFORMATION", foreground="black"
             )
