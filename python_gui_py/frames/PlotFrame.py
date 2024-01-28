@@ -316,13 +316,29 @@ class PlotFrame(ctk.CTkFrame):
             # Define the arc radius for drawing the angle
             arc_radius = width / 2
 
-            # TODO: Fix the angle drawing when p2[1] < p1[1]
-
             # Define the arc angle
-            if p2[0] < p1[0]:
+            if p2[0] < p1[0] and p2[1] > p1[1]:
                 arc_angle = 180 - angle_deg
-            else:
+            elif p2[0] < p1[0] and p2[1] < p1[1]:
+                arc_angle = 180
+            elif p2[0] > p1[0] and p2[1] < p1[1]:
+                arc_angle = -angle_deg
+            else: # p2[0] > p1[0] and p2[1] > p1[1]:
                 arc_angle = 0
+
+            # Define points for texts
+            if p2[0] < p1[0]:
+                x_left = p2[0]
+                x_right = p1[0]
+            else:
+                x_left = p1[0]
+                x_right = p2[0]
+            if p2[1] < p1[1]:
+                y_upper = p1[1]
+                y_lower = p2[1]
+            else:
+                y_upper = p2[1]
+                y_lower = p1[1]
 
             # Draw the angle
             self.ax.add_patch(
@@ -342,33 +358,33 @@ class PlotFrame(ctk.CTkFrame):
             # Draw the angle value
             self.ax.text(
                 (p1[0] + p2[0]) / 2,
-                p1[1] - 1,
-                f"{angle_deg:.2f} degrees",
+                y_lower - 1,
+                f"a={angle_deg:.2f}°",
                 horizontalalignment="center",
                 color="black",
-                fontsize=12,
+                fontsize=10,
                 zorder=2,
             )
 
             # Draw width value
             self.ax.text(
                 (p1[0] + p2[0]) / 2,
-                p2[1] + 1,
-                f"width = {width:.2f}",
+                y_upper,
+                f"w={width:.2f}",
                 horizontalalignment="center",
                 color="black",
-                fontsize=12,
+                fontsize=10,
                 zorder=2,
             )
 
             # Draw height value
             self.ax.text(
-                p2[0],
+                x_right,
                 (p1[1] + p2[1]) / 2,
-                f"height = {height:.2f}",
+                f"h={height:.2f}",
                 horizontalalignment="center",
                 color="black",
-                fontsize=12,
+                fontsize=10,
                 zorder=2,
             )
 
@@ -390,11 +406,8 @@ class PlotFrame(ctk.CTkFrame):
 
         # Weld width lines
 
-        # Find the indices where the weld is (can be adjusted)
-        z_weld = np.where(
-            (section > np.percentile(section, 5))
-            & (section < np.percentile(section, 100))
-        )[0]
+        # Find the indices where the weld is
+        z_weld = np.where(section > np.percentile(section, 10))[0]
 
         # Find the start and end points of the weld
         weld_start = z_weld[0]

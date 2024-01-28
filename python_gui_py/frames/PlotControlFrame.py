@@ -5,7 +5,6 @@ import numpy as np
 import open3d as o3d
 import pandas as pd
 from scipy.ndimage import gaussian_filter, median_filter, uniform_filter1d
-
 from .ExportPLYFrame import ExportPLYWindow
 
 
@@ -72,7 +71,7 @@ class PlotControlFrame(ctk.CTkFrame):
         # Dropdown menus
         self.filter_menu_dropdown = ctk.CTkOptionMenu(
             self,
-            values=["No Filter", "Gaussian", "Median"],
+            values=["No Filter", "Gaussian", "Median", "Interpolation"],
             anchor="center",
             command=self.filter_menu,
         )
@@ -173,6 +172,15 @@ class PlotControlFrame(ctk.CTkFrame):
             data_filtered_smoothed = median_filter(
                 data_filtered, size=10, mode="nearest"
             )
+        elif choice == "Interpolation":
+            # Find the indices where the weld is
+            if self.master.plot_frame.invert_plot:
+                z_weld = np.where(first_row < np.percentile(first_row, 90))[0]
+            else:
+                z_weld = np.where(first_row > np.percentile(first_row, 10))[0]
+            if z_weld.size == 0:
+                return first_row
+            data_filtered_smoothed = np.interp(np.arange(0, len(first_row)), z_weld, first_row[z_weld])
         else:
             return first_row
 
