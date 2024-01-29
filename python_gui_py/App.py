@@ -81,7 +81,8 @@ class App(ctk.CTk):
         new_state = text_2 if current_state == text_1 else text_1
         # Check if it is time to start or stop the scan
         if current_state == "Take scan":
-            self.change_console_text("Taking scan", "INFORMATION")
+            self.change_console_text("Listening to scan topic /range", "INFORMATION")
+            self.change_console_text("Verify that ros2 node is publishing or the rosbag is playing", "INFORMATION")
             self.start_scan()
         elif current_state == "Stop scan":
             self.change_console_text("Stopping scan", "INFORMATION")
