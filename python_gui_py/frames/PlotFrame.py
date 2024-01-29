@@ -285,108 +285,108 @@ class PlotFrame(ctk.CTkFrame):
         # Append the point to the list
         self.points.append((x, y))
 
-        # Check that list has at least 2 points
-        if len(self.points) < 2:
+        # Check that list has at least 2 points and that all points have a pair
+        if len(self.points) < 2 or len(self.points) % 2 != 0:
             return
+
+        # Get the last two points to draw the newest line
+        p1 = self.points[-2]
+        p2 = self.points[-1]
         
-        # Draw the lines
-        for i in range(1, len(self.points), 2):
+        # Check none values
+        if p1[0] == None or p2[0] == None:
+            return
 
-            # Get the last two points
-            p1 = self.points[i-1]
-            p2 = self.points[i]
-            
-            # Check none values
-            if p1[0] == None or p2[0] == None:
-                continue
+        # Plot a line segment connecting them
+        self.ax.plot([p1[0],p2[0]],
+                [p1[1], p2[1]],
+                color='red',
+                linestyle="-"
+                )
 
-            # Plot a line segment connecting them
-            self.ax.plot([p1[0],p2[0]],
-                    [p1[1], p2[1]],
-                    color='red',
-                    linestyle="-"
-                    )
+        # Calculate the angle of the line
+        width = abs(p1[0] - p2[0])
+        height = abs(p1[1] - p2[1])
+        angle_rad = np.arctan(height / width)  # radians
+        angle_deg = angle_rad * 180 / np.pi  # degrees
 
-            # Calculate the angle of the line
-            width = abs(p1[0] - p2[0])
-            height = abs(p1[1] - p2[1])
-            angle_rad = np.arctan(height / width)  # radians
-            angle_deg = angle_rad * 180 / np.pi  # degrees
-
-            # Define the arc radius for drawing the angle
+        # Define the arc radius for drawing the angle
+        if width < height:
+            arc_radius = height / 2
+        else:
             arc_radius = width / 2
 
-            # Define the arc angle
-            if p2[0] < p1[0] and p2[1] > p1[1]:
-                arc_angle = 180 - angle_deg
-            elif p2[0] < p1[0] and p2[1] < p1[1]:
-                arc_angle = 180
-            elif p2[0] > p1[0] and p2[1] < p1[1]:
-                arc_angle = -angle_deg
-            else: # p2[0] > p1[0] and p2[1] > p1[1]:
-                arc_angle = 0
+        # Define the arc angle
+        if p2[0] < p1[0] and p2[1] > p1[1]:
+            arc_angle = 180 - angle_deg
+        elif p2[0] < p1[0] and p2[1] < p1[1]:
+            arc_angle = 180
+        elif p2[0] > p1[0] and p2[1] < p1[1]:
+            arc_angle = -angle_deg
+        else: # p2[0] > p1[0] and p2[1] > p1[1]:
+            arc_angle = 0
 
-            # Define points for texts
-            if p2[0] < p1[0]:
-                x_left = p2[0]
-                x_right = p1[0]
-            else:
-                x_left = p1[0]
-                x_right = p2[0]
-            if p2[1] < p1[1]:
-                y_upper = p1[1]
-                y_lower = p2[1]
-            else:
-                y_upper = p2[1]
-                y_lower = p1[1]
+        # Define points for texts
+        if p2[0] < p1[0]:
+            x_left = p2[0]
+            x_right = p1[0]
+        else:
+            x_left = p1[0]
+            x_right = p2[0]
+        if p2[1] < p1[1]:
+            y_upper = p1[1]
+            y_lower = p2[1]
+        else:
+            y_upper = p2[1]
+            y_lower = p1[1]
 
-            # Draw the angle
-            self.ax.add_patch(
-                Arc(
-                    p1,
-                    width=2 * arc_radius,
-                    height=2 * arc_radius,
-                    angle=arc_angle,
-                    theta1=0,
-                    theta2=angle_deg,
-                    color="red",
-                    linestyle="--",
-                    zorder=2,
-                )
-            )
-
-            # Draw the angle value
-            self.ax.text(
-                (p1[0] + p2[0]) / 2,
-                y_lower - 1,
-                f"a={angle_deg:.2f}°",
-                horizontalalignment="center",
-                color="black",
-                fontsize=10,
+        # Draw the angle
+        self.ax.add_patch(
+            Arc(
+                p1,
+                width=2 * arc_radius,
+                height=2 * arc_radius,
+                angle=arc_angle,
+                theta1=0,
+                theta2=angle_deg,
+                color="red",
+                linestyle="--",
                 zorder=2,
             )
+        )
 
-            # Draw width value
-            self.ax.text(
-                (p1[0] + p2[0]) / 2,
-                y_upper,
-                f"w={width:.2f}",
-                horizontalalignment="center",
-                color="black",
-                fontsize=10,
-                zorder=2,
-            )
+        # Draw the angle value
+        self.ax.text(
+            (p1[0] + p2[0]) / 2,
+            y_lower - 1,
+            f"a={angle_deg:.2f}°",
+            horizontalalignment="center",
+            color="black",
+            fontsize=10,
+            zorder=2,
+        )
 
-            # Draw height value
-            self.ax.text(
-                x_right,
-                (p1[1] + p2[1]) / 2,
-                f"h={height:.2f}",
-                horizontalalignment="center",
-                color="black",
-                fontsize=10,
-                zorder=2,
-            )
+        # Draw width value
+        self.ax.text(
+            (p1[0] + p2[0]) / 2,
+            y_upper,
+            f"w={width:.2f}",
+            horizontalalignment="center",
+            color="black",
+            fontsize=10,
+            zorder=2,
+        )
+
+        # Draw height value
+        self.ax.text(
+            x_right,
+            (p1[1] + p2[1]) / 2,
+            f"h={height:.2f}",
+            horizontalalignment="center",
+            color="black",
+            fontsize=10,
+            zorder=2,
+        )
 
         # Draw the plot
         self.canvas.draw()
@@ -407,11 +407,11 @@ class PlotFrame(ctk.CTkFrame):
         # Weld width lines
 
         # Find the indices where the weld is
-        z_weld = np.where(section > np.percentile(section, 10))[0]
+        i_weld = np.where(section > np.percentile(section, 10))[0]
 
         # Find the start and end points of the weld
-        weld_start = z_weld[0]
-        weld_end = z_weld[-1]
+        weld_start = i_weld[0]
+        weld_end = i_weld[-1]
 
         # Plot a vertical line at the start and end points of the weld
         self.ax.axvline(x=weld_start, color="red", linestyle="--")
@@ -422,10 +422,10 @@ class PlotFrame(ctk.CTkFrame):
         # Calculate the top and bottom position of the weld
         if self.invert_plot:
             # Inverted
-            weld_top = np.max(section) - np.mean(section[z_weld])
+            weld_top = np.max(section) - np.mean(section[i_weld])
         else:
-            weld_top = np.mean(section[z_weld])
-        weld_bot = np.min(np.delete(section, z_weld))  # surface height
+            weld_top = np.mean(section[i_weld])
+        weld_bot = np.min(np.delete(section, i_weld))  # surface height
 
         # Plot a horizontal line at the top and bottom points of the weld
         self.ax.axhline(y=weld_top, color="red", linestyle="--")
