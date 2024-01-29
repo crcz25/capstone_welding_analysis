@@ -29,6 +29,8 @@ class PlotControlFrame(ctk.CTkFrame):
         self.color = "white"
 
         # Create Slider
+        self.start_position_label = ctk.CTkLabel(self, text="1")
+        self.end_position_label = ctk.CTkLabel(self, text="512")
         self.slider_value = tkinter.IntVar(master=self.master, value=0)
         self.slider = ctk.CTkSlider(
             self,
@@ -38,7 +40,9 @@ class PlotControlFrame(ctk.CTkFrame):
             variable=self.slider_value,
             command=self.slider_event,
         )
-        self.slider.grid(row=0, columnspan=4, padx=(10, 10), pady=(10, 10), sticky="ew")
+        self.start_position_label.grid(row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nse")
+        self.slider.grid(row=0, column=1, columnspan=2, padx=(10, 10), pady=(10, 10), sticky="ew")
+        self.end_position_label.grid(row=0, column=3, padx=(10, 10), pady=(10, 10), sticky="nsw")
         self.slider.set(0)
 
         # Create main control buttons

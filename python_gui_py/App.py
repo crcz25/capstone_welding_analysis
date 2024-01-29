@@ -216,6 +216,7 @@ class App(ctk.CTk):
             self.range_data = self.range_data.reshape(
                 total_profiles, self.range_data.shape[2]
             )
+
         # Set the current frame to 0
         self.current_profile = 0
         # Set the max frames
@@ -251,6 +252,12 @@ class App(ctk.CTk):
         self.plot_frame.create_figure(
             profile=self.current_profile, data=self.range_data
         )
+
+        # Update the max profiles label of the slider
+        self.plot_control_frame.end_position_label.configure(
+            text=f"{self.max_profiles + 1}"
+        )
+
         # Update the info frame textboxes
         self.update_info_frame()
 
