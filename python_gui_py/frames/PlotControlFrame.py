@@ -228,6 +228,11 @@ class PlotControlFrame(ctk.CTkFrame):
                 np.arange(0, ranges.shape[1]) * pixel_size[0],
                 np.arange(0, ranges.shape[0]) * pixel_size[1],
             )
+        else:
+            mesh_x, mesh_y = np.meshgrid(
+                np.arange(0, ranges.shape[1]) * pixel_size[0],
+                np.arange(0, ranges.shape[0]) * pixel_size[1],
+            )
         # Create point cloud array
         xyz = np.zeros((np.size(mesh_x), 3))
         xyz[:, 0] = np.reshape(mesh_x, -1)
