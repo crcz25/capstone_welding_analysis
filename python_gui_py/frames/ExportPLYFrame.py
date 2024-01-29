@@ -99,17 +99,20 @@ class ExportPLYWindow(ctk.CTkToplevel):
         self.file_path_button.grid(
             row=0, column=3, padx=(10, 10), pady=(10, 10), sticky="e"
         )
-        # self.check_var = ctk.StringVar(value="off")
-        # self.check_button = ctk.CTkCheckBox(
-        #     self.file_path_frame,
-        #     text="Export current Time Stamp",
-        #     command=self.checkbox_event,
-        #     variable=self.check_var,
-        #     onvalue="on",
-        #     offvalue="off",
-        # )
+        # Add checkbox to remove outliers from the point cloud if ply was selected
+        # if self.choice == ".ply":
+        #     print("Adding checkbox")
+        #     self.check_var = ctk.StringVar(value="off")
+        #     self.check_button = ctk.CTkCheckBox(
+        #         self.file_path_frame,
+        #         text="Remove Outliers from Point Cloud (only PLY)",
+        #         command=self.checkbox_event,
+        #         variable=self.check_var,
+        #         onvalue="on",
+        #         offvalue="off",
+        #     )
         # self.check_button.grid(
-        #     row=0, column=3, padx=(10, 10), pady=(10, 10), sticky="nsew"
+        #     row=1, column=3, padx=(10, 10), pady=(10, 10), sticky="nsew"
         # )
 
         # Create subframe for export and cancel buttons
@@ -140,6 +143,9 @@ class ExportPLYWindow(ctk.CTkToplevel):
         # Position the buttons to the right of the frame
 
         self.file_name = None
+
+        # Remove outliers from the point cloud
+        # self.remove_outliers = False
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
@@ -203,6 +209,7 @@ class ExportPLYWindow(ctk.CTkToplevel):
                     self.pixel_size_y.get(),
                     self.pixel_size_z.get(),
                 ),
+                remove_outliers=self.remove_outliers,
             )
         elif self.choice == ".npy":
             # Export point cloud
@@ -223,6 +230,10 @@ class ExportPLYWindow(ctk.CTkToplevel):
 
     # def checkbox_event(self, event=None):
     #     value = self.check_var.get()
+    #     if value == "on":
+    #         self.remove_outliers = True
+    #     else:
+    #         self.remove_outliers = False
     #     print("checkbox toggled, current value:", value)
 
     def cancel(self):

@@ -240,12 +240,16 @@ class PlotControlFrame(ctk.CTkFrame):
         xyz[:, 2] = np.reshape(ranges, -1)
         return xyz
 
-    def write_ply(self, file_name, pixel_size=(1.0, 1.0, 1.0)):
+    def write_ply(self, file_name, pixel_size=(1.0, 1.0, 1.0), remove_outliers=False):
         # Create point cloud array
         xyz = self.create_pcd_array(pixel_size)
         # Create point cloud
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(xyz)
+        # Remove outliers
+        # if remove_outliers:
+            # print("Removing outliers")
+            # pcd, _ = pcd.remove_statistical_outlier(nb_neighbors=20, std_ratio=2.0)
         # Write point cloud to file
         o3d.io.write_point_cloud(file_name, pcd)
 
