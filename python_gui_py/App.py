@@ -245,7 +245,7 @@ class App(ctk.CTk):
         self.range_data[:, 2] *= float(pixel_size_z)
 
         # Extrapolate the nan values in the range data with 0
-        self.range_data = np.nan_to_num(self.range_data, nan=0)
+        # self.range_data = np.nan_to_num(self.range_data, nan=0)
 
         # Update the plot
         self.plot_frame.create_figure(

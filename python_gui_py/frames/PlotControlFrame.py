@@ -110,6 +110,13 @@ class PlotControlFrame(ctk.CTkFrame):
         self.invert_plot = False
         self.og_color = self.scan_button.cget("fg_color")
 
+        # Bindings to filter functions
+        self.filter_functions = {
+            "No Filter": lambda row: row,
+            "Gaussian": lambda row: gaussian_filter(row, sigma=1),
+            "Median": lambda row: median_filter(row, size=3),
+        }
+
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def slider_event(self, other=None):
         # Set the slider to the current profile
@@ -140,6 +147,7 @@ class PlotControlFrame(ctk.CTkFrame):
     def invert(self):
         # Change the flag True/False
         self.master.plot_frame.invert_plot ^= True
+        # Update the surface plot
         self.master.plot_frame.update_surface(
             profile=self.master.current_profile, choice=self.choice
         )
@@ -149,34 +157,27 @@ class PlotControlFrame(ctk.CTkFrame):
         else:
             self.invert_button.configure(fg_color=self.og_color, text_color="white")
 
-    def interpolate_and_filter(self, first_row, choice):
+    def interpolate_and_filter(self, row, choice):
         """
         Interpolate and filter.
 
         Args:
             choice: filter type.
-            first_row: first points
+            row: profile to interpolate and filter.
         """
         np.set_printoptions(threshold=np.inf)
-
         # Interpolate missing values
         data_filtered = pd.Series(
-            np.where(first_row == 0, np.nan, first_row)
-        ).interpolate()
+            np.where(row == 0, np.nan, row)
+        ).interpolate().ffill().bfill()
 
-        # Apply filters
-        if choice == "Gaussian":
-            data_filtered_smoothed = gaussian_filter(
-                data_filtered, sigma=10, mode="nearest"
-            )
-        elif choice == "Median":
-            data_filtered_smoothed = median_filter(
-                data_filtered, size=10, mode="nearest"
-            )
-        else:
-            return first_row
+        # Apply filters based on choice
+        filter_function = self.filter_functions.get(choice)
 
-        return data_filtered_smoothed
+        if filter_function is not None:
+            data_filtered = filter_function(data_filtered)
+
+        return data_filtered
 
     def filter_menu(self, choice):
         """

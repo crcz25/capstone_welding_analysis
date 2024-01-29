@@ -429,20 +429,15 @@ class PlotFrame(ctk.CTkFrame):
         super().update()
 
     def apply_filter(self, data=None, choice=None):
-        # Get the section to plot
-        section = data
+        # Interpolate (and possibly filter) the data first
+        section = self.master.plot_control_frame.interpolate_and_filter(data, choice)
+
         # Invert the plot if the flag is set
         if self.invert_plot:
             inverted_section = -section
             # Move the inverted data back to zero
             min_value = np.min(inverted_section)
             section = inverted_section - min_value
-
-        # Depending on the choice filter differently
-        if choice != None or choice != "No Filter":
-            section = self.master.plot_control_frame.interpolate_and_filter(
-                section, choice
-            )
 
         return section
 
