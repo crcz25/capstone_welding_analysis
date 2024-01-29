@@ -191,7 +191,7 @@ class PlotControlFrame(ctk.CTkFrame):
             else:
                 z_weld = np.where(row > np.percentile(row, 10))[0]
             if z_weld.size == 0:
-                return row
+                return data_filtered
             data_filtered_smoothed = np.interp(np.arange(0, len(row)), z_weld, row[z_weld])
         else:
             return data_filtered
