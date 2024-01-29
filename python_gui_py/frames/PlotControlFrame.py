@@ -76,7 +76,7 @@ class PlotControlFrame(ctk.CTkFrame):
         # Dropdown menus
         self.filter_menu_dropdown = ctk.CTkOptionMenu(
             self,
-            values=["No Filter", "Gaussian", "Median", "Interpolation"],
+            values=["No Filter", "Gaussian", "Median", "Linear"],
             anchor="center",
             command=self.filter_menu,
         )
@@ -184,15 +184,15 @@ class PlotControlFrame(ctk.CTkFrame):
             data_filtered_smoothed = median_filter(
                 data_filtered, size=10, mode="nearest"
             )
-        elif choice == "Interpolation":
+        elif choice == "Linear":
             # Find the indices where the weld is
             if self.master.plot_frame.invert_plot:
-                z_weld = np.where(row < np.percentile(row, 90))[0]
+                i_weld = np.where(row < np.percentile(row, 90))[0]
             else:
-                z_weld = np.where(row > np.percentile(row, 10))[0]
-            if z_weld.size == 0:
+                i_weld = np.where(row > np.percentile(row, 10))[0]
+            if i_weld.size == 0:
                 return data_filtered
-            data_filtered_smoothed = np.interp(np.arange(0, len(row)), z_weld, row[z_weld])
+            data_filtered_smoothed = np.interp(np.arange(0, len(row)), i_weld, row[i_weld])
         else:
             return data_filtered
 
