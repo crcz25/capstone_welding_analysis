@@ -453,47 +453,50 @@ class PlotFrame(ctk.CTkFrame):
 
         """
         data = self.master.range_data
-        # Apply the filter
-        section = self.apply_filter(data[profile, :], choice)
-        # Recreate the figure
-        # Default color
-        default_color = plt.rcParams["axes.prop_cycle"].by_key()["color"][0]
-        # Save the positions of the cursors to recreate them later
-        x_1_pos = self.x_1.line.get_xdata()[0]
-        x_2_pos = self.x_2.line.get_xdata()[0]
-        y_1_pos = self.y_1.line.get_ydata()[0]
-        y_2_pos = self.y_2.line.get_ydata()[0]
-        # Clean the plot
-        self.ax.clear()
-        # Remove and re-add the cursors to the plot
-        for cursor in [self.y_1, self.y_2, self.x_1, self.x_2]:
-            if cursor.line is not None:
-                cursor.line.remove()
-                cursor.line = None
-        # Crete the cursors in their previous positions
-        self.y_1 = PlotCursor(self.master, self.ax, "y", y_1_pos, "Y - Max")
-        self.y_2 = PlotCursor(self.master, self.ax, "y", y_2_pos, "Y - Min")
-        self.x_1 = PlotCursor(self.master, self.ax, "x", x_1_pos, "X - Min")
-        self.x_2 = PlotCursor(self.master, self.ax, "x", x_2_pos, "X - Max")
-        # Create the cursors
-        # self.create_cursors()
-        # Update cursor limits
-        self.update_cursor_limits()
-        # Set the axes limits based on cursor positions
-        self.set_axes_limits()
-        # Plot the data
-        self.ax.plot(section, color=default_color)
-        # Add guide lines to the plot
-        self.add_guides(profile, data)
-        # Set the title of the plot
-        plot_title = f"Profile {profile + 1}, Filter {choice}"
-        self.ax.set_title(plot_title)
-        # Redraw the canvas
-        self.canvas.draw_idle()
-        # Update the plot window
-        self.update_window()
-        # Update the info frame
-        self.master.update_info_frame()
+        try:
+            # Apply the filter
+            section = self.apply_filter(data[profile, :], choice)
+            # Recreate the figure
+            # Default color
+            default_color = plt.rcParams["axes.prop_cycle"].by_key()["color"][0]
+            # Save the positions of the cursors to recreate them later
+            x_1_pos = self.x_1.line.get_xdata()[0]
+            x_2_pos = self.x_2.line.get_xdata()[0]
+            y_1_pos = self.y_1.line.get_ydata()[0]
+            y_2_pos = self.y_2.line.get_ydata()[0]
+            # Clean the plot
+            self.ax.clear()
+            # Remove and re-add the cursors to the plot
+            for cursor in [self.y_1, self.y_2, self.x_1, self.x_2]:
+                if cursor.line is not None:
+                    cursor.line.remove()
+                    cursor.line = None
+            # Crete the cursors in their previous positions
+            self.y_1 = PlotCursor(self.master, self.ax, "y", y_1_pos, "Y - Max")
+            self.y_2 = PlotCursor(self.master, self.ax, "y", y_2_pos, "Y - Min")
+            self.x_1 = PlotCursor(self.master, self.ax, "x", x_1_pos, "X - Min")
+            self.x_2 = PlotCursor(self.master, self.ax, "x", x_2_pos, "X - Max")
+            # Create the cursors
+            # self.create_cursors()
+            # Update cursor limits
+            self.update_cursor_limits()
+            # Set the axes limits based on cursor positions
+            self.set_axes_limits()
+            # Plot the data
+            self.ax.plot(section, color=default_color)
+            # Add guide lines to the plot
+            self.add_guides(profile, data)
+            # Set the title of the plot
+            plot_title = f"Profile {profile + 1}, Filter {choice}"
+            self.ax.set_title(plot_title)
+            # Redraw the canvas
+            self.canvas.draw_idle()
+            # Update the plot window
+            self.update_window()
+            # Update the info frame
+            self.master.update_info_frame()
+        except Exception as e:
+            self.master.change_console_text(f"Error during plot update: verify there is data imported and try again.", "ERROR")
 
     def clean_plot(self):
         """
