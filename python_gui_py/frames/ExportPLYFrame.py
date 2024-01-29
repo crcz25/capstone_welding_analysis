@@ -34,7 +34,9 @@ class ExportPLYWindow(ctk.CTkToplevel):
         self.pixel_size_frame.grid(
             row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew"
         )
-        self.grid_columnconfigure(5, weight=1)
+        for i in range(6):
+            self.frame.grid_columnconfigure(i, weight=1)
+        self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
         self.pixel_label = ctk.CTkLabel(self.pixel_size_frame, text="Pixel Size:")
@@ -79,6 +81,7 @@ class ExportPLYWindow(ctk.CTkToplevel):
         )
         # Configure the grid
         self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
         for i in range(4):
             self.file_path_frame.grid_columnconfigure(i, weight=1)
 
