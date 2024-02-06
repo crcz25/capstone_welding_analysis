@@ -83,7 +83,7 @@ class Recorder(Node):
         timestamp = now.strftime("%d-%m-%Y-%H-%M-%S")
         return timestamp
     
-    def generate_timestamps(self, timestamps: np.ndarray, cycle_time: float = 3000) -> np.ndarray:
+    def generate_timestamps(self, timestamps: np.ndarray, cycle_time: float = 3000000) -> np.ndarray:
         """
         len(timestamps) > 0
         
