@@ -236,7 +236,7 @@ class App(ctk.CTk):
         self.timestamp_data = np.genfromtxt(self.timestamp_file, delimiter=",")
         
         # Divide the timestamps for each profile
-        self.timestamp_divider()
+        self.timestamp_formatter()
 
         self.change_console_text(
             f"Timestamp file to open: {self.timestamp_file}", "INFORMATION"
@@ -269,26 +269,13 @@ class App(ctk.CTk):
         # Update the info frame textboxes
         self.update_info_frame()
     
-    def timestamp_divider(self, profiles=5120):
-        divided_timestamps = []
 
-        if len(self.timestamp_data) > 0:
-            self.profile_times = []
-            # Calculate the time difference between consecutive profiles
-            # For now this only takes the first and last time stamp from the file
-            self.time_difference = (self. timestamp_data[0] - self.timestamp_data[-1]) / (profiles - 1)
-
-            # Divide timestamps
-            for j in range(profiles + 1):
-                timestamp = self.timestamp_data[0] + j * self.time_difference
-                divided_timestamps.append(timestamp)
-
-        # Convert and print times
-        for i in range(len(divided_timestamps)):
-            real_time = datetime.utcfromtimestamp(divided_timestamps[i] / 1e9).strftime("%Y-%m-%d %H:%M:%S")
-            #print(f"Profile {i}: {real_time} - Time Difference: {i * self.time_difference / 1e6:.3f} ms\n")
-            self.real_time_between_profile = (i * self.time_difference / 1e6)
-            self.profile_times.append(self.real_time_between_profile)
+    def timestamp_formatter(self):
+        # Format csv file timestamps back to human readable for the UI
+        self.formatted_timestamps = []
+        for timestamp in self.timestamp_data:
+            formatted_timestamp = datetime.utcfromtimestamp(timestamp / 1e9).strftime("%H:%M:%S.%f")
+            self.formatted_timestamps.append(formatted_timestamp)
 
 
     def update_info_frame(self, new_limits=None):
@@ -300,14 +287,17 @@ class App(ctk.CTk):
             self.info_frame.textbox_info.delete("1.0", "end")
             # Insert the new text
             filename = self.range_file.name
-            tstamp = f"{self.profile_times[self.current_profile]} ms"
+            tstamp = f"{self.formatted_timestamps[self.current_profile]}"
 
+            # Since the timestamps after profile 1536 are calculated with the cycle time, they have to be formatted differently
             if self.current_profile == 0:
                 time_difference = 0
+            elif self.current_profile <= 1536:
+                time_difference = ((self.timestamp_data[self.current_profile] - self.timestamp_data[self.current_profile - 1]) / 1000000)
             else:
-                time_difference = (self.profile_times[self.current_profile] - self.profile_times[self.current_profile - 1])
+                time_difference = ((self.timestamp_data[self.current_profile] - self.timestamp_data[self.current_profile - 1]) / 1000)
 
-            tstampdif = f"{time_difference} ms"
+            tstampdif = f"{time_difference:.6f} ms"
             profile = self.current_profile + 1
             # Get the limits of the cursor
             x_min = f"{self.plot_frame.cursor_limits['x_min']} mm"

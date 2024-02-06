@@ -33,7 +33,7 @@ class PlotControlFrame(ctk.CTkFrame):
             self, text="Search"
         )
         self.searchbox_label.grid(
-            row=0, columnspan=4, padx=(10, 10), pady=(10, 5), sticky="w")
+            row=0, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="w")
 
         self.searchbox_entry = ctk.CTkTextbox(
             self,height=25, text_color=self.color, activate_scrollbars=False,
@@ -42,7 +42,7 @@ class PlotControlFrame(ctk.CTkFrame):
             row=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew")
         
         # Set initial text to searchbox
-        self.searchbox_entry.insert("0.0","Search by profile <value> or timestamp <value>")
+        self.searchbox_entry.insert("0.0","Search by profile <integer> or timestamp <hh:mm:ss.sss>")
 
         # Remove the original text after you click the searchbox
         self.searchbox_entry.bind("<Button-1>", lambda e: self.on_searchbox_click())
@@ -66,7 +66,9 @@ class PlotControlFrame(ctk.CTkFrame):
             variable=self.slider_value,
             command=self.slider_event,
         )
-        self.slider.grid(row=2, columnspan=4, padx=(10, 10), pady=(5, 5), sticky="ew")
+        self.start_position_label.grid(row=2, column=0, padx=(10, 10), pady=(5, 5), sticky="ew")
+        self.slider.grid(row=2, column=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew")
+        self.end_position_label.grid(row=2, column=3, padx=(10, 10), pady=(5, 5), sticky="ew")
         self.slider.set(0)
 
         # Create main control buttons
@@ -324,47 +326,71 @@ class PlotControlFrame(ctk.CTkFrame):
     def restore_searchbox_text(self):
         # Insert default text back again
         self.searchbox_entry.delete("1.0", ctk.END)
-        self.searchbox_entry.insert("0.0", "Search by profile <value> or timestamp <value>")
+        self.searchbox_entry.insert("0.0", "Search by profile <integer> or timestamp <hh:mm:ss.sss>")
 
         # Ensure that the focus is not on the searchbox
         self.master.focus_set()
 
-    def find_closest_timestamp_index(self, target_timestamp):
-        # Find the closest timestamp index from the times list
-        if self.master.profile_times:
-            closest_index = min(range(len(self.master.profile_times)), key=lambda i: abs(self.master.profile_times[i] - target_timestamp))
-            closest_timestamp = min(self.master.profile_times, key=lambda x: abs(x - target_timestamp))
-            return closest_index, closest_timestamp
-        else:
+    def timestamp_to_seconds(self, timestamp_str):
+        try:
+            # Convert timestamp string to seconds
+            hours, minutes, seconds = map(float, timestamp_str.split(':'))
+            return hours * 3600 + minutes * 60 + seconds
+        except ValueError as ve:
+            print(f"Error converting timestamp: {ve}")
+            return None
+
+    def find_closest_timestamp(self, target_timestamp):
+        try:
+            # Find the closest timestamp from the times list
+            if self.master.formatted_timestamps:
+                # Convert each timestamp in the list to seconds
+                formatted_timestamps_seconds = [self.timestamp_to_seconds(ts) for ts in self.master.formatted_timestamps]
+
+                # Find the closest timestamp based on total seconds
+                closest_index = min(range(len(formatted_timestamps_seconds)), key=lambda i: abs(formatted_timestamps_seconds[i] - target_timestamp))
+                closest_timestamp = self.master.formatted_timestamps[closest_index]
+
+                return closest_index,closest_timestamp
+
+        except Exception as e:
+            print(f"Error in find_closest_timestamp: {e}")
             return None
         
+
     def search_profile(self):
         # Get the search term from the search box
         search_term = self.searchbox_entry.get("1.0", "end-1c").strip()
+        
         try:
-            # Check if the search term is "profile <value>"
-            if search_term.startswith("profile"):
-                profile_number_str = search_term[len("profile"):].strip()
-                if profile_number_str.isdigit() and self.master.range_file is not None:
-                    profile_number = int(profile_number_str) - 1
-                    self.handle_search_result(profile_number)
+            if self.master.range_file is not None:
+                if search_term.startswith("profile"):
+                    profile_number_str = search_term[len("profile"):].strip()
+                    if profile_number_str.isdigit():
+                        profile_number = int(profile_number_str) - 1
+                        self.handle_search_result(profile_number)
 
-            # Check if the search term is "timestamp <value>"
-            elif search_term.startswith("timestamp"):
-                timestamp_str = search_term[len("timestamp"):].strip()
-                if timestamp_str.replace('.', '', 1).isdigit() and self.master.range_file is not None:
-                    timestamp = float(timestamp_str)
-                    closest_timestamp_index, closest_timestamp = self.find_closest_timestamp_index(timestamp)
-                    self.handle_search_result(closest_timestamp_index, closest_timestamp)
+                elif search_term.startswith("timestamp"):
+                    timestamp_str = search_term[len("timestamp"):].strip()
+                    total_seconds = self.timestamp_to_seconds(timestamp_str)
 
-            else:
-                self.master.change_console_text(f"Invalid search format: {search_term}. Use 'profile <value>' or 'timestamp <value>'.", "ERROR")
+                    if total_seconds is not None:
+                        closest_index, closest_timestamp = self.find_closest_timestamp(total_seconds)
 
-            # Clear the search box after processing the search
-            self.restore_searchbox_text()
+                        if closest_timestamp is not None:
+                            self.handle_search_result(closest_index, closest_timestamp)
+                        else:
+                            self.master.change_console_text("No formatted timestamps available.", "ERROR")
 
-        except Exception:
-            self.master.change_console_text(f"Data is not loaded", "ERROR")
+                else:
+                    self.master.change_console_text(f"Invalid search format: {search_term}. Use 'profile <integer>' or 'timestamp <hh:mm:ss.sss>'.", "ERROR")
+
+                # Clear the search box after processing the search
+                self.restore_searchbox_text()
+
+        except Exception as e:
+            self.master.change_console_text("Data is not loaded", "ERROR")
+
 
     def handle_search_result(self, profile_number, timestamp=None):
         if 0 <= profile_number < self.master.max_profiles + 1:
