@@ -11,3 +11,5 @@ call venv\Scripts\activate.bat
 set ROS_DOMAIN_ID=20
 :: Set the RMW_IMPLEMENTATION
 set "RMW_IMPLEMENTATION=rmw_cyclonedds_cpp"
+:: Run python UI
+python python_gui_py/App.py

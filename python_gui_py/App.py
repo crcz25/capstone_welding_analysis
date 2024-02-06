@@ -81,7 +81,8 @@ class App(ctk.CTk):
         new_state = text_2 if current_state == text_1 else text_1
         # Check if it is time to start or stop the scan
         if current_state == "Take scan":
-            self.change_console_text("Taking scan", "INFORMATION")
+            self.change_console_text("Listening to scan topic /range", "INFORMATION")
+            self.change_console_text("Verify that ros2 node is publishing or the rosbag is playing", "INFORMATION")
             self.start_scan()
         elif current_state == "Stop scan":
             self.change_console_text("Stopping scan", "INFORMATION")
@@ -216,6 +217,7 @@ class App(ctk.CTk):
             self.range_data = self.range_data.reshape(
                 total_profiles, self.range_data.shape[2]
             )
+
         # Set the current frame to 0
         self.current_profile = 0
         # Set the max frames
@@ -236,10 +238,27 @@ class App(ctk.CTk):
             f"Size of timestamp data: {self.timestamp_data.shape}", "INFORMATION"
         )
 
+        # Correct the dimensions of the data based on the pixel size from the settings frame
+        # Get the pixel size from the settings frame
+        pixel_size_x, pixel_size_y, pixel_size_z = self.settings_frame.get_pixel_size()
+        # Apply the pixel size to the range data
+        self.range_data[:, 0] *= float(pixel_size_x)
+        self.range_data[:, 1] *= float(pixel_size_y)
+        self.range_data[:, 2] *= float(pixel_size_z)
+
+        # Extrapolate the nan values in the range data with 0
+        # self.range_data = np.nan_to_num(self.range_data, nan=0)
+
         # Update the plot
         self.plot_frame.create_figure(
             profile=self.current_profile, data=self.range_data
         )
+
+        # Update the max profiles label of the slider
+        self.plot_control_frame.end_position_label.configure(
+            text=f"{self.max_profiles + 1}"
+        )
+
         # Update the info frame textboxes
         self.update_info_frame()
 

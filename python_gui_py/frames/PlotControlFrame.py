@@ -29,6 +29,8 @@ class PlotControlFrame(ctk.CTkFrame):
         self.color = "white"
 
         # Create Slider
+        self.start_position_label = ctk.CTkLabel(self, text="1")
+        self.end_position_label = ctk.CTkLabel(self, text="512")
         self.slider_value = tkinter.IntVar(master=self.master, value=0)
         self.slider = ctk.CTkSlider(
             self,
@@ -38,7 +40,9 @@ class PlotControlFrame(ctk.CTkFrame):
             variable=self.slider_value,
             command=self.slider_event,
         )
-        self.slider.grid(row=0, columnspan=4, padx=(10, 10), pady=(10, 10), sticky="ew")
+        self.start_position_label.grid(row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nse")
+        self.slider.grid(row=0, column=1, columnspan=2, padx=(10, 10), pady=(10, 10), sticky="ew")
+        self.end_position_label.grid(row=0, column=3, padx=(10, 10), pady=(10, 10), sticky="nsw")
         self.slider.set(0)
 
         # Create main control buttons
@@ -72,7 +76,7 @@ class PlotControlFrame(ctk.CTkFrame):
         # Dropdown menus
         self.filter_menu_dropdown = ctk.CTkOptionMenu(
             self,
-            values=["No Filter", "Gaussian", "Median"],
+            values=["No Filter", "Gaussian", "Median", "Linear"],
             anchor="center",
             command=self.filter_menu,
         )
@@ -110,6 +114,13 @@ class PlotControlFrame(ctk.CTkFrame):
         self.invert_plot = False
         self.og_color = self.scan_button.cget("fg_color")
 
+        # Bindings to filter functions
+        self.filter_functions = {
+            "No Filter": lambda row: row,
+            "Gaussian": lambda row: gaussian_filter(row, sigma=1),
+            "Median": lambda row: median_filter(row, size=3),
+        }
+
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def slider_event(self, other=None):
         # Set the slider to the current profile
@@ -140,6 +151,7 @@ class PlotControlFrame(ctk.CTkFrame):
     def invert(self):
         # Change the flag True/False
         self.master.plot_frame.invert_plot ^= True
+        # Update the surface plot
         self.master.plot_frame.update_surface(
             profile=self.master.current_profile, choice=self.choice
         )
@@ -149,20 +161,19 @@ class PlotControlFrame(ctk.CTkFrame):
         else:
             self.invert_button.configure(fg_color=self.og_color, text_color="white")
 
-    def interpolate_and_filter(self, first_row, choice):
+    def interpolate_and_filter(self, row, choice):
         """
         Interpolate and filter.
 
         Args:
             choice: filter type.
-            first_row: first points
+            row: profile to interpolate and filter.
         """
         np.set_printoptions(threshold=np.inf)
-
         # Interpolate missing values
         data_filtered = pd.Series(
-            np.where(first_row == 0, np.nan, first_row)
-        ).interpolate()
+            np.where(row == 0, np.nan, row)
+        ).interpolate().ffill().bfill()
 
         # Apply filters
         if choice == "Gaussian":
@@ -173,8 +184,17 @@ class PlotControlFrame(ctk.CTkFrame):
             data_filtered_smoothed = median_filter(
                 data_filtered, size=10, mode="nearest"
             )
+        elif choice == "Linear":
+            # Find the indices where the weld is
+            if self.master.plot_frame.invert_plot:
+                i_weld = np.where(row < np.percentile(row, 90))[0]
+            else:
+                i_weld = np.where(row > np.percentile(row, 10))[0]
+            if i_weld.size == 0:
+                return data_filtered
+            data_filtered_smoothed = np.interp(np.arange(0, len(row)), i_weld, row[i_weld])
         else:
-            return first_row
+            return data_filtered
 
         return data_filtered_smoothed
 
@@ -223,6 +243,11 @@ class PlotControlFrame(ctk.CTkFrame):
                 np.arange(0, ranges.shape[1]) * pixel_size[0],
                 np.arange(0, ranges.shape[0]) * pixel_size[1],
             )
+        else:
+            mesh_x, mesh_y = np.meshgrid(
+                np.arange(0, ranges.shape[1]) * pixel_size[0],
+                np.arange(0, ranges.shape[0]) * pixel_size[1],
+            )
         # Create point cloud array
         xyz = np.zeros((np.size(mesh_x), 3))
         xyz[:, 0] = np.reshape(mesh_x, -1)
@@ -230,12 +255,16 @@ class PlotControlFrame(ctk.CTkFrame):
         xyz[:, 2] = np.reshape(ranges, -1)
         return xyz
 
-    def write_ply(self, file_name, pixel_size=(1.0, 1.0, 1.0)):
+    def write_ply(self, file_name, pixel_size=(1.0, 1.0, 1.0), remove_outliers=False):
         # Create point cloud array
         xyz = self.create_pcd_array(pixel_size)
         # Create point cloud
         pcd = o3d.geometry.PointCloud()
         pcd.points = o3d.utility.Vector3dVector(xyz)
+        # Remove outliers
+        # if remove_outliers:
+            # print("Removing outliers")
+            # pcd, _ = pcd.remove_statistical_outlier(nb_neighbors=20, std_ratio=2.0)
         # Write point cloud to file
         o3d.io.write_point_cloud(file_name, pcd)
 

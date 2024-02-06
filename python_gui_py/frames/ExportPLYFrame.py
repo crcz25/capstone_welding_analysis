@@ -10,12 +10,13 @@ class ExportPLYWindow(ctk.CTkToplevel):
 
         # Get the chosen option
         self.choice = choice
-        print(self.choice)
 
         # - Pixel size (x, y, z) The scale/size of the pixel in the x, y and z directions.
-        self.pixel_size_x = ctk.DoubleVar(value=0.1122161041015625)
-        self.pixel_size_y = ctk.DoubleVar(value=1.0)
-        self.pixel_size_z = ctk.DoubleVar(value=1.0)
+        # Get the pixel sizes from the settings window and apply them to the export window
+        pixel_size_x, pixel_size_y, pixel_size_z = self.master.settings_frame.get_pixel_size()
+        self.pixel_size_x = ctk.DoubleVar(value=pixel_size_x)
+        self.pixel_size_y = ctk.DoubleVar(value=pixel_size_y)
+        self.pixel_size_z = ctk.DoubleVar(value=pixel_size_z)
         # - File Path: Dialog to select the path and name of the PLY file.
         # - Export and Cancel buttons
 
@@ -33,7 +34,9 @@ class ExportPLYWindow(ctk.CTkToplevel):
         self.pixel_size_frame.grid(
             row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew"
         )
-        self.grid_columnconfigure(5, weight=1)
+        for i in range(6):
+            self.frame.grid_columnconfigure(i, weight=1)
+        self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
         self.pixel_label = ctk.CTkLabel(self.pixel_size_frame, text="Pixel Size:")
@@ -78,6 +81,7 @@ class ExportPLYWindow(ctk.CTkToplevel):
         )
         # Configure the grid
         self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
         for i in range(4):
             self.file_path_frame.grid_columnconfigure(i, weight=1)
 
@@ -95,17 +99,20 @@ class ExportPLYWindow(ctk.CTkToplevel):
         self.file_path_button.grid(
             row=0, column=3, padx=(10, 10), pady=(10, 10), sticky="e"
         )
-        # self.check_var = ctk.StringVar(value="off")
-        # self.check_button = ctk.CTkCheckBox(
-        #     self.file_path_frame,
-        #     text="Export current Time Stamp",
-        #     command=self.checkbox_event,
-        #     variable=self.check_var,
-        #     onvalue="on",
-        #     offvalue="off",
-        # )
+        # Add checkbox to remove outliers from the point cloud if ply was selected
+        # if self.choice == ".ply":
+        #     print("Adding checkbox")
+        #     self.check_var = ctk.StringVar(value="off")
+        #     self.check_button = ctk.CTkCheckBox(
+        #         self.file_path_frame,
+        #         text="Remove Outliers from Point Cloud (only PLY)",
+        #         command=self.checkbox_event,
+        #         variable=self.check_var,
+        #         onvalue="on",
+        #         offvalue="off",
+        #     )
         # self.check_button.grid(
-        #     row=0, column=3, padx=(10, 10), pady=(10, 10), sticky="nsew"
+        #     row=1, column=3, padx=(10, 10), pady=(10, 10), sticky="nsew"
         # )
 
         # Create subframe for export and cancel buttons
@@ -137,10 +144,12 @@ class ExportPLYWindow(ctk.CTkToplevel):
 
         self.file_name = None
 
+        # Remove outliers from the point cloud
+        # self.remove_outliers = False
+
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
     def browse_file_path(self):
-        print("Browse file path")
         # Check what option was selected if npy or ply
         if self.choice == ".ply":
             # Ask for the file name to save the point cloud
@@ -178,7 +187,6 @@ class ExportPLYWindow(ctk.CTkToplevel):
         )
 
     def export(self):
-        print("Export")
         # Check if the file name is valid
         if self.file_name is None:
             self.master.change_console_text("Invalid file name", "ERROR")
@@ -201,6 +209,7 @@ class ExportPLYWindow(ctk.CTkToplevel):
                     self.pixel_size_y.get(),
                     self.pixel_size_z.get(),
                 ),
+                remove_outliers=self.remove_outliers,
             )
         elif self.choice == ".npy":
             # Export point cloud
@@ -221,8 +230,11 @@ class ExportPLYWindow(ctk.CTkToplevel):
 
     # def checkbox_event(self, event=None):
     #     value = self.check_var.get()
+    #     if value == "on":
+    #         self.remove_outliers = True
+    #     else:
+    #         self.remove_outliers = False
     #     print("checkbox toggled, current value:", value)
 
     def cancel(self):
-        print("Cancel")
         self.destroy()

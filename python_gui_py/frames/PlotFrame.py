@@ -57,6 +57,12 @@ class PlotFrame(ctk.CTkFrame):
         self.fig, self.ax = plt.subplots()
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
 
+        # Connect the mouse click event to the add_lines_on_click function
+        self.canvas.mpl_connect('button_press_event', self.add_lines_on_click)
+        
+        # Initialize an empty list to store the clicked points
+        self.points = []
+
         # Default cursor limits
         self.initial_cursor_limits = {
             "x_min": 0,
@@ -172,7 +178,7 @@ class PlotFrame(ctk.CTkFrame):
 
         """
         try:
-            # Check if the cursor limits have change
+            # Check if the cursor limits have changed
             self.update_cursor_limits()
             # Update the filter menu to the current choice
             if self.cursor_limits != self.initial_cursor_limits:
@@ -264,6 +270,127 @@ class PlotFrame(ctk.CTkFrame):
         # Update the plot window
         self.update_window()
 
+    def add_lines_on_click(self, event):
+        """
+        Draws lines between clicked points.
+
+        Args:
+            event: The button press event.
+        """
+
+        # Get the x and y coordinates of the clicked point
+        x = event.xdata
+        y = event.ydata
+
+        # Append the point to the list
+        self.points.append((x, y))
+
+        # Check that list has at least 2 points and that all points have a pair
+        if len(self.points) < 2 or len(self.points) % 2 != 0:
+            return
+
+        # Get the last two points to draw the newest line
+        p1 = self.points[-2]
+        p2 = self.points[-1]
+        
+        # Check none values
+        if p1[0] == None or p2[0] == None:
+            return
+
+        # Plot a line segment connecting them
+        self.ax.plot([p1[0],p2[0]],
+                [p1[1], p2[1]],
+                color='red',
+                linestyle="-"
+                )
+
+        # Calculate the angle of the line
+        width = abs(p1[0] - p2[0])
+        height = abs(p1[1] - p2[1])
+        angle_rad = np.arctan(height / width)  # radians
+        angle_deg = angle_rad * 180 / np.pi  # degrees
+
+        # Define the arc radius for drawing the angle
+        if width < height:
+            arc_radius = height / 2
+        else:
+            arc_radius = width / 2
+
+        # Define the arc angle
+        if p2[0] < p1[0] and p2[1] > p1[1]:
+            arc_angle = 180 - angle_deg
+        elif p2[0] < p1[0] and p2[1] < p1[1]:
+            arc_angle = 180
+        elif p2[0] > p1[0] and p2[1] < p1[1]:
+            arc_angle = -angle_deg
+        else: # p2[0] > p1[0] and p2[1] > p1[1]:
+            arc_angle = 0
+
+        # Define points for texts
+        if p2[0] < p1[0]:
+            x_left = p2[0]
+            x_right = p1[0]
+        else:
+            x_left = p1[0]
+            x_right = p2[0]
+        if p2[1] < p1[1]:
+            y_upper = p1[1]
+            y_lower = p2[1]
+        else:
+            y_upper = p2[1]
+            y_lower = p1[1]
+
+        # Draw the angle
+        self.ax.add_patch(
+            Arc(
+                p1,
+                width=2 * arc_radius,
+                height=2 * arc_radius,
+                angle=arc_angle,
+                theta1=0,
+                theta2=angle_deg,
+                color="red",
+                linestyle="--",
+                zorder=2,
+            )
+        )
+
+        # Draw the angle value
+        self.ax.text(
+            (p1[0] + p2[0]) / 2,
+            y_lower - 1,
+            f"a={angle_deg:.2f}°",
+            horizontalalignment="center",
+            color="black",
+            fontsize=10,
+            zorder=2,
+        )
+
+        # Draw width value
+        self.ax.text(
+            (p1[0] + p2[0]) / 2,
+            y_upper,
+            f"w={width:.2f}",
+            horizontalalignment="center",
+            color="black",
+            fontsize=10,
+            zorder=2,
+        )
+
+        # Draw height value
+        self.ax.text(
+            x_right,
+            (p1[1] + p2[1]) / 2,
+            f"h={height:.2f}",
+            horizontalalignment="center",
+            color="black",
+            fontsize=10,
+            zorder=2,
+        )
+
+        # Draw the plot
+        self.canvas.draw()
+
     def add_guides(self, profile=0, data=None):
         """
         Adds guide lines to the figure.
@@ -280,15 +407,11 @@ class PlotFrame(ctk.CTkFrame):
         # Weld width lines
 
         # Find the indices where the weld is
-        # TODO: needs adjusting
-        z_weld = np.where(
-            (section > np.percentile(section, 5))
-            & (section < np.percentile(section, 95))
-        )[0]
+        i_weld = np.where(section > np.percentile(section, 10))[0]
 
         # Find the start and end points of the weld
-        weld_start = z_weld[0]
-        weld_end = z_weld[-1]
+        weld_start = i_weld[0]
+        weld_end = i_weld[-1]
 
         # Plot a vertical line at the start and end points of the weld
         self.ax.axvline(x=weld_start, color="red", linestyle="--")
@@ -297,89 +420,16 @@ class PlotFrame(ctk.CTkFrame):
         # Weld height lines
 
         # Calculate the top and bottom position of the weld
-        # TODO: needs adjusting
-        weld_top = np.mean(section[z_weld])
-        weld_bot = np.min(np.delete(section, z_weld))  # surface height
+        if self.invert_plot:
+            # Inverted
+            weld_top = np.max(section) - np.mean(section[i_weld])
+        else:
+            weld_top = np.mean(section[i_weld])
+        weld_bot = np.min(np.delete(section, i_weld))  # surface height
 
         # Plot a horizontal line at the top and bottom points of the weld
         self.ax.axhline(y=weld_top, color="red", linestyle="--")
         self.ax.axhline(y=weld_bot, color="red", linestyle="--")
-
-        # Calculate the angle of the weld in relation to the center point of the weld
-        weld_width = weld_end - weld_start
-        weld_height = weld_top - weld_bot
-        angle_rad = np.arctan(weld_height / (weld_width / 2))  # radians
-        angle_deg = angle_rad * 180 / np.pi  # degrees
-
-        # Define the arc radius for drawing the angle
-        arc_radius = weld_width / 10  # recommended max value is weld_width / 2
-
-        # Left line
-        left_01 = [weld_start, weld_bot]
-        left_02 = [
-            weld_start + np.cos(angle_rad) * arc_radius,
-            weld_bot + np.sin(angle_rad) * arc_radius,
-        ]
-
-        # Right line
-        right_01 = [weld_end, weld_bot]
-        right_02 = [
-            weld_end - np.cos(angle_rad) * arc_radius,
-            weld_bot + np.sin(angle_rad) * arc_radius,
-        ]
-
-        # Draw the angle lines, i.e. hypotenuses
-        x_values = [[left_01[0], right_01[0]], [left_02[0], right_02[0]]]
-        y_values = [[left_01[1], right_01[1]], [left_02[1], right_02[1]]]
-        self.ax.plot(x_values, y_values, color="red", linestyle="--")
-
-        # Draw the angle on both sides
-        self.ax.add_patch(
-            Arc(
-                left_01,
-                width=2 * arc_radius,
-                height=2 * arc_radius,
-                angle=0,
-                theta1=0,
-                theta2=angle_deg,
-                color="red",
-                linestyle="--",
-                zorder=2,
-            )
-        )
-        self.ax.add_patch(
-            Arc(
-                right_01,
-                width=2 * arc_radius,
-                height=2 * arc_radius,
-                angle=180 - angle_deg,
-                theta1=0,
-                theta2=angle_deg,
-                color="red",
-                linestyle="--",
-                zorder=2,
-            )
-        )
-
-        # Draw the angle value
-        self.ax.text(
-            left_02[0],
-            left_02[1] * 1.1,
-            f"{angle_deg:.2f} degrees",
-            horizontalalignment="center",
-            color="black",
-            fontsize=12,
-            zorder=2,
-        )
-        self.ax.text(
-            right_02[0],
-            right_02[1] * 1.1,
-            f"{angle_deg:.2f} degrees",
-            horizontalalignment="center",
-            color="black",
-            fontsize=12,
-            zorder=2,
-        )
 
         # Print the information
         txt = (
@@ -388,7 +438,6 @@ class PlotFrame(ctk.CTkFrame):
         txt += (
             f"\nThe weld starts at z = {weld_bot:.2f} and ends at z = {weld_top:.2f}."
         )
-        txt += f"\nThe weld angle is alpha = {angle_deg:.2f} degrees.\n"
         self.master.change_console_text(txt, "INFORMATION")
 
     def set_axes_limits(self):
@@ -429,20 +478,15 @@ class PlotFrame(ctk.CTkFrame):
         super().update()
 
     def apply_filter(self, data=None, choice=None):
-        # Get the section to plot
-        section = data
+        # Interpolate (and possibly filter) the data first
+        section = self.master.plot_control_frame.interpolate_and_filter(data, choice)
+
         # Invert the plot if the flag is set
         if self.invert_plot:
             inverted_section = -section
             # Move the inverted data back to zero
             min_value = np.min(inverted_section)
             section = inverted_section - min_value
-
-        # Depending on the choice filter differently
-        if choice != None or choice != "No Filter":
-            section = self.master.plot_control_frame.interpolate_and_filter(
-                section, choice
-            )
 
         return section
 
@@ -458,47 +502,52 @@ class PlotFrame(ctk.CTkFrame):
 
         """
         data = self.master.range_data
-        # Apply the filter
-        section = self.apply_filter(data[profile, :], choice)
-        # Recreate the figure
-        # Default color
-        default_color = plt.rcParams["axes.prop_cycle"].by_key()["color"][0]
-        # Save the positions of the cursors to recreate them later
-        x_1_pos = self.x_1.line.get_xdata()[0]
-        x_2_pos = self.x_2.line.get_xdata()[0]
-        y_1_pos = self.y_1.line.get_ydata()[0]
-        y_2_pos = self.y_2.line.get_ydata()[0]
-        # Clean the plot
-        self.ax.clear()
-        # Remove and re-add the cursors to the plot
-        for cursor in [self.y_1, self.y_2, self.x_1, self.x_2]:
-            if cursor.line is not None:
-                cursor.line.remove()
-                cursor.line = None
-        # Crete the cursors in their previous positions
-        self.y_1 = PlotCursor(self.master, self.ax, "y", y_1_pos, "Y - Max")
-        self.y_2 = PlotCursor(self.master, self.ax, "y", y_2_pos, "Y - Min")
-        self.x_1 = PlotCursor(self.master, self.ax, "x", x_1_pos, "X - Min")
-        self.x_2 = PlotCursor(self.master, self.ax, "x", x_2_pos, "X - Max")
-        # Create the cursors
-        # self.create_cursors()
-        # Update cursor limits
-        self.update_cursor_limits()
-        # Set the axes limits based on cursor positions
-        self.set_axes_limits()
-        # Plot the data
-        self.ax.plot(section, color=default_color)
-        # Add guide lines to the plot
-        self.add_guides(profile, data)
-        # Set the title of the plot
-        plot_title = f"Profile {profile + 1}, Filter {choice}"
-        self.ax.set_title(plot_title)
-        # Redraw the canvas
-        self.canvas.draw_idle()
-        # Update the plot window
-        self.update_window()
-        # Update the info frame
-        self.master.update_info_frame()
+        try:
+            # Apply the filter
+            section = self.apply_filter(data[profile, :], choice)
+            # Recreate the figure
+            # Default color
+            default_color = plt.rcParams["axes.prop_cycle"].by_key()["color"][0]
+            # Save the positions of the cursors to recreate them later
+            x_1_pos = self.x_1.line.get_xdata()[0]
+            x_2_pos = self.x_2.line.get_xdata()[0]
+            y_1_pos = self.y_1.line.get_ydata()[0]
+            y_2_pos = self.y_2.line.get_ydata()[0]
+            # Clean the plot
+            self.ax.clear()
+            # Remove and re-add the cursors to the plot
+            for cursor in [self.y_1, self.y_2, self.x_1, self.x_2]:
+                if cursor.line is not None:
+                    cursor.line.remove()
+                    cursor.line = None
+            # Create the cursors in their previous positions
+            self.y_1 = PlotCursor(self.master, self.ax, "y", y_1_pos, "Y - Max")
+            self.y_2 = PlotCursor(self.master, self.ax, "y", y_2_pos, "Y - Min")
+            self.x_1 = PlotCursor(self.master, self.ax, "x", x_1_pos, "X - Min")
+            self.x_2 = PlotCursor(self.master, self.ax, "x", x_2_pos, "X - Max")
+            # Create the cursors
+            # self.create_cursors()
+            # Update cursor limits
+            self.update_cursor_limits()
+            # Set the axes limits based on cursor positions
+            self.set_axes_limits()
+            # Plot the data
+            self.ax.plot(section, color=default_color)
+            # Add guide lines to the plot
+            self.add_guides(profile, data)
+            # Remove points for clicked guide lines
+            self.points = []
+            # Set the title of the plot
+            plot_title = f"Profile {profile + 1}, Filter {choice}"
+            self.ax.set_title(plot_title)
+            # Redraw the canvas
+            self.canvas.draw_idle()
+            # Update the plot window
+            self.update_window()
+            # Update the info frame
+            self.master.update_info_frame()
+        except Exception as e:
+            self.master.change_console_text(f"Error during plot update: verify there is data imported and try again.", "ERROR")
 
     def clean_plot(self):
         """
