@@ -261,7 +261,8 @@ class PlotFrame(ctk.CTkFrame):
         # self.start_update_info_frame()
 
         # Depending on the choice plot differently
-        section = data[profile, :]
+        # Apply the filter
+        section = self.apply_filter(data[profile, :], choice)
         self.ax.plot(section)
         plot_title = f"Profile {profile + 1}, Filter {choice}"
 
