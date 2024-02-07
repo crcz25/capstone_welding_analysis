@@ -506,6 +506,9 @@ class PlotFrame(ctk.CTkFrame):
             min_value = np.min(inverted_section)
             section = inverted_section - min_value
 
+        # Set the section data
+        self.master.data_filtered = section
+
         return section
 
     def update_surface(self, profile=0, data=None, choice=None):

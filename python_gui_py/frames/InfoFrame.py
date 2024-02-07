@@ -70,6 +70,22 @@ class InfoFrame(ctk.CTkFrame):
 
         self.update_in_progress = False
 
+        # For defect detection
+        self.defect_choice = None
+        # Bindings to defect functions
+        self.filter_functions = { 
+            "Excessive": {
+                "D": lambda t: min(0.4 + 0.4 * t, 10),
+                "C": lambda t: min(0.4 + 0.3 * t, 10),
+                "B": lambda t: min(0.4 + 0.2 * t, 10),
+            },
+            "Sagging": {
+                "D": lambda t: min(0.3 * t, 3),
+                "C": lambda t: min(0.2 * t, 2),
+                "B": lambda t: min(0.1 * t, 1),
+            },
+        }
+
         # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
         def change_defects_found(choice):
@@ -80,6 +96,7 @@ class InfoFrame(ctk.CTkFrame):
             - choice (str).
 
             """
+            self.defect_choice = choice
             for defect_category in self.data.get("weld_defects", []):
                 for defect in defect_category.get("defects", []):
                     if defect.get("name") == choice:
@@ -124,6 +141,11 @@ class InfoFrame(ctk.CTkFrame):
                 f"Incorrect input: Work piece thickness, width of weld and height of weld must be non-negative numbers.", "ERROR"
             )
             return
+        # Check which functions should be used to evaluate the defects
+        functions = self.filter_functions[self.defect_choice]
+        # Evaluate the functions for the defects and get the expected_height for each
+        expected_height = {k: f(work_piece_thickness) for k, f in functions.items()}
+        print(expected_height)
         # Update the values in PlotFrame
         self.master.plot_frame.work_piece_thickness = work_piece_thickness
         self.master.plot_frame.width_of_weld = width_of_weld
@@ -132,6 +154,28 @@ class InfoFrame(ctk.CTkFrame):
         self.master.plot_frame.update_surface(
             profile=self.master.current_profile, choice=self.master.plot_control_frame.choice
         )
+        # Get the current profile shown in the plot
+        data = self.master.data_filtered
+        print(data.shape)
+        # Get the current cursors to crop the data from the surface plot
+        cursors = self.master.plot_frame.cursor_limits
+        x_min = int(cursors["x_min"])
+        x_max = int(cursors["x_max"])
+        print(cursors)
+        # Crop the data (indexes based on the Xs cursors)
+        cropped_data = data[x_min:x_max]
+        print(cropped_data.shape)
+        # Get the current choice of defect
+        print(self.defect_choice)
+        print(functions)
+        # Get the maximum value of the cropped data
+        max_value = cropped_data.max()
+        print(max_value)
+        # Calculate the height of the weld based on the maximum value
+        height_of_weld = max_value - work_piece_thickness
+        print(height_of_weld)
+
+
 
     def open_json_file(self, file_path):
         #TODO: Check if you can actually display something or not (display only after analysis done)
