@@ -80,6 +80,11 @@ class PlotFrame(ctk.CTkFrame):
         # Flag for inverting the plot
         self.invert_plot = False
 
+        # Work piece thickness
+        self.work_piece_thickness = 0.0
+        self.width_of_weld = 0.0
+        self.height_of_weld = 0.0
+
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def update_info_frame(self):
         """
@@ -440,6 +445,18 @@ class PlotFrame(ctk.CTkFrame):
         )
         self.master.change_console_text(txt, "INFORMATION")
 
+    def add_guide_thickness(self, y_position = 0):
+        """
+        Adds a guide line for the thickness of the work piece.
+
+        Args:
+            y_position: The y position of the guide line.
+
+        """
+
+        # Plot the guide line
+        self.ax.axhline(y=y_position, color="blue", linestyle="--")
+
     def set_axes_limits(self):
         """
         Update the axes limits of the plot
@@ -535,6 +552,9 @@ class PlotFrame(ctk.CTkFrame):
             self.ax.plot(section, color=default_color)
             # Add guide lines to the plot
             self.add_guides(profile, data)
+            # Add the guide line for the work piece thickness
+            if self.work_piece_thickness > 0:
+                self.add_guide_thickness(self.work_piece_thickness)
             # Remove points for clicked guide lines
             self.points = []
             # Set the title of the plot

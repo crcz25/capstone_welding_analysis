@@ -1,6 +1,8 @@
-import customtkinter as ctk
 import json
 import threading
+
+import customtkinter as ctk
+
 
 #--------------------------------------------------------RIGHT INFO/DEFECTS FRAME--------------------------------------------------------#
 class InfoFrame(ctk.CTkFrame):
@@ -40,8 +42,8 @@ class InfoFrame(ctk.CTkFrame):
 
         # Settings for weld
         self.work_piece_thickness = ctk.DoubleVar(value=0.0)
-        self.width_of_weld = ctk.StringVar(value="Insert value")
-        self.height_of_weld = ctk.StringVar(value="Insert value")
+        self.width_of_weld = ctk.DoubleVar(value=0.0)
+        self.height_of_weld = ctk.DoubleVar(value=0.0)
 
         # Create labels and entry widgets
         work_piece_thickness_label = ctk.CTkLabel(labels_dropdown_frame, text="Work Piece Thickness (mm):")
@@ -61,6 +63,10 @@ class InfoFrame(ctk.CTkFrame):
 
         height_of_weld_entry = ctk.CTkEntry(labels_dropdown_frame, textvariable=self.height_of_weld)
         height_of_weld_entry.grid(row=5, column=1, padx=(10,10), pady=(5,5), sticky="we")
+
+        # Button to find defects
+        find_defects_button = ctk.CTkButton(labels_dropdown_frame, text="Find defects", command=self.find_defects)
+        find_defects_button.grid(row=6, column=0, columnspan=2, padx=(50,50), pady=(20,20), sticky="we")
 
         self.update_in_progress = False
 
@@ -101,7 +107,31 @@ class InfoFrame(ctk.CTkFrame):
             dropdown['textvariable'] = self.dropdown_var
             dropdown.grid(row=i+1, column=1, padx=(10, 10), pady=(10, 10), sticky="w")
     
-        
+    
+    def find_defects(self):
+        """
+        Find defects in the weld.
+
+        """
+        print("Finding defects...")
+        # Save settings for the weld
+        work_piece_thickness = self.work_piece_thickness.get()
+        width_of_weld = self.width_of_weld.get()
+        height_of_weld = self.height_of_weld.get()
+        # Validate the input (non-negative numbers)
+        if work_piece_thickness < 0 or width_of_weld < 0 or height_of_weld < 0:
+            self.master.change_console_text(
+                f"Incorrect input: Work piece thickness, width of weld and height of weld must be non-negative numbers.", "ERROR"
+            )
+            return
+        # Update the values in PlotFrame
+        self.master.plot_frame.work_piece_thickness = work_piece_thickness
+        self.master.plot_frame.width_of_weld = width_of_weld
+        self.master.plot_frame.height_of_weld = height_of_weld
+        # Update the surface plot
+        self.master.plot_frame.update_surface(
+            profile=self.master.current_profile, choice=self.master.plot_control_frame.choice
+        )
 
     def open_json_file(self, file_path):
         #TODO: Check if you can actually display something or not (display only after analysis done)
