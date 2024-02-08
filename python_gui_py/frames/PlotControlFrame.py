@@ -33,13 +33,13 @@ class PlotControlFrame(ctk.CTkFrame):
             self, text="Search"
         )
         self.searchbox_label.grid(
-            row=0, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="w")
+            row=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="w")
 
         self.searchbox_entry = ctk.CTkTextbox(
             self,height=25, text_color=self.color, activate_scrollbars=False,
         )
         self.searchbox_entry.grid(
-            row=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew")
+            row=2, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew")
         
         # Set initial text to searchbox
         self.searchbox_entry.insert("0.0","Search by profile <integer> or timestamp <hh:mm:ss.sss>")
@@ -66,9 +66,9 @@ class PlotControlFrame(ctk.CTkFrame):
             variable=self.slider_value,
             command=self.slider_event,
         )
-        self.start_position_label.grid(row=2, column=0, padx=(10, 10), pady=(5, 5), sticky="ew")
-        self.slider.grid(row=2, column=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew")
-        self.end_position_label.grid(row=2, column=3, padx=(10, 10), pady=(5, 5), sticky="ew")
+        self.start_position_label.grid(row=0, column=0, padx=(10, 10), pady=(10, 5), sticky="ew")
+        self.slider.grid(row=0, column=1, columnspan=2, padx=(10, 10), pady=(10, 5), sticky="ew")
+        self.end_position_label.grid(row=0, column=3, padx=(10, 10), pady=(10, 5), sticky="ew")
         self.slider.set(0)
 
         # Create main control buttons

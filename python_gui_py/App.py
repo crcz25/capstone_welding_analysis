@@ -274,7 +274,7 @@ class App(ctk.CTk):
         # Format csv file timestamps back to human readable for the UI
         self.formatted_timestamps = []
         for timestamp in self.timestamp_data:
-            formatted_timestamp = datetime.utcfromtimestamp(timestamp / 1e9).strftime("%H:%M:%S.%f")
+            formatted_timestamp = datetime.fromtimestamp(timestamp / 1e9).strftime("%H:%M:%S.%f")
             self.formatted_timestamps.append(formatted_timestamp)
 
 
@@ -293,11 +293,11 @@ class App(ctk.CTk):
             if self.current_profile == 0:
                 time_difference = 0
             elif self.current_profile <= 1536:
-                time_difference = ((self.timestamp_data[self.current_profile] - self.timestamp_data[self.current_profile - 1]) / 1000000)
+                time_difference = ((self.timestamp_data[self.current_profile] - self.timestamp_data[self.current_profile - 1]) // 1000000)
             else:
-                time_difference = ((self.timestamp_data[self.current_profile] - self.timestamp_data[self.current_profile - 1]) / 1000)
+                time_difference = ((self.timestamp_data[self.current_profile] - self.timestamp_data[self.current_profile - 1]) // 1000)
 
-            tstampdif = f"{time_difference:.6f} ms"
+            tstampdif = f"{time_difference:.2f} ms"
             profile = self.current_profile + 1
             # Get the limits of the cursor
             x_min = f"{self.plot_frame.cursor_limits['x_min']} mm"
