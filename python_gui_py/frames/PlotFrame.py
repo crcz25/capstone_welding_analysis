@@ -9,6 +9,7 @@ from frames.cursors import PlotCursor
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
 from matplotlib.patches import Arc
 
 
@@ -207,20 +208,27 @@ class PlotFrame(ctk.CTkFrame):
                     [self.cursor_limits["x_max"], self.cursor_limits["x_max"]]
                 )
 
-                # Redraw the canvas
-                self.canvas.draw_idle()
-
-                # Reset the figure to the original one
-                self.create_figure(profile, data, choice)
-
-                self.master.change_console_text(
-                    f"Plot and cursors reset frame: profile, {profile + 1}",
-                    "INFORMATION",
-                )
             else:
                 self.master.change_console_text(
-                    "Cursors are already in their initial positions", "ERROR"
+                    "Cursors are already in their initial positions", "Information"
                 )
+            # Reset the thickness and height of the weld
+            self.work_piece_thickness = 0.0
+            self.height_of_weld = 0.0
+            self.x_position_of_weld = 0.0
+            # Add guide lines for defects
+            self.add_guides_defects()
+
+            # Redraw the canvas
+            self.canvas.draw_idle()
+
+            # Reset the figure to the original one
+            self.create_figure(profile, data, choice)
+
+            self.master.change_console_text(
+                f"Plot and cursors reset frame: profile, {profile + 1}",
+                "INFORMATION",
+            )
 
         except Exception as e:
             self.master.change_console_text(
@@ -450,10 +458,18 @@ class PlotFrame(ctk.CTkFrame):
             y_position: The y position of the guide line.
 
         """
+        # remove previous guide lines
+        for line in self.ax.lines:
+            if line.get_label() in ["thickness", "height"]:
+                line.remove()
+        for child in self.ax.get_children():
+            if isinstance(child, Line2D) and child.get_label() in ["thickness", "height"]:
+                child.remove()
         print("Adding guide lines for defects")
         if self.work_piece_thickness > 0 and self.height_of_weld > 0:
             # Plot the guide line of the work piece thickness
-            self.ax.axhline(y=self.work_piece_thickness, color="black", linestyle="--")
+            line = Line2D([0, 1600], [self.work_piece_thickness, self.work_piece_thickness], color="black", linestyle="--", label="thickness")
+            self.ax.add_line(line)
             print(f"X position of weld: {self.x_position_of_weld}")
             print(f"Height of weld: {self.height_of_weld}")
             print(f"Work piece thickness: {self.work_piece_thickness}")
@@ -461,13 +477,8 @@ class PlotFrame(ctk.CTkFrame):
             if self.master.info_frame.defect_choice == "Excessive":
                 y_min = self.work_piece_thickness
                 y_max = self.work_piece_thickness + self.height_of_weld
-                self.ax.vlines(
-                    x=self.x_position_of_weld,
-                    ymin=y_min,
-                    ymax=y_max,
-                    color="black",
-                    linestyle="--",
-                )
+                line = Line2D([self.x_position_of_weld, self.x_position_of_weld], [y_min, y_max], color="black", linestyle="--", label="height")
+                self.ax.add_line(line)
                 self.ax.text(
                     self.x_position_of_weld,
                     y_max * 1.1,
@@ -480,13 +491,8 @@ class PlotFrame(ctk.CTkFrame):
             elif self.master.info_frame.defect_choice == "Sagging":
                 y_min = self.work_piece_thickness - self.height_of_weld
                 y_max = self.work_piece_thickness
-                self.ax.vlines(
-                    x=self.x_position_of_weld,
-                    ymin=y_min,
-                    ymax=y_max,
-                    color="black",
-                    linestyle="--",
-                )
+                line = Line2D([self.x_position_of_weld, self.x_position_of_weld], [y_min, y_max], color="black", linestyle="--", label="height")
+                self.ax.add_line(line)
                 self.ax.text(
                     self.x_position_of_weld,
                     y_min * 0.9,
@@ -626,3 +632,4 @@ class PlotFrame(ctk.CTkFrame):
         """
         self.ax.clear()
         self.update_window()
+
