@@ -2,6 +2,7 @@ import json
 import threading
 
 import customtkinter as ctk
+from util.Defects import find_defect
 
 
 #--------------------------------------------------------RIGHT INFO/DEFECTS FRAME--------------------------------------------------------#
@@ -65,27 +66,14 @@ class InfoFrame(ctk.CTkFrame):
         height_of_weld_entry.grid(row=5, column=1, padx=(10,10), pady=(5,5), sticky="we")
 
         # Button to find defects
-        find_defects_button = ctk.CTkButton(labels_dropdown_frame, text="Find defects", command=self.find_defects)
+        find_defects_button = ctk.CTkButton(labels_dropdown_frame, text="Find defects", command=self.process_defects)
         find_defects_button.grid(row=6, column=0, columnspan=2, padx=(50,50), pady=(20,20), sticky="we")
 
         self.update_in_progress = False
 
         # For defect detection
         self.defect_choice = None
-        # Bindings to defect functions
-        self.filter_functions = { 
-            "Excessive": {
-                "D": lambda t: min(0.4 + 0.4 * t, 10),
-                "C": lambda t: min(0.4 + 0.3 * t, 10),
-                "B": lambda t: min(0.4 + 0.2 * t, 10),
-            },
-            "Sagging": {
-                "D": lambda t: min(0.3 * t, 3),
-                "C": lambda t: min(0.2 * t, 2),
-                "B": lambda t: min(0.1 * t, 1),
-            },
-        }
-
+        self.template_string = "Profile: {} - timestamp: {}\nDefect type:{}"
         # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
         def change_defects_found(choice):
@@ -125,7 +113,7 @@ class InfoFrame(ctk.CTkFrame):
             dropdown.grid(row=i+1, column=1, padx=(10, 10), pady=(10, 10), sticky="w")
     
     
-    def find_defects(self):
+    def process_defects(self):
         """
         Find defects in the weld.
 
@@ -141,11 +129,6 @@ class InfoFrame(ctk.CTkFrame):
                 f"Incorrect input: Work piece thickness, width of weld and height of weld must be non-negative numbers.", "ERROR"
             )
             return
-        # Check which functions should be used to evaluate the defects
-        functions = self.filter_functions[self.defect_choice]
-        # Evaluate the functions for the defects and get the expected_height for each
-        expected_height = {k: f(work_piece_thickness) for k, f in functions.items()}
-        print(expected_height)
         # Update the values in PlotFrame
         self.master.plot_frame.work_piece_thickness = work_piece_thickness
         self.master.plot_frame.width_of_weld = width_of_weld
@@ -167,14 +150,38 @@ class InfoFrame(ctk.CTkFrame):
         print(cropped_data.shape)
         # Get the current choice of defect
         print(self.defect_choice)
-        print(functions)
-        # Get the maximum value of the cropped data
-        max_value = cropped_data.max()
-        print(max_value)
-        # Calculate the height of the weld based on the maximum value
-        height_of_weld = max_value - work_piece_thickness
-        print(height_of_weld)
+        # Get the correct height according to the defect, if it is excessive, use maximum
+        # if it is sagging, use minimum
+        if self.defect_choice == "Excessive":
+            # Calculate the height of the weld based on the maximum value
+            height_of_weld = cropped_data.max() - work_piece_thickness
+            print(height_of_weld)
+        elif self.defect_choice == "Sagging":
+            # Calculate the height of the weld based on the minimum value
+            height_of_weld = work_piece_thickness - cropped_data.min()
+            print(height_of_weld)
+        else:
+            self.master.change_console_text(
+                f"Incorrect input: Verify the dimensions to be evaluated.", "ERROR"
+            )
+            return
+        # Before evaluating the defect, check if the height of the weld is non-negative
+        if height_of_weld < 0:
+            self.master.change_console_text(
+                f"Incorrect input: The height of the weld must be non-negative. Verify the dimensions to be evaluated..", "ERROR"
+            )
+            return
+        # Find defects
+        type_found = find_defect(self.defect_choice, work_piece_thickness, height_of_weld)
+        # Write in console
+        self.master.change_console_text(
+                f"{type_found}", "INFORMATION"
+        )
+        # Update the defects found text
+        print(f"Current profile: {self.master.current_profile+1}, timestamp: {self.master.timestamp_data[self.master.current_profile]}")
 
+        # self.template_string = self.template_string.format(self.master.current_profile, self.master.timestamp_data[self.master.current_profile], type_found)
+        # print(self.template_string)
 
 
     def open_json_file(self, file_path):
