@@ -216,6 +216,11 @@ class PlotFrame(ctk.CTkFrame):
             self.work_piece_thickness = 0.0
             self.height_of_weld = 0.0
             self.x_position_of_weld = 0.0
+
+            # Reset the defect choice
+            self.master.info_frame.defect_choice = "None"
+            self.master.info_frame.dropdown.set("None")
+
             # Add guide lines for defects
             self.add_guides_defects()
 
@@ -465,6 +470,7 @@ class PlotFrame(ctk.CTkFrame):
         for child in self.ax.get_children():
             if isinstance(child, Line2D) and child.get_label() in ["thickness", "height"]:
                 child.remove()
+
         print("Adding guide lines for defects")
         if self.work_piece_thickness > 0 and self.height_of_weld > 0:
             # Plot the guide line of the work piece thickness
@@ -516,20 +522,6 @@ class PlotFrame(ctk.CTkFrame):
 
         self.ax.set_xlim(self.cursor_limits["x_min"], self.cursor_limits["x_max"])
         self.ax.set_ylim(self.cursor_limits["y_min"], self.cursor_limits["y_max"])
-
-    def update_window(self):
-        """
-
-        Updates the plot window.
-
-        """
-
-        # Draw the plot
-        self.canvas.draw()
-        # Set the plot position to fill the frame and expand to fill the frame
-        self.canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
-        # Update the frame
-        super().update()
 
     def update_window(self):
         """

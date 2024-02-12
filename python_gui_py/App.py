@@ -322,6 +322,8 @@ class App(ctk.CTk):
                 profile = self.max_profiles
             # Update the info frame textboxes
             self.update_info_frame()
+            if self.info_frame.defect_choice is not None:
+                self.info_frame.process_defects()
             # Update the plot
             self.plot_frame.update_surface(
                 profile=profile,
