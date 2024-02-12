@@ -5,7 +5,7 @@ import customtkinter as ctk
 from util.Defects import find_defect
 
 
-#--------------------------------------------------------RIGHT INFO/DEFECTS FRAME--------------------------------------------------------#
+# --------------------------------------------------------RIGHT INFO/DEFECTS FRAME--------------------------------------------------------#
 class InfoFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, corner_radius=0, **kwargs)
@@ -18,16 +18,22 @@ class InfoFrame(ctk.CTkFrame):
         self.scaling_label_info = ctk.CTkLabel(self, text="Information", anchor="w")
         self.scaling_label_info.grid(row=0, column=0, padx=10, pady=(10, 0))
         self.textbox_info = ctk.CTkTextbox(self, width=220)
-        self.textbox_info.grid(row=1, column=0, padx=(10, 10), pady=(10, 0), sticky="nsew")
+        self.textbox_info.grid(
+            row=1, column=0, padx=(10, 10), pady=(10, 0), sticky="nsew"
+        )
 
         self.scaling_label_alerts = ctk.CTkLabel(self, text="Defects", anchor="w")
         self.scaling_label_alerts.grid(row=2, column=0, padx=10, pady=(10, 0))
         self.textbox_alerts = ctk.CTkTextbox(self, width=220)
-        self.textbox_alerts.grid(row=3, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew")
+        self.textbox_alerts.grid(
+            row=3, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew"
+        )
 
         # Defects
         labels_dropdown_frame = ctk.CTkFrame(self, bg_color="transparent")
-        labels_dropdown_frame.grid(row=4, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew")
+        labels_dropdown_frame.grid(
+            row=4, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew"
+        )
 
         self.data = self.open_json_file("python_gui_py\data\defects.json")
 
@@ -35,11 +41,17 @@ class InfoFrame(ctk.CTkFrame):
         self.defects_found_text = ctk.StringVar()
 
         # Labels
-        defect_settings_label = ctk.CTkLabel(labels_dropdown_frame, text="Defect settings")
-        defect_settings_label.grid(row=0, column=0, columnspan=2, padx=(10, 10), pady=(10, 10), sticky="nsew")
+        defect_settings_label = ctk.CTkLabel(
+            labels_dropdown_frame, text="Defect settings"
+        )
+        defect_settings_label.grid(
+            row=0, column=0, columnspan=2, padx=(10, 10), pady=(10, 10), sticky="nsew"
+        )
 
         weld_settings_label = ctk.CTkLabel(labels_dropdown_frame, text="Weld settings")
-        weld_settings_label.grid(row=2, column=0, columnspan=2, padx=(10, 10), pady=(10, 10), sticky="nsew")
+        weld_settings_label.grid(
+            row=2, column=0, columnspan=2, padx=(10, 10), pady=(10, 10), sticky="nsew"
+        )
 
         # Settings for weld
         self.work_piece_thickness = ctk.DoubleVar(value=0.0)
@@ -47,27 +59,39 @@ class InfoFrame(ctk.CTkFrame):
         self.height_of_weld = ctk.DoubleVar(value=0.0)
 
         # Create labels and entry widgets
-        work_piece_thickness_label = ctk.CTkLabel(labels_dropdown_frame, text="Work Piece Thickness (mm):")
-        work_piece_thickness_label.grid(row=3, column=0, padx=(10,10) , pady=(5,5), sticky="we")
+        work_piece_thickness_label = ctk.CTkLabel(
+            labels_dropdown_frame, text="Work Piece Thickness (mm):"
+        )
+        work_piece_thickness_label.grid(
+            row=3, column=0, padx=(10, 10), pady=(5, 5), sticky="we"
+        )
 
-        work_piece_thickness_entry = ctk.CTkEntry(labels_dropdown_frame, textvariable=self.work_piece_thickness)
-        work_piece_thickness_entry.grid(row=3, column=1, padx=(10,10), pady=(5,5), sticky="we")
+        work_piece_thickness_entry = ctk.CTkEntry(
+            labels_dropdown_frame, textvariable=self.work_piece_thickness
+        )
+        work_piece_thickness_entry.grid(
+            row=3, column=1, padx=(10, 10), pady=(5, 5), sticky="we"
+        )
 
-        width_of_weld_label = ctk.CTkLabel(labels_dropdown_frame, text="Width of Weld (mm):")
-        width_of_weld_label.grid(row=4, column=0, padx=(10,10), pady=(5,5), sticky="we")
+        # width_of_weld_label = ctk.CTkLabel(labels_dropdown_frame, text="Width of Weld (mm):")
+        # width_of_weld_label.grid(row=4, column=0, padx=(10,10), pady=(5,5), sticky="we")
 
-        width_of_weld_entry = ctk.CTkEntry(labels_dropdown_frame, textvariable=self.width_of_weld)
-        width_of_weld_entry.grid(row=4, column=1, padx=(10,10), pady=(5,5), sticky="we")
+        # width_of_weld_entry = ctk.CTkEntry(labels_dropdown_frame, textvariable=self.width_of_weld)
+        # width_of_weld_entry.grid(row=4, column=1, padx=(10,10), pady=(5,5), sticky="we")
 
-        height_of_weld_label = ctk.CTkLabel(labels_dropdown_frame, text="Height of Weld (mm):")
-        height_of_weld_label.grid(row=5, column=0, padx=(10,10), pady=(5,5), sticky="we")
+        # height_of_weld_label = ctk.CTkLabel(labels_dropdown_frame, text="Height of Weld (mm):")
+        # height_of_weld_label.grid(row=5, column=0, padx=(10,10), pady=(5,5), sticky="we")
 
-        height_of_weld_entry = ctk.CTkEntry(labels_dropdown_frame, textvariable=self.height_of_weld)
-        height_of_weld_entry.grid(row=5, column=1, padx=(10,10), pady=(5,5), sticky="we")
+        # height_of_weld_entry = ctk.CTkEntry(labels_dropdown_frame, textvariable=self.height_of_weld)
+        # height_of_weld_entry.grid(row=5, column=1, padx=(10,10), pady=(5,5), sticky="we")
 
         # Button to find defects
-        find_defects_button = ctk.CTkButton(labels_dropdown_frame, text="Find defects", command=self.process_defects)
-        find_defects_button.grid(row=6, column=0, columnspan=2, padx=(50,50), pady=(20,20), sticky="we")
+        find_defects_button = ctk.CTkButton(
+            labels_dropdown_frame, text="Find defects", command=self.process_defects
+        )
+        find_defects_button.grid(
+            row=6, column=0, columnspan=2, padx=(50, 50), pady=(20, 20), sticky="we"
+        )
 
         self.update_in_progress = False
 
@@ -89,9 +113,14 @@ class InfoFrame(ctk.CTkFrame):
                 for defect in defect_category.get("defects", []):
                     if defect.get("name") == choice:
                         defects_found = defect.get("defects_found", [])
-            
+
             # Format the read JSON data
-            formatted_defects = "\n".join([f"ID: {defect['id']}\nTimestamp: {defect['timestamp']}\n" for defect in defects_found])
+            formatted_defects = "\n".join(
+                [
+                    f"ID: {defect['id']}\nTimestamp: {defect['timestamp']}\n"
+                    for defect in defects_found
+                ]
+            )
 
             # Set data to the textbox
             self.textbox_alerts.configure(state="normal")
@@ -103,16 +132,22 @@ class InfoFrame(ctk.CTkFrame):
         for i, defect_category in enumerate(self.data.get("weld_defects", [])):
             label_text = defect_category.get("type", "")
             label = ctk.CTkLabel(labels_dropdown_frame, text=label_text, anchor="w")
-            label.grid(row=i+1, column=0, padx=10, pady=(10, 10))
+            label.grid(row=i + 1, column=0, padx=10, pady=(10, 10))
 
-            options_data = [defect["name"] for defect in defect_category.get("defects", [])]
+            options_data = [
+                defect["name"] for defect in defect_category.get("defects", [])
+            ]
             self.dropdown_var = ctk.StringVar(labels_dropdown_frame)
 
-            dropdown = ctk.CTkComboBox(labels_dropdown_frame, state="readonly", values=options_data, command=change_defects_found)
-            dropdown['textvariable'] = self.dropdown_var
-            dropdown.grid(row=i+1, column=1, padx=(10, 10), pady=(10, 10), sticky="w")
-    
-    
+            dropdown = ctk.CTkComboBox(
+                labels_dropdown_frame,
+                state="readonly",
+                values=options_data,
+                command=change_defects_found,
+            )
+            dropdown["textvariable"] = self.dropdown_var
+            dropdown.grid(row=i + 1, column=1, padx=(10, 10), pady=(10, 10), sticky="w")
+
     def process_defects(self):
         """
         Find defects in the weld.
@@ -121,56 +156,67 @@ class InfoFrame(ctk.CTkFrame):
         print("Finding defects...")
         # Save settings for the weld
         work_piece_thickness = self.work_piece_thickness.get()
-        width_of_weld = self.width_of_weld.get()
-        height_of_weld = self.height_of_weld.get()
         # Validate the input (non-negative numbers)
-        if work_piece_thickness < 0 or width_of_weld < 0 or height_of_weld < 0:
+        if work_piece_thickness < 0:
             self.master.change_console_text(
-                f"Incorrect input: Work piece thickness, width of weld and height of weld must be non-negative numbers.", "ERROR"
+                f"Incorrect input: Work piece thickness be non-negative numbers.",
+                "ERROR",
             )
             return
-        # Update the values in PlotFrame
-        self.master.plot_frame.work_piece_thickness = work_piece_thickness
-        self.master.plot_frame.width_of_weld = width_of_weld
-        self.master.plot_frame.height_of_weld = height_of_weld
-        # Update the surface plot
-        self.master.plot_frame.update_surface(
-            profile=self.master.current_profile, choice=self.master.plot_control_frame.choice
-        )
+
         # Get the current profile shown in the plot
         data = self.master.data_filtered
-        print(data.shape)
         # Get the current cursors to crop the data from the surface plot
         cursors = self.master.plot_frame.cursor_limits
         x_min = int(cursors["x_min"])
         x_max = int(cursors["x_max"])
-        print(cursors)
         # Crop the data (indexes based on the Xs cursors)
         cropped_data = data[x_min:x_max]
-        print(cropped_data.shape)
-        # Get the current choice of defect
-        print(self.defect_choice)
+
         # Get the correct height according to the defect, if it is excessive, use maximum
         # if it is sagging, use minimum
         if self.defect_choice == "Excessive":
             # Calculate the height of the weld based on the maximum value
             height_of_weld = cropped_data.max() - work_piece_thickness
-            print(height_of_weld)
         elif self.defect_choice == "Sagging":
             # Calculate the height of the weld based on the minimum value
             height_of_weld = work_piece_thickness - cropped_data.min()
-            print(height_of_weld)
         else:
             self.master.change_console_text(
                 f"Incorrect input: Verify the dimensions to be evaluated.", "ERROR"
             )
             return
+
         # Before evaluating the defect, check if the height of the weld is non-negative
         if height_of_weld < 0:
             self.master.change_console_text(
-                f"Incorrect input: The height of the weld must be non-negative. Verify the dimensions to be evaluated..", "ERROR"
+                f"Incorrect input: The height of the weld must be non-negative. Verify the dimensions to be evaluated..",
+                "ERROR",
             )
             return
+
+        # Find the x position of the height of the weld
+        x_position = (
+            cropped_data.argmax()
+            if self.defect_choice == "Excessive"
+            else cropped_data.argmin()
+        )
+
+        # Update the values in PlotFrame
+        self.master.plot_frame.work_piece_thickness = work_piece_thickness
+        self.master.plot_frame.height_of_weld = height_of_weld
+        self.master.plot_frame.x_position_of_weld = x_position
+
+        print(
+            f"Work piece thickness: {work_piece_thickness}, height of weld: {height_of_weld}, x position of weld: {x_position}"
+        )
+
+        # Update the surface plot
+        self.master.plot_frame.update_surface(
+            profile=self.master.current_profile,
+            choice=self.master.plot_control_frame.choice,
+        )
+
         # Find defects
         type_found = find_defect(self.defect_choice, work_piece_thickness, height_of_weld)
         # Write in console
@@ -180,12 +226,11 @@ class InfoFrame(ctk.CTkFrame):
         # Update the defects found text
         print(f"Current profile: {self.master.current_profile+1}, timestamp: {self.master.timestamp_data[self.master.current_profile]}")
 
-        # self.template_string = self.template_string.format(self.master.current_profile, self.master.timestamp_data[self.master.current_profile], type_found)
-        # print(self.template_string)
-
+        # self.template_string = self.template_string.format(self.master.current_profile+1, self.master.timestamp_data[self.master.current_profile], type_found)
+        # # print(self.template_string)
 
     def open_json_file(self, file_path):
-        #TODO: Check if you can actually display something or not (display only after analysis done)
+        # TODO: Check if you can actually display something or not (display only after analysis done)
         """
         Open and read a JSON file.
 
@@ -196,10 +241,10 @@ class InfoFrame(ctk.CTkFrame):
         - dict: The parsed JSON data.
         """
         try:
-            with open(file_path, 'r') as file:
+            with open(file_path, "r") as file:
                 json_data = json.load(file)
             return json_data
-        
+
         except FileNotFoundError:
             print(f"Error: File not found at path '{file_path}'.")
 

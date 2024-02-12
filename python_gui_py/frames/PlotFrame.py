@@ -58,8 +58,8 @@ class PlotFrame(ctk.CTkFrame):
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
 
         # Connect the mouse click event to the add_lines_on_click function
-        self.canvas.mpl_connect('button_press_event', self.add_lines_on_click)
-        
+        self.canvas.mpl_connect("button_press_event", self.add_lines_on_click)
+
         # Initialize an empty list to store the clicked points
         self.points = []
 
@@ -82,8 +82,8 @@ class PlotFrame(ctk.CTkFrame):
 
         # Work piece thickness
         self.work_piece_thickness = 0.0
-        self.width_of_weld = 0.0
         self.height_of_weld = 0.0
+        self.x_position_of_weld = 0.0
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def update_info_frame(self):
@@ -270,7 +270,7 @@ class PlotFrame(ctk.CTkFrame):
         self.set_axes_limits()
 
         # Add guide lines to the plot
-        self.add_guides(profile, data)
+        # self.add_guides(profile, data)
         # Set the plot title
         self.ax.set_title(plot_title)
         # Update the plot window
@@ -298,17 +298,13 @@ class PlotFrame(ctk.CTkFrame):
         # Get the last two points to draw the newest line
         p1 = self.points[-2]
         p2 = self.points[-1]
-        
+
         # Check none values
         if p1[0] == None or p2[0] == None:
             return
 
         # Plot a line segment connecting them
-        self.ax.plot([p1[0],p2[0]],
-                [p1[1], p2[1]],
-                color='red',
-                linestyle="-"
-                )
+        self.ax.plot([p1[0], p2[0]], [p1[1], p2[1]], color="red", linestyle="-")
 
         # Calculate the angle of the line
         width = abs(p1[0] - p2[0])
@@ -329,7 +325,7 @@ class PlotFrame(ctk.CTkFrame):
             arc_angle = 180
         elif p2[0] > p1[0] and p2[1] < p1[1]:
             arc_angle = -angle_deg
-        else: # p2[0] > p1[0] and p2[1] > p1[1]:
+        else:  # p2[0] > p1[0] and p2[1] > p1[1]:
             arc_angle = 0
 
         # Define points for texts
@@ -446,7 +442,7 @@ class PlotFrame(ctk.CTkFrame):
         )
         self.master.change_console_text(txt, "INFORMATION")
 
-    def add_guide_thickness(self, y_position = 0):
+    def add_guides_defects(self):
         """
         Adds a guide line for the thickness of the work piece.
 
@@ -454,9 +450,57 @@ class PlotFrame(ctk.CTkFrame):
             y_position: The y position of the guide line.
 
         """
+        print("Adding guide lines for defects")
+        if self.work_piece_thickness > 0 and self.height_of_weld > 0:
+            # Plot the guide line of the work piece thickness
+            self.ax.axhline(y=self.work_piece_thickness, color="black", linestyle="--")
+            print(f"X position of weld: {self.x_position_of_weld}")
+            print(f"Height of weld: {self.height_of_weld}")
+            print(f"Work piece thickness: {self.work_piece_thickness}")
+            # Plot the guide line of the height of the weld using the thickness of the work piece as its x axis position
+            if self.master.info_frame.defect_choice == "Excessive":
+                y_min = self.work_piece_thickness
+                y_max = self.work_piece_thickness + self.height_of_weld
+                self.ax.vlines(
+                    x=self.x_position_of_weld,
+                    ymin=y_min,
+                    ymax=y_max,
+                    color="black",
+                    linestyle="--",
+                )
+                self.ax.text(
+                    self.x_position_of_weld,
+                    y_max * 1.1,
+                    f"H={self.height_of_weld:.2f}",
+                    horizontalalignment="center",
+                    color="black",
+                    fontsize=10,
+                    zorder=2,
+                )
+            elif self.master.info_frame.defect_choice == "Sagging":
+                y_min = self.work_piece_thickness - self.height_of_weld
+                y_max = self.work_piece_thickness
+                self.ax.vlines(
+                    x=self.x_position_of_weld,
+                    ymin=y_min,
+                    ymax=y_max,
+                    color="black",
+                    linestyle="--",
+                )
+                self.ax.text(
+                    self.x_position_of_weld,
+                    y_min * 0.9,
+                    f"H={self.height_of_weld:.2f}",
+                    horizontalalignment="center",
+                    color="black",
+                    fontsize=10,
+                    zorder=2,
+                )
+            else:
+                self.master.change_console_text(
+                    "Plot error: Unknown defect type", "ERROR"
+                )
 
-        # Plot the guide line
-        self.ax.axhline(y=y_position, color="blue", linestyle="--")
 
     def set_axes_limits(self):
         """
@@ -555,10 +599,9 @@ class PlotFrame(ctk.CTkFrame):
             # Plot the data
             self.ax.plot(section, color=default_color)
             # Add guide lines to the plot
-            self.add_guides(profile, data)
+            # self.add_guides(profile, data)
             # Add the guide line for the work piece thickness
-            if self.work_piece_thickness > 0:
-                self.add_guide_thickness(self.work_piece_thickness)
+            self.add_guides_defects()
             # Remove points for clicked guide lines
             self.points = []
             # Set the title of the plot
@@ -571,7 +614,10 @@ class PlotFrame(ctk.CTkFrame):
             # Update the info frame
             self.master.update_info_frame()
         except Exception as e:
-            self.master.change_console_text(f"Error during plot update: verify there is data imported and try again.", "ERROR")
+            self.master.change_console_text(
+                f"Error during plot update: verify there is data imported and try again.",
+                "ERROR",
+            )
 
     def clean_plot(self):
         """
