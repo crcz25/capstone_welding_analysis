@@ -455,12 +455,9 @@ class PlotFrame(ctk.CTkFrame):
         )
         self.master.change_console_text(txt, "INFORMATION")
 
-    def add_guides_defects(self):
+    def reset_guides_defects(self):
         """
-        Adds a guide line for the thickness of the work piece.
-
-        Args:
-            y_position: The y position of the guide line.
+        Resets the guide lines for defects.
 
         """
         # remove previous guide lines
@@ -470,7 +467,24 @@ class PlotFrame(ctk.CTkFrame):
         for child in self.ax.get_children():
             if isinstance(child, Line2D) and child.get_label() in ["thickness", "height"]:
                 child.remove()
+        # Remove the text
+        for text in self.ax.texts:
+            text.remove()
+        # Reset the work piece thickness and height of the weld
+        self.work_piece_thickness = 0.0
+        self.height_of_weld = 0.0
+        self.x_position_of_weld = 0.0
+        # Redraw the canvas
+        self.update_window()
 
+    def add_guides_defects(self):
+        """
+        Adds a guide line for the thickness of the work piece.
+
+        Args:
+            y_position: The y position of the guide line.
+
+        """
         print("Adding guide lines for defects")
         if self.work_piece_thickness > 0 and self.height_of_weld > 0:
             # Plot the guide line of the work piece thickness

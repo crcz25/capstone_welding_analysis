@@ -119,10 +119,8 @@ class InfoFrame(ctk.CTkFrame):
         """
         self.defect_choice = choice
         if choice == "None":
-            self.master.plot_frame.work_piece_thickness = 0
-            self.master.plot_frame.height_of_weld = 0
-            self.master.plot_frame.x_position_of_weld = 0
             self.work_piece_thickness.set(0)
+            self.master.plot_frame.reset_guides_defects()
 
     def process_defects(self):
         """
@@ -215,6 +213,9 @@ class InfoFrame(ctk.CTkFrame):
             self.textbox_alerts.delete("0.0", ctk.END)
             self.textbox_alerts.insert(ctk.END, formatted_defects)
             self.textbox_alerts.configure(state="disabled")
+
+            # Redraw the canvas
+            self.master.plot_frame.update_window()
         except Exception as e:
             self.master.change_console_text(
                 f"Verify there is data imported.", "ERROR"
