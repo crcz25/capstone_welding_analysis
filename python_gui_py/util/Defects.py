@@ -1,3 +1,40 @@
+import json
+from datetime import datetime
+
+
+class WeldDefectsReport:
+    def __init__(self):
+        self.report ={
+            "weld_defects": [
+                {
+                    "type": "Defect type",
+                    "defects":[]
+                }
+            ]
+        }
+        self.defect_types = {}
+    
+    def add_defect(self, defect_type, defect_id, timestamp, quality):
+        # Check if the defect type already exists
+        if defect_type not in self.defect_types:
+             # If not, add it to the defects list and keep track of its position
+            defect_entry = {
+                "name": defect_type,
+                "defects_found": []
+            }
+            self.report["weld_defects"][0]["defects"].append(defect_entry)
+            self.defect_types[defect_type] = len(self.report["weld_defects"][0]["defects"]) - 1
+        
+        # Add the defect to the report
+        defect_index = self.defect_types[defect_type]
+        self.report["weld_defects"][0]["defects"][defect_index]["defects_found"].append({
+            "id": defect_id,
+            "timestamp": timestamp,
+            "quality": quality
+        })
+    
+    def serialize(self):
+        return json.dumps(self.report, indent=4)
 class WeldDefect:
     def __init__(self, work_piece_thickness):
         self.work_piece_thickness = work_piece_thickness
@@ -19,7 +56,7 @@ class Excessive(WeldDefect):
     def evaluate_defect(self, height_of_weld):
         for grade, threshold in self.criteria.items():
             if height_of_weld > threshold:
-                return f"Excessive - {grade} class"
+                return f"{grade}"
         return "No Excessive defect"
 
 
@@ -35,7 +72,7 @@ class Sagging(WeldDefect):
     def evaluate_defect(self, height_of_weld):
         for grade, threshold in self.criteria.items():
             if height_of_weld > threshold:
-                return f"Sagging - {grade} class"
+                return f"{grade}"
         return "No Sagging defect"
 
 
@@ -66,6 +103,19 @@ def main():
 
     # Find defects
     find_defect(defect_choice, work_piece_thickness, height_of_weld)
+
+    # Example usage
+    report = WeldDefectsReport()
+
+    # Simulate adding defects
+    report.add_defect("Excessive", 1, "2023-01-01T12:34:56Z", "B")
+    report.add_defect("Excessive", 2, "2023-02-01T12:34:56Z", "C")
+    report.add_defect("Sagging", 1, "2023-01-01T12:34:56Z", "D")
+
+    # Serialize to JSON
+    json_output = report.serialize()
+
+    print(json_output)
 
 
 if __name__ == "__main__":

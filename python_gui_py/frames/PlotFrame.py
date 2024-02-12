@@ -220,6 +220,7 @@ class PlotFrame(ctk.CTkFrame):
             # Reset the defect choice
             self.master.info_frame.defect_choice = "None"
             self.master.info_frame.dropdown.set("None")
+            self.master.info_frame.work_piece_thickness.set(0.0)
 
             # Add guide lines for defects
             self.add_guides_defects()
@@ -485,7 +486,10 @@ class PlotFrame(ctk.CTkFrame):
             y_position: The y position of the guide line.
 
         """
-        print("Adding guide lines for defects")
+        self.work_piece_thickness = self.master.info_frame.work_piece_thickness.get()
+        self.height_of_weld = self.master.info_frame.height_of_weld.get()
+        self.x_position_of_weld = self.master.info_frame.x_position_of_weld.get()
+
         if self.work_piece_thickness > 0 and self.height_of_weld > 0:
             # Plot the guide line of the work piece thickness
             line = Line2D([0, 1600], [self.work_piece_thickness, self.work_piece_thickness], color="black", linestyle="--", label="thickness")

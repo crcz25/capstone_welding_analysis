@@ -2,7 +2,7 @@ import json
 import threading
 
 import customtkinter as ctk
-from util.Defects import find_defect
+from util.Defects import WeldDefectsReport, find_defect
 
 
 # --------------------------------------------------------RIGHT INFO/DEFECTS FRAME--------------------------------------------------------#
@@ -24,10 +24,17 @@ class InfoFrame(ctk.CTkFrame):
 
         self.scaling_label_alerts = ctk.CTkLabel(self, text="Defects", anchor="w")
         self.scaling_label_alerts.grid(row=2, column=0, padx=10, pady=(10, 0))
-        self.textbox_alerts = ctk.CTkTextbox(self, width=220)
+        self.textbox_alerts = ctk.CTkTextbox(self, width=220, activate_scrollbars=False)
         self.textbox_alerts.grid(
             row=3, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew"
         )
+        # create CTk scrollbar
+        ctk_textbox_scrollbar = ctk.CTkScrollbar(
+            self, command=self.textbox_alerts.yview
+        )
+        ctk_textbox_scrollbar.grid(row=3, column=1, sticky="ns")
+        # connect textbox scroll event to CTk scrollbar
+        self.textbox_alerts.configure(yscrollcommand=ctk_textbox_scrollbar.set)
 
         # Defects
         labels_dropdown_frame = ctk.CTkFrame(self, bg_color="transparent")
@@ -54,7 +61,9 @@ class InfoFrame(ctk.CTkFrame):
             anchor="center",
             command=self.change_defects_found,
         )
-        self.dropdown.grid(row=1, column=0, columnspan=2, padx=(50, 50), pady=(20, 20), sticky="nsew")
+        self.dropdown.grid(
+            row=1, column=0, columnspan=2, padx=(10, 10), pady=(10, 10), sticky="ns"
+        )
         self.dropdown.set("None")
 
         weld_settings_label = ctk.CTkLabel(labels_dropdown_frame, text="Weld settings")
@@ -64,8 +73,8 @@ class InfoFrame(ctk.CTkFrame):
 
         # Settings for weld
         self.work_piece_thickness = ctk.DoubleVar(value=0.0)
-        self.width_of_weld = ctk.DoubleVar(value=0.0)
         self.height_of_weld = ctk.DoubleVar(value=0.0)
+        self.x_position_of_weld = ctk.DoubleVar(value=0.0)
 
         # Create labels and entry widgets
         work_piece_thickness_label = ctk.CTkLabel(
@@ -99,14 +108,24 @@ class InfoFrame(ctk.CTkFrame):
             labels_dropdown_frame, text="Find defects", command=self.process_defects
         )
         find_defects_button.grid(
-            row=6, column=0, columnspan=2, padx=(50, 50), pady=(20, 20), sticky="we"
+            row=6, column=0, padx=(50, 50), pady=(20, 20), sticky="we"
+        )
+
+        # Button to process all
+        process_all_button = ctk.CTkButton(
+            labels_dropdown_frame,
+            text="Find all defects",
+            command=self.process_all_defects,
+        )
+        process_all_button.grid(
+            row=6, column=1, padx=(50, 50), pady=(20, 20), sticky="we"
         )
 
         self.update_in_progress = False
 
         # For defect detection
-        self.defect_choice = None
-        self.template_string = "Profile: {}\nTimestamp: {}\nDefect type: {}\nHeight of weld: {} mm\n x position of weld: {} mm\n"
+        self.defect_choice = "None"
+        self.template_string = "Profile: {}\nTimestamp: {}\nDefect type: {} class\nHeight of weld: {} mm\n x position of weld: {} mm\n"
         # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
     def change_defects_found(self, choice):
@@ -122,40 +141,21 @@ class InfoFrame(ctk.CTkFrame):
             self.work_piece_thickness.set(0)
             self.master.plot_frame.reset_guides_defects()
 
-    def process_defects(self):
-        """
-        Find defects in the weld.
-
-        """
+    def find_height(self, profile, x_min, x_max, work_piece_thickness, defect_choice):
         try:
-            print("Finding defects...")
-            # Save settings for the weld
-            work_piece_thickness = self.work_piece_thickness.get()
-            # Validate the input (non-negative numbers)
-            if work_piece_thickness < 0:
-                self.master.change_console_text(
-                    f"Incorrect input: Work piece thickness be non-negative numbers.",
-                    "ERROR",
-                )
-                return
-
-            # Get the current profile shown in the plot
-            data = self.master.data_filtered
-            # Get the current cursors to crop the data from the surface plot
-            cursors = self.master.plot_frame.cursor_limits
-            x_min = int(cursors["x_min"])
-            x_max = int(cursors["x_max"])
             # Crop the data (indexes based on the Xs cursors)
-            cropped_data = data[x_min:x_max]
+            cropped_data = profile[x_min:x_max]
 
             # Get the correct height according to the defect, if it is excessive, use maximum
             # if it is sagging, use minimum
-            if self.defect_choice == "Excessive":
+            if defect_choice == "Excessive":
                 # Calculate the height of the weld based on the maximum value
                 height_of_weld = cropped_data.max() - work_piece_thickness
-            elif self.defect_choice == "Sagging":
+                x_position = cropped_data.argmax()
+            elif defect_choice == "Sagging":
                 # Calculate the height of the weld based on the minimum value
                 height_of_weld = work_piece_thickness - cropped_data.min()
+                x_position = cropped_data.argmin()
             else:
                 self.master.change_console_text(
                     f"Incorrect input: Verify the dimensions to be evaluated.", "ERROR"
@@ -170,57 +170,114 @@ class InfoFrame(ctk.CTkFrame):
                 )
                 return
 
-            # Find the x position of the height of the weld
-            x_position = (
-                cropped_data.argmax()
-                if self.defect_choice == "Excessive"
-                else cropped_data.argmin()
-            )
-
-            # Update the values in PlotFrame
-            self.master.plot_frame.work_piece_thickness = work_piece_thickness
-            self.master.plot_frame.height_of_weld = height_of_weld
-            self.master.plot_frame.x_position_of_weld = x_position
-
-            print(
-                f"Work piece thickness: {work_piece_thickness}, height of weld: {height_of_weld}, x position of weld: {x_position}"
-            )
-
-            # Update the surface plot
-            self.master.plot_frame.update_surface(
-                profile=self.master.current_profile,
-                choice=self.master.plot_control_frame.choice,
-            )
-
-            # Find defects
-            type_found = find_defect(self.defect_choice, work_piece_thickness, height_of_weld)
-            # Write in console
-            self.master.change_console_text(
-                    f"{type_found}", "INFORMATION"
-            )
-
-            # Format the defects found
-            formatted_defects = self.template_string.format(
-                self.master.current_profile+1,
-                self.master.timestamp_data[self.master.current_profile],
-                type_found,
-                height_of_weld,
-                x_position,
-            )
-
-            # Add text to the textbox
-            self.textbox_alerts.configure(state="normal")
-            self.textbox_alerts.delete("0.0", ctk.END)
-            self.textbox_alerts.insert(ctk.END, formatted_defects)
-            self.textbox_alerts.configure(state="disabled")
-
-            # Redraw the canvas
-            self.master.plot_frame.update_window()
+            return height_of_weld, x_position
         except Exception as e:
-            self.master.change_console_text(
-                f"Verify there is data imported.", "ERROR"
-            )
+            self.master.change_console_text(f"Verify there is data imported.", "ERROR")
+            print(e)
 
+    def process_defects(self):
+        """
+        Find defects in current weld.
+
+        """
+        print("Finding defects...")
+        # Save settings for the weld
+        work_piece_thickness = self.work_piece_thickness.get()
+        # Validate the input (non-negative numbers)
+        if work_piece_thickness < 0:
+            self.master.change_console_text(
+                f"Incorrect input: Work piece thickness must be non-negative and greater than zero.",
+                "ERROR",
+            )
+            return
+
+        # Get the current profile shown in the plot
+        data = self.master.data_filtered.values
+        # Get the current cursors to crop the data from the surface plot
+        cursors = self.master.plot_frame.cursor_limits
+        x_min = int(cursors["x_min"])
+        x_max = int(cursors["x_max"])
+
+        # Find the defect
+        height_of_weld, x_position = self.find_height(
+            data, x_min, x_max, work_piece_thickness, self.defect_choice
+        )
+
+        # Update the values in PlotFrame
+        self.height_of_weld.set(height_of_weld)
+        self.work_piece_thickness.set(work_piece_thickness)
+        self.x_position_of_weld.set(x_position)
+
+        # Find defects
+        type_found = find_defect(
+            self.defect_choice, work_piece_thickness, height_of_weld
+        )
+
+        # Write in console
+        self.master.change_console_text(f"{type_found}", "INFORMATION")
+
+        # Format the defects found
+        formatted_defects = self.template_string.format(
+            self.master.current_profile + 1,
+            self.master.timestamp_data[self.master.current_profile],
+            f"{self.defect_choice} - {type_found}",
+            height_of_weld,
+            x_position,
+        )
+
+        # Add text to the textbox
+        self.textbox_alerts.configure(state="normal")
+        self.textbox_alerts.delete("0.0", ctk.END)
+        self.textbox_alerts.insert(ctk.END, formatted_defects)
+        self.textbox_alerts.configure(state="disabled")
+
+        # Update the surface plot
+        self.master.plot_frame.update_surface(
+            profile=self.master.current_profile,
+            choice=self.master.plot_control_frame.choice,
+        )
+
+    def process_all_defects(self):
+        """
+        Find all defects in the ranges.
+        """
+        print("Finding all defects...")
+        try:
+            # Save settings for the weld
+            work_piece_thickness = self.work_piece_thickness.get()
+            # Validate the input (non-negative numbers)
+            if work_piece_thickness < 0:
+                self.master.change_console_text(
+                    f"Incorrect input: Work piece thickness must be non-negative and greater than zero.",
+                    "ERROR",
+                )
+                return
+
+            ranges = self.master.range_data
+            timestamps = self.master.timestamp_data
+            filter = self.master.plot_control_frame.choice
+            report = WeldDefectsReport()
+            for idx, (range, timestamp) in enumerate(zip(ranges, timestamps)):
+                filtered_data = self.master.plot_frame.apply_filter(range, filter).values
+                # Find the defect
+                height_of_weld, x_position = self.find_height(
+                    filtered_data,
+                    0,
+                    ranges.shape[1],
+                    work_piece_thickness,
+                    self.defect_choice,
+                )
+                print(f"Work piece thickness: {work_piece_thickness}, height of weld: {height_of_weld}, x position of weld: {x_position}")
+                # Find defects
+                type_found = find_defect(
+                    self.defect_choice, work_piece_thickness, height_of_weld
+                )
+                report.add_defect(self.defect_choice, idx, timestamp, type_found)
+            json_output = report.serialize()
+            print(json_output)
+        except Exception as e:
+            self.master.change_console_text(f"Verify there is data imported.", "ERROR")
+            print(e)
 
     def open_json_file(self, file_path):
         # TODO: Check if you can actually display something or not (display only after analysis done)
