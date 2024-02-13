@@ -127,7 +127,7 @@ class InfoFrame(ctk.CTkFrame):
 
         # For defect detection
         self.defect_choice = "None"
-        self.template_string = "Profile: {}\nTimestamp: {}\nDefect type: {} class\nHeight of weld: {} mm\n x position of weld: {} mm\n"
+        self.template_string = "Profile: {}\nTimestamp: {}\nDefect type: {} class\nHeight of weld: {} mm\n x position of weld: {} mm\n\n"
         self.export_path = Path(__file__).parent.parent / "data"
         # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
@@ -261,7 +261,9 @@ class InfoFrame(ctk.CTkFrame):
             filter = self.master.plot_control_frame.choice
             report = WeldDefectsReport()
             for idx, (range, timestamp) in enumerate(zip(ranges, timestamps)):
-                filtered_data = self.master.plot_frame.apply_filter(range, filter).values
+                filtered_data = self.master.plot_frame.apply_filter(
+                    range, filter
+                ).values
                 # Find the defect
                 height_of_weld, x_position = self.find_height(
                     filtered_data,
@@ -270,19 +272,43 @@ class InfoFrame(ctk.CTkFrame):
                     work_piece_thickness,
                     self.defect_choice,
                 )
-                print(f"Work piece thickness: {work_piece_thickness}, height of weld: {height_of_weld}, x position of weld: {x_position}")
+                print(
+                    f"Work piece thickness: {work_piece_thickness}, height of weld: {height_of_weld}, x position of weld: {x_position}"
+                )
                 # Find defects
                 type_found = find_defect(
                     self.defect_choice, work_piece_thickness, height_of_weld
                 )
-                report.add_defect(self.defect_choice, idx, timestamp, type_found, height_of_weld)
+                report.add_defect(
+                    self.defect_choice,
+                    idx,
+                    timestamp,
+                    type_found,
+                    height_of_weld,
+                    x_position,
+                )
             json_output = report.serialize()
-            print(json_output)
             # Save the report to a file
             curr_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
             filename = f"defects_report_{curr_datetime}.json"
             with open(self.export_path / filename, "w") as file:
                 file.write(json_output)
+            self.master.change_console_text(
+                f"Report saved to {self.export_path / filename}", "INFORMATION"
+            )
+            # Add the report to the textbox
+            for defect in report.report["weld_defects"][0]["defects"]:
+                for defect_found in defect["defects_found"]:
+                    formatted_defects = self.template_string.format(
+                        defect_found["profile"] + 1,
+                        defect_found["timestamp"],
+                        f"{self.defect_choice} - {defect_found['quality']}",
+                        defect_found["height"],
+                        defect_found["x_position"],
+                    )
+                    self.textbox_alerts.configure(state="normal")
+                    self.textbox_alerts.insert(ctk.END, formatted_defects)
+                    self.textbox_alerts.configure(state="disabled")
         except Exception as e:
             self.master.change_console_text(f"Verify there is data imported.", "ERROR")
             print(e)

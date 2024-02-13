@@ -1,41 +1,53 @@
 import json
 from datetime import datetime
 
+import numpy as np
+
+
+class NPEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NPEncoder, self).default(obj)
+
 
 class WeldDefectsReport:
     def __init__(self):
-        self.report ={
-            "weld_defects": [
-                {
-                    "type": "Defect type",
-                    "defects":[]
-                }
-            ]
-        }
+        self.report = {"weld_defects": [{"type": "Defect type", "defects": []}]}
         self.defect_types = {}
-    
-    def add_defect(self, defect_type, defect_id, timestamp, quality, height):
+
+    def add_defect(self, defect_type, defect_id, timestamp, quality, height, x_pos):
         # Check if the defect type already exists
         if defect_type not in self.defect_types:
-             # If not, add it to the defects list and keep track of its position
-            defect_entry = {
-                "name": defect_type,
-                "defects_found": []
-            }
+            # If not, add it to the defects list and keep track of its position
+            defect_entry = {"name": defect_type, "defects_found": []}
             self.report["weld_defects"][0]["defects"].append(defect_entry)
-            self.defect_types[defect_type] = len(self.report["weld_defects"][0]["defects"]) - 1
-        
+            self.defect_types[defect_type] = (
+                len(self.report["weld_defects"][0]["defects"]) - 1
+            )
+
         # Add the defect to the report
         defect_index = self.defect_types[defect_type]
-        self.report["weld_defects"][0]["defects"][defect_index]["defects_found"].append({
-            "profile": defect_id,
-            "timestamp": timestamp,
-            "quality": quality,
-            "height": height
-        })
-    
+        self.report["weld_defects"][0]["defects"][defect_index]["defects_found"].append(
+            {
+                "profile": defect_id,
+                "timestamp": timestamp,
+                "quality": quality,
+                "height": height,
+                "x_position": x_pos,
+            }
+        )
+
     def serialize(self):
-        return json.dumps(self.report, indent=4)
+        return json.dumps(self.report, indent=4, cls=NPEncoder)
+
+
 class WeldDefect:
     def __init__(self, work_piece_thickness):
         self.work_piece_thickness = work_piece_thickness
