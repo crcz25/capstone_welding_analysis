@@ -1,5 +1,7 @@
+import datetime
 import json
 import threading
+from pathlib import Path
 
 import customtkinter as ctk
 from util.Defects import WeldDefectsReport, find_defect
@@ -126,6 +128,7 @@ class InfoFrame(ctk.CTkFrame):
         # For defect detection
         self.defect_choice = "None"
         self.template_string = "Profile: {}\nTimestamp: {}\nDefect type: {} class\nHeight of weld: {} mm\n x position of weld: {} mm\n"
+        self.export_path = Path(__file__).parent.parent / "data"
         # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
     def change_defects_found(self, choice):
@@ -272,9 +275,14 @@ class InfoFrame(ctk.CTkFrame):
                 type_found = find_defect(
                     self.defect_choice, work_piece_thickness, height_of_weld
                 )
-                report.add_defect(self.defect_choice, idx, timestamp, type_found)
+                report.add_defect(self.defect_choice, idx, timestamp, type_found, height_of_weld)
             json_output = report.serialize()
             print(json_output)
+            # Save the report to a file
+            curr_datetime = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            filename = f"defects_report_{curr_datetime}.json"
+            with open(self.export_path / filename, "w") as file:
+                file.write(json_output)
         except Exception as e:
             self.master.change_console_text(f"Verify there is data imported.", "ERROR")
             print(e)

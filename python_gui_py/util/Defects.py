@@ -14,7 +14,7 @@ class WeldDefectsReport:
         }
         self.defect_types = {}
     
-    def add_defect(self, defect_type, defect_id, timestamp, quality):
+    def add_defect(self, defect_type, defect_id, timestamp, quality, height):
         # Check if the defect type already exists
         if defect_type not in self.defect_types:
              # If not, add it to the defects list and keep track of its position
@@ -28,9 +28,10 @@ class WeldDefectsReport:
         # Add the defect to the report
         defect_index = self.defect_types[defect_type]
         self.report["weld_defects"][0]["defects"][defect_index]["defects_found"].append({
-            "id": defect_id,
+            "profile": defect_id,
             "timestamp": timestamp,
-            "quality": quality
+            "quality": quality,
+            "height": height
         })
     
     def serialize(self):
