@@ -195,7 +195,7 @@ class InfoFrame(ctk.CTkFrame):
             return
 
         # Get the current profile shown in the plot
-        data = self.master.data_filtered.values
+        data = self.master.data_filtered
         # Get the current cursors to crop the data from the surface plot
         cursors = self.master.plot_frame.cursor_limits
         x_min = int(cursors["x_min"])
@@ -263,7 +263,7 @@ class InfoFrame(ctk.CTkFrame):
             for idx, (range, timestamp) in enumerate(zip(ranges, timestamps)):
                 filtered_data = self.master.plot_frame.apply_filter(
                     range, filter
-                ).values
+                )
                 # Find the defect
                 height_of_weld, x_position = self.find_height(
                     filtered_data,
