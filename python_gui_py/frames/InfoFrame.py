@@ -127,7 +127,7 @@ class InfoFrame(ctk.CTkFrame):
 
         # For defect detection
         self.defect_choice = "None"
-        self.template_string = "Profile: {}\nTimestamp: {}\nDefect type: {} class\nHeight of weld: {} mm\n x position of weld: {} mm\n\n"
+        self.template_string = "Profile: {}\nTimestamp: {}\nDefect type: {} class\nHeight of weld: {} mm\nHeight limit: {} mm\n x position of weld: {} mm\n\n"
         self.export_path = Path(__file__).parent.parent / "data"
         # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
@@ -212,7 +212,7 @@ class InfoFrame(ctk.CTkFrame):
         self.x_position_of_weld.set(x_position)
 
         # Find defects
-        type_found = find_defect(
+        type_found, height_limit = find_defect(
             self.defect_choice, work_piece_thickness, height_of_weld
         )
 
@@ -225,6 +225,7 @@ class InfoFrame(ctk.CTkFrame):
             self.master.timestamp_data[self.master.current_profile],
             f"{self.defect_choice} - {type_found}",
             height_of_weld,
+            height_limit,
             x_position,
         )
 
@@ -276,7 +277,7 @@ class InfoFrame(ctk.CTkFrame):
                     f"Work piece thickness: {work_piece_thickness}, height of weld: {height_of_weld}, x position of weld: {x_position}"
                 )
                 # Find defects
-                type_found = find_defect(
+                type_found, height_limit = find_defect(
                     self.defect_choice, work_piece_thickness, height_of_weld
                 )
                 report.add_defect(
@@ -285,6 +286,7 @@ class InfoFrame(ctk.CTkFrame):
                     timestamp,
                     type_found,
                     height_of_weld,
+                    height_limit,
                     x_position,
                 )
             json_output = report.serialize()
@@ -296,6 +298,10 @@ class InfoFrame(ctk.CTkFrame):
             self.master.change_console_text(
                 f"Report saved to {self.export_path / filename}", "INFORMATION"
             )
+            # Clean the textbox
+            self.textbox_alerts.configure(state="normal")
+            self.textbox_alerts.delete("0.0", ctk.END)
+            self.textbox_alerts.configure(state="disabled")
             # Add the report to the textbox
             for defect in report.report["weld_defects"][0]["defects"]:
                 for defect_found in defect["defects_found"]:
@@ -304,6 +310,7 @@ class InfoFrame(ctk.CTkFrame):
                         defect_found["timestamp"],
                         f"{self.defect_choice} - {defect_found['quality']}",
                         defect_found["height"],
+                        defect_found["height_limit"],
                         defect_found["x_position"],
                     )
                     self.textbox_alerts.configure(state="normal")

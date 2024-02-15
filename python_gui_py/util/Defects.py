@@ -22,7 +22,7 @@ class WeldDefectsReport:
         self.report = {"weld_defects": [{"type": "Defect type", "defects": []}]}
         self.defect_types = {}
 
-    def add_defect(self, defect_type, defect_id, timestamp, quality, height, x_pos):
+    def add_defect(self, defect_type, defect_id, timestamp, quality, height, limit, x_pos):
         # Check if the defect type already exists
         if defect_type not in self.defect_types:
             # If not, add it to the defects list and keep track of its position
@@ -40,6 +40,7 @@ class WeldDefectsReport:
                 "timestamp": timestamp,
                 "quality": quality,
                 "height": height,
+                "height_limit": limit,
                 "x_position": x_pos,
             }
         )
@@ -69,7 +70,7 @@ class Excessive(WeldDefect):
     def evaluate_defect(self, height_of_weld):
         for grade, threshold in self.criteria.items():
             if height_of_weld > threshold:
-                return f"{grade}"
+                return f"{grade}", threshold
         return "No Excessive defect"
 
 
@@ -85,7 +86,7 @@ class Sagging(WeldDefect):
     def evaluate_defect(self, height_of_weld):
         for grade, threshold in self.criteria.items():
             if height_of_weld > threshold:
-                return f"{grade}"
+                return f"{grade}", threshold
         return "No Sagging defect"
 
 
