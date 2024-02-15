@@ -145,7 +145,7 @@ class ExportPLYWindow(ctk.CTkToplevel):
         self.file_name = None
 
         # Remove outliers from the point cloud
-        # self.remove_outliers = False
+        self.remove_outliers = False
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 

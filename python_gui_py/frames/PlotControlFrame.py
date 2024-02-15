@@ -134,11 +134,17 @@ class PlotControlFrame(ctk.CTkFrame):
         self.master.change_plot(change=-1, profile=self.master.current_profile - 1)
         # Set the slider to the current profile
         self.slider_value.set(self.master.current_profile)
+        if self.master.info_frame.defect_choice != "None":
+            self.master.plot_frame.reset_guides_defects()
+            self.master.info_frame.process_defects()
 
     def next_plot(self):
         self.master.change_plot(change=1, profile=self.master.current_profile + 1)
         # Set the slider to the current profile
         self.slider_value.set(self.master.current_profile)
+        if self.master.info_frame.defect_choice != "None":
+            self.master.plot_frame.reset_guides_defects()
+            self.master.info_frame.process_defects()
 
     def import_scan(self):
         self.master.import_files()
