@@ -7,6 +7,7 @@ import pandas as pd
 from scipy.ndimage import gaussian_filter, median_filter, uniform_filter1d
 
 from .ExportPLYFrame import ExportPLYWindow
+from .AutoCompleteEntry import AutocompleteEntry
 
 
 # --------------------------------------------------------SLIDER/MAIN CONTROL FRAME--------------------------------------------------------#
@@ -16,34 +17,26 @@ class PlotControlFrame(ctk.CTkFrame):
         self.grid(row=1, column=1, padx=(10, 10), pady=(10, 10), sticky="nsew")
 
         # Configure weights for columns and rows
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
-        self.grid_columnconfigure(2, weight=1)
-        self.grid_columnconfigure(3, weight=1)
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
-        self.grid_rowconfigure(2, weight=1)
-        self.grid_rowconfigure(3, weight=1)
+        for i in range(4):
+            self.grid_columnconfigure(i, weight=1)
+            self.grid_rowconfigure(i, weight=1)
 
         # Default text color
         self.color = "white"
 
-        # Create search box
-        self.searchbox_label= ctk.CTkLabel(
-            self, text="Search"
-        )
-        self.searchbox_label.grid(
-            row=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="w")
+        # Default vars
+        self.search_type = tkinter.StringVar()
 
-        self.searchbox_entry = ctk.CTkTextbox(
-            self,height=25, text_color=self.color, activate_scrollbars=False,
-        )
-        self.searchbox_entry.grid(
-            row=2, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew")
+        # Create the search box
+        self.searchbox_label = ctk.CTkLabel(self, text="Search")
+        self.searchbox_label.grid(row=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="w")
+        self.searchbox_entry = AutocompleteEntry(self, 
+                                               variable=self.search_type, 
+                                               values=["Search by profile <integer>", "Search by timestamp <hh:mm:ss.sss>"], 
+                                               command=self.searchbox_selection)
+        self.searchbox_entry.grid(row=2, column=0, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew")
+        self.searchbox_entry.set("Search by profile <integer>")
         
-        # Set initial text to searchbox
-        self.searchbox_entry.insert("0.0","Search by profile <integer> or timestamp <hh:mm:ss.sss>")
-
         # Remove the original text after you click the searchbox
         self.searchbox_entry.bind("<Button-1>", lambda e: self.on_searchbox_click())
 
@@ -52,7 +45,6 @@ class PlotControlFrame(ctk.CTkFrame):
 
         # Bind the function to restore the original text when the entry loses focus
         self.searchbox_entry.bind("<FocusOut>", lambda e: self.restore_searchbox_text())
-
 
         # Create Slider
         self.start_position_label = ctk.CTkLabel(self, text="1")
@@ -139,6 +131,9 @@ class PlotControlFrame(ctk.CTkFrame):
         self.choice = None
         self.invert_plot = False
         self.og_color = self.scan_button.cget("fg_color")
+        self.profile_search_option = "Search by profile <integer>"
+        self.timestamp_search_option = "Search by timestamp <hh:mm:ss.sss>"
+        self.selected_value = self.profile_search_option
 
         # Bindings to filter functions
         self.filter_functions = {
@@ -318,22 +313,32 @@ class PlotControlFrame(ctk.CTkFrame):
             print("Error exporting")
             print(e)
 
+    def searchbox_selection(self, choice):
+        selected_value = self.searchbox_entry.get()
+        self.selected_value = selected_value
+
+        if self.selected_value == self.profile_search_option:
+            self.master.change_console_text("Searching by profile", "INFO")
+        elif self.selected_value == self.timestamp_search_option:
+            self.master.change_console_text("Searching by timestamps", "INFO")
+
     def on_searchbox_click(self):
-        # Ensure the entry widget is clicked and delete intial text
-        self.searchbox_entry.focus_set()
-        self.searchbox_entry.delete("1.0", ctk.END)
+        if self.selected_value == self.profile_search_option:
+            self.searchbox_entry.set("profile 1")
+        elif self.selected_value == self.timestamp_search_option:
+            self.searchbox_entry.set("timestamp 00:00:00.000")
 
     def restore_searchbox_text(self):
-        # Insert default text back again
-        self.searchbox_entry.delete("1.0", ctk.END)
-        self.searchbox_entry.insert("0.0", "Search by profile <integer> or timestamp <hh:mm:ss.sss>")
+        # Restore the original text
+        if self.selected_value == self.timestamp_search_option:
+            self.searchbox_entry.set("Search by timestamp <hh:mm:ss.sss>")            
+        else:
+            self.searchbox_entry.set("Search by profile <integer>")
 
-        # Ensure that the focus is not on the searchbox
-        self.master.focus_set()
 
     def timestamp_to_seconds(self, timestamp_str):
+        # Convert timestamp string to seconds
         try:
-            # Convert timestamp string to seconds
             hours, minutes, seconds = map(float, timestamp_str.split(':'))
             return hours * 3600 + minutes * 60 + seconds
         except ValueError as ve:
@@ -360,17 +365,18 @@ class PlotControlFrame(ctk.CTkFrame):
 
     def search_profile(self):
         # Get the search term from the search box
-        search_term = self.searchbox_entry.get("1.0", "end-1c").strip()
+        search_term = self.searchbox_entry.get().strip()
         
         try:
             if self.master.range_file is not None:
-                if search_term.startswith("profile"):
+                if search_term.startswith("profile") and self.selected_value == self.profile_search_option:
                     profile_number_str = search_term[len("profile"):].strip()
                     if profile_number_str.isdigit():
                         profile_number = int(profile_number_str) - 1
                         self.handle_search_result(profile_number)
 
-                elif search_term.startswith("timestamp"):
+
+                elif search_term.startswith("timestamp") and self.selected_value == self.timestamp_search_option:
                     timestamp_str = search_term[len("timestamp"):].strip()
                     total_seconds = self.timestamp_to_seconds(timestamp_str)
 
@@ -383,14 +389,14 @@ class PlotControlFrame(ctk.CTkFrame):
                             self.master.change_console_text("No formatted timestamps available.", "ERROR")
 
                 else:
-                    self.master.change_console_text(f"Invalid search format: {search_term}. Use 'profile <integer>' or 'timestamp <hh:mm:ss.sss>'.", "ERROR")
+                    self.master.change_console_text(
+                        f"Invalid search format: {search_term} or search option. Use 'profile <integer>' or 'timestamp <hh:mm:ss.sss>'.", "ERROR")
 
                 # Clear the search box after processing the search
                 self.restore_searchbox_text()
 
         except Exception as e:
             self.master.change_console_text("Data is not loaded", "ERROR")
-
 
     def handle_search_result(self, profile_number, timestamp=None):
         if 0 <= profile_number < self.master.max_profiles + 1:
