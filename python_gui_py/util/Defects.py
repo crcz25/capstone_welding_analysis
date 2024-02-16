@@ -71,7 +71,7 @@ class Excessive(WeldDefect):
         for grade, threshold in self.criteria.items():
             if height_of_weld > threshold:
                 return f"{grade}", threshold
-        return "No Excessive defect"
+        return "No Excessive defect", "NA"
 
 
 class Sagging(WeldDefect):
@@ -87,7 +87,7 @@ class Sagging(WeldDefect):
         for grade, threshold in self.criteria.items():
             if height_of_weld > threshold:
                 return f"{grade}", threshold
-        return "No Sagging defect"
+        return "No Sagging defect", "NA"
 
 
 class WeldDefectFactory:
