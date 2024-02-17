@@ -15,30 +15,15 @@ The directory `ros2_ws` contains the ROS2 packages:
 
 # To recreate the environment:
 
-The necessary documentation and/or executables are provided in Seafile under our UTU account. Due to compatibility issues, it is recommended to use a Windows 10 machine. The following steps are required to recreate the environment:
+The necessary documentation and/or executables are provided in Seafile under our UTU account. Due to compatibility issues, it is recommended to use a Windows 10/11 machine. The complete list of instructions are provided in the document *how_to_recreate_env.pdf*. Below is a summary of the steps required to recreate the environment.
 
 1. Install Visual Studio 2019 Community Edition (how_to_install_vs_studio_2019.pdf).
 2. Install Visual Studio 2010 (some dll files are required that are only available with this version) (how_to_install_vs_studio_2010.pdf).
 3. Install ROS2 Foxy Fitzroy
    - Follow the instructions using this tutorial from MS IOT - ROS on Windows: https://ms-iot.github.io/ROSOnWindows/GettingStarted/SetupRos2.html
 4. Install SICK Ranger Studio 5.1 and eBus Driver (how_to_install_sick_api.pdf & how_to_connect_to_camera.pdf).
-5. Install python 3.8.3 (how_to_install_python_3.8.3.pdf)
-6. Create a virtual environment:
-   1. Open a x64 Native Tools Command Prompt for VS 2019 terminal as administrator.
-   2. Create a virtual environment in the root's repo using ```virtualenv -p python3 venv```.
-   3. Activate the virtual environment using ```call venv\Scripts\activate.bat```.
-   4. Install the necessary packages using ```python -m pip install -r requirements.txt```
-7. Verify the installation of the python environments by executing the script `setup.bat` in the root's repo. Then issue the command `where python` to verify that the python executables are in the correct order. Notice the first python executable should be the virtual environment, then the global python installation and finally the ROS2 python installation. The output should be similar to this:
-    ```bash
-    (venv) C:\Users\crcz\Documents\repos\capstone_welding_analysis>where python
-    C:\Users\crcz\Documents\repos\capstone_welding_analysis\venv\Scripts\python.exe
-    C:\Python38\python.exe
-    c:\opt\ros\foxy\x64\python.exe
-    C:\Users\crcz\AppData\Local\Microsoft\WindowsApps\python.exe
-    ```
-
-8. Now you can build your workspace and run your python node that depends on packages installed in your virtual environment.
-
+5. Install and configure python 3.8.3 (how_to_install_python_3.8.3.pdf)
+6. Now you can build your workspace and run the software.
 
 ## Build the ROS environment:
 
@@ -60,12 +45,8 @@ The necessary documentation and/or executables are provided in Seafile under our
   ```bash
   call setup.bat
   ```
-- For Linux (not tested):
-  ```bash
-  source setup.sh
-  ```
 
-2. Run the client using:
+1. Run the client using:
 
     ```bash
     python python_gui_py/App.py
@@ -101,7 +82,7 @@ This node is used to control the SICK Ranger E55 camera and the laser. It publis
 
 # To save a rosbag:
 
-We recommend to record a rosbag to test the code without the need of the camera. The rosbag can then be played back to test the GUI and the processing code.
+We recommend recording a rosbag to test the code without the need of the camera. The rosbag can then be played back to test the GUI and the processing code.
 
 1. Open a _Developer Command Prompt for VS 2019_ terminal, load the ROS2 Environment, and set the RMW Implementation and the ROS Domain ID using the following commands:
     ```bash
