@@ -183,7 +183,6 @@ class InfoFrame(ctk.CTkFrame):
         Find defects in current weld.
 
         """
-        print("Finding defects...")
         # Save settings for the weld
         work_piece_thickness = self.work_piece_thickness.get()
         # Validate the input (non-negative numbers)
@@ -245,7 +244,6 @@ class InfoFrame(ctk.CTkFrame):
         """
         Find all defects in the ranges.
         """
-        print("Finding all defects...")
         try:
             # Save settings for the weld
             work_piece_thickness = self.work_piece_thickness.get()
@@ -272,9 +270,6 @@ class InfoFrame(ctk.CTkFrame):
                     ranges.shape[1],
                     work_piece_thickness,
                     self.defect_choice,
-                )
-                print(
-                    f"Work piece thickness: {work_piece_thickness}, height of weld: {height_of_weld}, x position of weld: {x_position}"
                 )
                 # Find defects
                 type_found, height_limit = find_defect(
