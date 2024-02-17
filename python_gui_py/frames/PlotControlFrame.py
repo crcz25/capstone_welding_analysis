@@ -84,7 +84,7 @@ class PlotControlFrame(ctk.CTkFrame):
         self.filter_menu_dropdown.set("No Filter")
 
         self.export_menu_dropdown = ctk.CTkOptionMenu(
-            self, values=[".ply", ".npy"], anchor="center", command=self.export_menu
+            self, values=[".ply", ".npy", "plot"], anchor="center", command=self.export_menu
         )
         self.export_menu_dropdown.grid(row=2, column=3, padx=10, pady=10, sticky="new")
         self.export_menu_dropdown.set("Export")

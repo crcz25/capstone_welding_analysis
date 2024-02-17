@@ -178,12 +178,25 @@ class ExportPLYWindow(ctk.CTkToplevel):
             # Verify the extension is .npy
             if not self.file_name.endswith(".npy"):
                 self.file_name += ".npy"
+        elif self.choice == "plot":
+            # Ask for the file name to save the point cloud
+            self.file_name = tkinter.filedialog.asksaveasfilename(
+                title="Save point cloud as",
+                filetypes=(("PNG files", "*.png"), ("All files", "*.*")),
+            )
+            # Verify the name is not empty
+            if self.file_name == "":
+                self.master.change_console_text("Invalid file name", "ERROR")
+                return
+            # Verify the extension is .png
+            if not self.file_name.endswith(".png"):
+                self.file_name += ".png"
         # Update the entry widget with the file name
         self.file_path_entry.delete(0, tkinter.END)
         self.file_path_entry.insert(0, self.file_name)
         # Print the file name and path
         self.master.change_console_text(
-            f"Saving point cloud as {self.file_name}", "INFO"
+            f"Saving as {self.file_name}", "INFO"
         )
 
     def export(self):
@@ -221,9 +234,14 @@ class ExportPLYWindow(ctk.CTkToplevel):
                     self.pixel_size_z.get(),
                 ),
             )
+        elif self.choice == "plot":
+            # Export the current plot as a png
+            self.master.plot_frame.save_plot(
+                file_name=self.file_name,
+            )
         # Print the file name and path
         self.master.change_console_text(
-            f"Point cloud saved as {self.file_name}", "SUCCESS"
+            f"File exported as {self.file_name}", "SUCCESS"
         )
         # Print the file name and path
         self.destroy()
