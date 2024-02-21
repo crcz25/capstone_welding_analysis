@@ -73,11 +73,13 @@ class PlotFrame(ctk.CTkFrame):
         }
         # Current cursor limits
         self.cursor_limits = self.initial_cursor_limits.copy()
+        
         # Inital cursors
         self.create_cursors()
 
         # Ensure safe thread stop
         self.stop_event = threading.Event()
+
         # Flag for inverting the plot
         self.invert_plot = False
 
@@ -278,15 +280,23 @@ class PlotFrame(ctk.CTkFrame):
         # Apply the filter
         section = self.apply_filter(data[profile, :], choice)
         self.ax.plot(section)
+
+        # Define the plot title and axis labels
         plot_title = f"Profile {profile + 1}, Filter {choice}"
+        x_label = "Width [mm]"
+        y_label = "Height [mm]"
+
+        # Set the plot title and axis labels
+        self.ax.set_title(plot_title)
+        self.ax.set_xlabel(x_label)
+        self.ax.set_ylabel(y_label)
 
         # Set the axes limits based on cursor positions
         self.set_axes_limits()
 
         # Add guide lines to the plot
         # self.add_guides(profile, data)
-        # Set the plot title
-        self.ax.set_title(plot_title)
+
         # Update the plot window
         self.update_window()
 
@@ -620,9 +630,14 @@ class PlotFrame(ctk.CTkFrame):
             self.add_guides_defects()
             # Remove points for clicked guide lines
             self.points = []
-            # Set the title of the plot
+            # Define plot_title and axis labels
             plot_title = f"Profile {profile + 1}, Filter {choice}"
+            x_label = "Width [mm]"
+            y_label = "Height [mm]"
+            # Set the plot title and axis labels
             self.ax.set_title(plot_title)
+            self.ax.set_xlabel(x_label)
+            self.ax.set_ylabel(y_label)
             # Redraw the canvas
             self.canvas.draw_idle()
             # Update the plot window
