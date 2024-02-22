@@ -102,7 +102,7 @@ class PlotControlFrame(ctk.CTkFrame):
         self.filter_menu_dropdown.set("No Filter")
 
         self.export_menu_dropdown = ctk.CTkOptionMenu(
-            self, values=[".ply", ".npy"], anchor="center", command=self.export_menu
+            self, values=[".ply", ".npy", "plot"], anchor="center", command=self.export_menu
         )
         self.export_menu_dropdown.grid(row=4, column=3, padx=10, pady=5, sticky="new")
         self.export_menu_dropdown.set("Export")
@@ -200,7 +200,7 @@ class PlotControlFrame(ctk.CTkFrame):
         # Interpolate missing values
         data_filtered = pd.Series(
             np.where(row == 0, np.nan, row)
-        ).interpolate().ffill().bfill()
+        ).ffill().bfill()
 
         # Apply filters
         if choice == "Gaussian":
