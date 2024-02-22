@@ -62,6 +62,7 @@ class App(ctk.CTk):
         # Visualization
         self.current_profile = 0
         self.max_profiles = 0
+        self.data_filtered = None
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def change_appearance_mode_event(self, new_appearance_mode: str):

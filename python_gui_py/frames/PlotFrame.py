@@ -9,6 +9,7 @@ from frames.cursors import PlotCursor
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
 from matplotlib.patches import Arc
 
 
@@ -58,8 +59,8 @@ class PlotFrame(ctk.CTkFrame):
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
 
         # Connect the mouse click event to the add_lines_on_click function
-        self.canvas.mpl_connect('button_press_event', self.add_lines_on_click)
-        
+        self.canvas.mpl_connect("button_press_event", self.add_lines_on_click)
+
         # Initialize an empty list to store the clicked points
         self.points = []
 
@@ -72,13 +73,20 @@ class PlotFrame(ctk.CTkFrame):
         }
         # Current cursor limits
         self.cursor_limits = self.initial_cursor_limits.copy()
+        
         # Inital cursors
         self.create_cursors()
 
         # Ensure safe thread stop
         self.stop_event = threading.Event()
+
         # Flag for inverting the plot
         self.invert_plot = False
+
+        # Work piece thickness
+        self.work_piece_thickness = 0.0
+        self.height_of_weld = 0.0
+        self.x_position_of_weld = 0.0
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def update_info_frame(self):
@@ -202,20 +210,33 @@ class PlotFrame(ctk.CTkFrame):
                     [self.cursor_limits["x_max"], self.cursor_limits["x_max"]]
                 )
 
-                # Redraw the canvas
-                self.canvas.draw_idle()
-
-                # Reset the figure to the original one
-                self.create_figure(profile, data, choice)
-
-                self.master.change_console_text(
-                    f"Plot and cursors reset frame: profile, {profile + 1}",
-                    "INFORMATION",
-                )
             else:
                 self.master.change_console_text(
-                    "Cursors are already in their initial positions", "ERROR"
+                    "Cursors are already in their initial positions", "Information"
                 )
+            # Reset the thickness and height of the weld
+            self.work_piece_thickness = 0.0
+            self.height_of_weld = 0.0
+            self.x_position_of_weld = 0.0
+
+            # Reset the defect choice
+            self.master.info_frame.defect_choice = "None"
+            self.master.info_frame.dropdown.set("None")
+            self.master.info_frame.work_piece_thickness.set(0.0)
+
+            # Add guide lines for defects
+            self.add_guides_defects()
+
+            # Redraw the canvas
+            self.canvas.draw_idle()
+
+            # Reset the figure to the original one
+            self.create_figure(profile, data, choice)
+
+            self.master.change_console_text(
+                f"Plot and cursors reset frame: profile, {profile + 1}",
+                "INFORMATION",
+            )
 
         except Exception as e:
             self.master.change_console_text(
@@ -256,17 +277,26 @@ class PlotFrame(ctk.CTkFrame):
         # self.start_update_info_frame()
 
         # Depending on the choice plot differently
-        section = data[profile, :]
+        # Apply the filter
+        section = self.apply_filter(data[profile, :], choice)
         self.ax.plot(section)
+
+        # Define the plot title and axis labels
         plot_title = f"Profile {profile + 1}, Filter {choice}"
+        x_label = "Width [mm]"
+        y_label = "Height [mm]"
+
+        # Set the plot title and axis labels
+        self.ax.set_title(plot_title)
+        self.ax.set_xlabel(x_label)
+        self.ax.set_ylabel(y_label)
 
         # Set the axes limits based on cursor positions
         self.set_axes_limits()
 
         # Add guide lines to the plot
-        self.add_guides(profile, data)
-        # Set the plot title
-        self.ax.set_title(plot_title)
+        # self.add_guides(profile, data)
+
         # Update the plot window
         self.update_window()
 
@@ -292,17 +322,13 @@ class PlotFrame(ctk.CTkFrame):
         # Get the last two points to draw the newest line
         p1 = self.points[-2]
         p2 = self.points[-1]
-        
+
         # Check none values
         if p1[0] == None or p2[0] == None:
             return
 
         # Plot a line segment connecting them
-        self.ax.plot([p1[0],p2[0]],
-                [p1[1], p2[1]],
-                color='red',
-                linestyle="-"
-                )
+        self.ax.plot([p1[0], p2[0]], [p1[1], p2[1]], color="red", linestyle="-")
 
         # Calculate the angle of the line
         width = abs(p1[0] - p2[0])
@@ -323,7 +349,7 @@ class PlotFrame(ctk.CTkFrame):
             arc_angle = 180
         elif p2[0] > p1[0] and p2[1] < p1[1]:
             arc_angle = -angle_deg
-        else: # p2[0] > p1[0] and p2[1] > p1[1]:
+        else:  # p2[0] > p1[0] and p2[1] > p1[1]:
             arc_angle = 0
 
         # Define points for texts
@@ -440,6 +466,82 @@ class PlotFrame(ctk.CTkFrame):
         )
         self.master.change_console_text(txt, "INFORMATION")
 
+    def reset_guides_defects(self):
+        """
+        Resets the guide lines for defects.
+
+        """
+        # remove previous guide lines
+        for line in self.ax.lines:
+            if line.get_label() in ["thickness", "height"]:
+                line.remove()
+        for child in self.ax.get_children():
+            if isinstance(child, Line2D) and child.get_label() in ["thickness", "height"]:
+                child.remove()
+        # Remove the text
+        for text in self.ax.texts:
+            text.remove()
+        # Reset the work piece thickness and height of the weld
+        self.work_piece_thickness = 0.0
+        self.height_of_weld = 0.0
+        self.x_position_of_weld = 0.0
+        # Redraw the canvas
+        self.update_window()
+
+    def add_guides_defects(self):
+        """
+        Adds a guide line for the thickness of the work piece.
+
+        Args:
+            y_position: The y position of the guide line.
+
+        """
+        self.work_piece_thickness = self.master.info_frame.work_piece_thickness.get()
+        self.height_of_weld = self.master.info_frame.height_of_weld.get()
+        self.x_position_of_weld = self.master.info_frame.x_position_of_weld.get()
+
+        if self.work_piece_thickness > 0 and self.height_of_weld > 0:
+            # Plot the guide line of the work piece thickness
+            line = Line2D([0, 1600], [self.work_piece_thickness, self.work_piece_thickness], color="black", linestyle="--", label="thickness")
+            self.ax.add_line(line)
+            print(f"X position of weld: {self.x_position_of_weld}")
+            print(f"Height of weld: {self.height_of_weld}")
+            print(f"Work piece thickness: {self.work_piece_thickness}")
+            # Plot the guide line of the height of the weld using the thickness of the work piece as its x axis position
+            if self.master.info_frame.defect_choice == "Excessive":
+                y_min = self.work_piece_thickness
+                y_max = self.work_piece_thickness + self.height_of_weld
+                line = Line2D([self.x_position_of_weld, self.x_position_of_weld], [y_min, y_max], color="black", linestyle="--", label="height")
+                self.ax.add_line(line)
+                self.ax.text(
+                    self.x_position_of_weld,
+                    y_max * 1.1,
+                    f"H={self.height_of_weld:.2f}",
+                    horizontalalignment="center",
+                    color="black",
+                    fontsize=10,
+                    zorder=2,
+                )
+            elif self.master.info_frame.defect_choice == "Sagging":
+                y_min = self.work_piece_thickness - self.height_of_weld
+                y_max = self.work_piece_thickness
+                line = Line2D([self.x_position_of_weld, self.x_position_of_weld], [y_min, y_max], color="black", linestyle="--", label="height")
+                self.ax.add_line(line)
+                self.ax.text(
+                    self.x_position_of_weld,
+                    y_min * 0.9,
+                    f"H={self.height_of_weld:.2f}",
+                    horizontalalignment="center",
+                    color="black",
+                    fontsize=10,
+                    zorder=2,
+                )
+            else:
+                self.master.change_console_text(
+                    "Plot error: Unknown defect type", "ERROR"
+                )
+
+
     def set_axes_limits(self):
         """
         Update the axes limits of the plot
@@ -448,20 +550,6 @@ class PlotFrame(ctk.CTkFrame):
 
         self.ax.set_xlim(self.cursor_limits["x_min"], self.cursor_limits["x_max"])
         self.ax.set_ylim(self.cursor_limits["y_min"], self.cursor_limits["y_max"])
-
-    def update_window(self):
-        """
-
-        Updates the plot window.
-
-        """
-
-        # Draw the plot
-        self.canvas.draw()
-        # Set the plot position to fill the frame and expand to fill the frame
-        self.canvas.get_tk_widget().pack(side="top", fill="both", expand=True)
-        # Update the frame
-        super().update()
 
     def update_window(self):
         """
@@ -487,6 +575,9 @@ class PlotFrame(ctk.CTkFrame):
             # Move the inverted data back to zero
             min_value = np.min(inverted_section)
             section = inverted_section - min_value
+
+        # Set the section data
+        self.master.data_filtered = section
 
         return section
 
@@ -534,12 +625,19 @@ class PlotFrame(ctk.CTkFrame):
             # Plot the data
             self.ax.plot(section, color=default_color)
             # Add guide lines to the plot
-            self.add_guides(profile, data)
+            # self.add_guides(profile, data)
+            # Add the guide line for the work piece thickness
+            self.add_guides_defects()
             # Remove points for clicked guide lines
             self.points = []
-            # Set the title of the plot
+            # Define plot_title and axis labels
             plot_title = f"Profile {profile + 1}, Filter {choice}"
+            x_label = "Width [mm]"
+            y_label = "Height [mm]"
+            # Set the plot title and axis labels
             self.ax.set_title(plot_title)
+            self.ax.set_xlabel(x_label)
+            self.ax.set_ylabel(y_label)
             # Redraw the canvas
             self.canvas.draw_idle()
             # Update the plot window
@@ -547,7 +645,10 @@ class PlotFrame(ctk.CTkFrame):
             # Update the info frame
             self.master.update_info_frame()
         except Exception as e:
-            self.master.change_console_text(f"Error during plot update: verify there is data imported and try again.", "ERROR")
+            self.master.change_console_text(
+                f"Error during plot update: verify there is data imported and try again.",
+                "ERROR",
+            )
 
     def clean_plot(self):
         """
@@ -556,3 +657,4 @@ class PlotFrame(ctk.CTkFrame):
         """
         self.ax.clear()
         self.update_window()
+
