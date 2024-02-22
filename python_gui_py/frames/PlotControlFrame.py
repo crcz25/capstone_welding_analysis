@@ -167,6 +167,21 @@ class PlotControlFrame(ctk.CTkFrame):
         else:
             self.invert_button.configure(fg_color=self.og_color, text_color="white")
 
+    def rotate(self):
+        # Do nothing if there is no reference line
+        if self.master.plot_frame.points % 2 != 0:
+            return
+        
+        # Two last clicked points which form the reference line
+        point1 = self.master.plot_frame.points[-2]
+        point2 = self.master.plot_frame.points[-1]
+
+        lowered_data = lower_data(self.master.data_filtered, point1, point2)
+
+        self.master.data_filtered = lowered_data
+
+        
+
     def interpolate_and_filter(self, row, choice):
         """
         Interpolate and filter.
@@ -297,3 +312,31 @@ class PlotControlFrame(ctk.CTkFrame):
         except Exception as e:
             print("Error exporting")
             print(e)
+
+def lower_data(data: list, point1: tuple[float, float], point2: tuple[float, float]) -> np.array:
+    """
+        Lowers the y-values of the data.
+
+        Points 1 and 2 form a line and that line is the new height 0 (new x-axis).
+
+        Args:
+            data: Data to lower.
+            point1: (x, y).
+            point2: (x, y).
+
+        Returns:
+            Lowered data.
+    """
+    x1 = point1[0]
+    y1 = point1[1]
+    x2 = point2[0]
+    y2 = point2[1]
+
+    if x2 == x1:
+        return np.array(data)
+
+    slope = (y2 - y1)/(x2 - x1)
+    intercept = y1 - slope * x1
+
+    lowered_data = np.array(data) - (np.arange(len(data))*slope + intercept)
+    return lowered_data
