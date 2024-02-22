@@ -179,7 +179,7 @@ class PlotControlFrame(ctk.CTkFrame):
         # Interpolate missing values
         data_filtered = pd.Series(
             np.where(row == 0, np.nan, row)
-        ).interpolate().ffill().bfill()
+        ).ffill().bfill()
 
         # Apply filters
         if choice == "Gaussian":
