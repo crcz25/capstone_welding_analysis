@@ -1,4 +1,5 @@
 import tkinter
+from typing import List, Tuple
 
 import customtkinter as ctk
 import numpy as np
@@ -6,6 +7,7 @@ import open3d as o3d
 import pandas as pd
 from scipy.ndimage import gaussian_filter, median_filter, uniform_filter1d
 
+from .AutoCompleteEntry import AutocompleteEntry
 from .ExportPLYFrame import ExportPLYWindow
 
 
@@ -16,17 +18,34 @@ class PlotControlFrame(ctk.CTkFrame):
         self.grid(row=1, column=1, padx=(10, 10), pady=(10, 10), sticky="nsew")
 
         # Configure weights for columns and rows
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
-        self.grid_columnconfigure(2, weight=1)
-        self.grid_columnconfigure(3, weight=1)
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
-        self.grid_rowconfigure(2, weight=1)
-        self.grid_rowconfigure(3, weight=1)
+        for i in range(4):
+            self.grid_columnconfigure(i, weight=1)
+            self.grid_rowconfigure(i, weight=1)
 
         # Default text color
         self.color = "white"
+
+        # Default vars
+        self.search_type = tkinter.StringVar()
+
+        # Create the search box
+        self.searchbox_label = ctk.CTkLabel(self, text="Search")
+        self.searchbox_label.grid(row=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="w")
+        self.searchbox_entry = AutocompleteEntry(self,
+                                               variable=self.search_type,
+                                               values=["Search by profile <integer>", "Search by timestamp <hh:mm:ss.sss>"],
+                                               command=self.searchbox_selection)
+        self.searchbox_entry.grid(row=2, column=0, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew")
+        self.searchbox_entry.set("Search by profile <integer>")
+
+        # Remove the original text after you click the searchbox
+        self.searchbox_entry.bind("<Button-1>", lambda e: self.on_searchbox_click())
+
+        # Bind the search function to the search box when enter is pressed
+        self.searchbox_entry.bind("<Return>", lambda e: self.search_profile())
+
+        # Bind the function to restore the original text when the entry loses focus
+        self.searchbox_entry.bind("<FocusOut>", lambda e: self.restore_searchbox_text())
 
         # Create Slider
         self.start_position_label = ctk.CTkLabel(self, text="1")
@@ -40,9 +59,9 @@ class PlotControlFrame(ctk.CTkFrame):
             variable=self.slider_value,
             command=self.slider_event,
         )
-        self.start_position_label.grid(row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nse")
-        self.slider.grid(row=0, column=1, columnspan=2, padx=(10, 10), pady=(10, 10), sticky="ew")
-        self.end_position_label.grid(row=0, column=3, padx=(10, 10), pady=(10, 10), sticky="nsw")
+        self.start_position_label.grid(row=0, column=0, padx=(10, 10), pady=(10, 5), sticky="ew")
+        self.slider.grid(row=0, column=1, columnspan=2, padx=(10, 10), pady=(10, 5), sticky="ew")
+        self.end_position_label.grid(row=0, column=3, padx=(10, 10), pady=(10, 5), sticky="ew")
         self.slider.set(0)
 
         # Create main control buttons
@@ -64,14 +83,14 @@ class PlotControlFrame(ctk.CTkFrame):
         )
 
         # Grid buttons
-        self.scan_button.grid(row=1, column=0, padx=10, pady=10, sticky="new")
-        self.previous_button.grid(row=1, column=1, padx=10, pady=10, sticky="new")
-        self.next_button.grid(row=1, column=2, padx=10, pady=10, sticky="new")
-        self.load_button.grid(row=1, column=3, padx=10, pady=10, sticky="new")
+        self.scan_button.grid(row=3, column=0, padx=10, pady=5, sticky="new")
+        self.previous_button.grid(row=3, column=1, padx=10, pady=5, sticky="new")
+        self.next_button.grid(row=3, column=2, padx=10, pady=5, sticky="new")
+        self.load_button.grid(row=3, column=3, padx=10, pady=5, sticky="new")
         self.clear_point_of_interest.grid(
-            row=2, column=2, padx=10, pady=10, sticky="new"
+            row=4, column=2, padx=10, pady=5, sticky="new"
         )
-        self.invert_button.grid(row=2, column=1, padx=10, pady=10, sticky="new")
+        self.invert_button.grid(row=4, column=1, padx=10, pady=5, sticky="new")
 
         # Dropdown menus
         self.filter_menu_dropdown = ctk.CTkOptionMenu(
@@ -80,32 +99,32 @@ class PlotControlFrame(ctk.CTkFrame):
             anchor="center",
             command=self.filter_menu,
         )
-        self.filter_menu_dropdown.grid(row=2, column=0, padx=10, pady=10, sticky="new")
+        self.filter_menu_dropdown.grid(row=4, column=0, padx=10, pady=5, sticky="new")
         self.filter_menu_dropdown.set("No Filter")
 
         self.export_menu_dropdown = ctk.CTkOptionMenu(
-            self, values=[".ply", ".npy"], anchor="center", command=self.export_menu
+            self, values=[".ply", ".npy", "plot"], anchor="center", command=self.export_menu
         )
-        self.export_menu_dropdown.grid(row=2, column=3, padx=10, pady=10, sticky="new")
+        self.export_menu_dropdown.grid(row=4, column=3, padx=10, pady=5, sticky="new")
         self.export_menu_dropdown.set("Export")
         self.export_window = None
 
         # Console
         self.console_label = ctk.CTkLabel(self, text="Console")
         self.console_label.grid(
-            row=3, column=0, padx=(20, 10), pady=(10, 10), sticky="w"
+            row=5, column=0, padx=(10, 10), pady=(5, 5), sticky="w"
         )
 
         self.console_entry = ctk.CTkTextbox(
-            self, width=250, height=150, text_color=self.color
+            self, height=150, text_color=self.color
         )
         self.console_entry.grid(
-            row=4,
+            row=6,
             column=0,
             columnspan=4,
             rowspan=4,
             padx=(10, 10),
-            pady=(10, 10),
+            pady=(5, 10),
             sticky="nsew",
         )
 
@@ -113,6 +132,9 @@ class PlotControlFrame(ctk.CTkFrame):
         self.choice = None
         self.invert_plot = False
         self.og_color = self.scan_button.cget("fg_color")
+        self.profile_search_option = "Search by profile <integer>"
+        self.timestamp_search_option = "Search by timestamp <hh:mm:ss.sss>"
+        self.selected_value = self.profile_search_option
 
         # Bindings to filter functions
         self.filter_functions = {
@@ -171,7 +193,7 @@ class PlotControlFrame(ctk.CTkFrame):
         # Do nothing if there is no reference line
         if self.master.plot_frame.points % 2 != 0:
             return
-        
+
         # Two last clicked points which form the reference line
         point1 = self.master.plot_frame.points[-2]
         point2 = self.master.plot_frame.points[-1]
@@ -179,8 +201,6 @@ class PlotControlFrame(ctk.CTkFrame):
         lowered_data = lower_data(self.master.data_filtered, point1, point2)
 
         self.master.data_filtered = lowered_data
-
-        
 
     def interpolate_and_filter(self, row, choice):
         """
@@ -194,7 +214,7 @@ class PlotControlFrame(ctk.CTkFrame):
         # Interpolate missing values
         data_filtered = pd.Series(
             np.where(row == 0, np.nan, row)
-        ).interpolate().ffill().bfill()
+        ).ffill().bfill()
 
         # Apply filters
         if choice == "Gaussian":
@@ -313,7 +333,111 @@ class PlotControlFrame(ctk.CTkFrame):
             print("Error exporting")
             print(e)
 
-def lower_data(data: list, point1: tuple[float, float], point2: tuple[float, float]) -> np.array:
+    def searchbox_selection(self, choice):
+        selected_value = self.searchbox_entry.get()
+        self.selected_value = selected_value
+
+        if self.selected_value == self.profile_search_option:
+            self.master.change_console_text("Searching by profile", "INFO")
+        elif self.selected_value == self.timestamp_search_option:
+            self.master.change_console_text("Searching by timestamps", "INFO")
+
+    def on_searchbox_click(self):
+        if self.selected_value == self.profile_search_option:
+            self.searchbox_entry.set("profile 1")
+        elif self.selected_value == self.timestamp_search_option:
+            self.searchbox_entry.set("timestamp 00:00:00.000")
+
+    def restore_searchbox_text(self):
+        # Restore the original text
+        if self.selected_value == self.timestamp_search_option:
+            self.searchbox_entry.set("Search by timestamp <hh:mm:ss.sss>")
+        else:
+            self.searchbox_entry.set("Search by profile <integer>")
+
+    def timestamp_to_seconds(self, timestamp_str):
+        # Convert timestamp string to seconds
+        try:
+            hours, minutes, seconds = map(float, timestamp_str.split(':'))
+            return hours * 3600 + minutes * 60 + seconds
+        except ValueError as ve:
+            print(f"Error converting timestamp: {ve}")
+            return None
+
+    def find_closest_timestamp(self, target_timestamp):
+        try:
+            # Find the closest timestamp from the times list
+            if self.master.formatted_timestamps:
+                # Convert each timestamp in the list to seconds
+                formatted_timestamps_seconds = [self.timestamp_to_seconds(ts) for ts in self.master.formatted_timestamps]
+
+                # Find the closest timestamp based on total seconds
+                closest_index = min(range(len(formatted_timestamps_seconds)), key=lambda i: abs(formatted_timestamps_seconds[i] - target_timestamp))
+                closest_timestamp = self.master.formatted_timestamps[closest_index]
+
+                return closest_index,closest_timestamp
+
+        except Exception as e:
+            print(f"Error in find_closest_timestamp: {e}")
+            return None
+
+
+    def search_profile(self):
+        # Get the search term from the search box
+        search_term = self.searchbox_entry.get().strip()
+
+        try:
+            if self.master.range_file is not None:
+                if search_term.startswith("profile") and self.selected_value == self.profile_search_option:
+                    profile_number_str = search_term[len("profile"):].strip()
+                    if profile_number_str.isdigit():
+                        profile_number = int(profile_number_str) - 1
+                        self.handle_search_result(profile_number)
+
+
+                elif search_term.startswith("timestamp") and self.selected_value == self.timestamp_search_option:
+                    timestamp_str = search_term[len("timestamp"):].strip()
+                    total_seconds = self.timestamp_to_seconds(timestamp_str)
+
+                    if total_seconds is not None:
+                        closest_index, closest_timestamp = self.find_closest_timestamp(total_seconds)
+
+                        if closest_timestamp is not None:
+                            self.handle_search_result(closest_index, closest_timestamp)
+                        else:
+                            self.master.change_console_text("No formatted timestamps available.", "ERROR")
+
+                else:
+                    self.master.change_console_text(
+                        f"Invalid search format: {search_term} or search option. Use 'profile <integer>' or 'timestamp <hh:mm:ss.sss>'.", "ERROR")
+
+                # Clear the search box after processing the search
+                self.restore_searchbox_text()
+
+        except Exception as e:
+            self.master.change_console_text("Data is not loaded", "ERROR")
+
+    def handle_search_result(self, profile_number, timestamp=None):
+        if 0 <= profile_number < self.master.max_profiles + 1:
+            self.slider_value.set(profile_number)
+            self.master.current_profile = self.slider_value.get()
+            self.master.change_plot(change=0, profile=self.slider_value.get())
+
+            if timestamp is not None:
+                # Display to the user which profile was selected (closest to search)
+                self.master.change_console_text(
+                    f"Found the closest timestamp: {timestamp}, profile: {profile_number + 1}.", "INFORMATION"
+                )
+            else:
+                self.master.change_console_text(
+                    f"Found profile: {profile_number + 1}.", "INFORMATION"
+                )
+        else:
+            self.master.change_console_text(
+                f"Profile number out of range (1 - {self.master.max_profiles + 1} ).", "ERROR"
+        )
+
+def lower_data(data: List, point1: Tuple[float, float], point2: Tuple[float, float]) -> np.array:
     """
         Lowers the y-values of the data.
 
@@ -340,3 +464,4 @@ def lower_data(data: list, point1: tuple[float, float], point2: tuple[float, flo
 
     lowered_data = np.array(data) - (np.arange(len(data))*slope + intercept)
     return lowered_data
+

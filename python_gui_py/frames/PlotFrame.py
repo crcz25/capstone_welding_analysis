@@ -658,3 +658,9 @@ class PlotFrame(ctk.CTkFrame):
         self.ax.clear()
         self.update_window()
 
+    def save_plot(self, file_name):
+        """
+        Save the plot as a .png file.
+
+        """
+        self.fig.savefig(file_name, dpi=300, bbox_inches="tight")
