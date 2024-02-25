@@ -1,4 +1,5 @@
 import tkinter
+from typing import List, Tuple
 
 import customtkinter as ctk
 import numpy as np
@@ -6,8 +7,8 @@ import open3d as o3d
 import pandas as pd
 from scipy.ndimage import gaussian_filter, median_filter, uniform_filter1d
 
-from .ExportPLYFrame import ExportPLYWindow
 from .AutoCompleteEntry import AutocompleteEntry
+from .ExportPLYFrame import ExportPLYWindow
 
 
 # --------------------------------------------------------SLIDER/MAIN CONTROL FRAME--------------------------------------------------------#
@@ -30,13 +31,13 @@ class PlotControlFrame(ctk.CTkFrame):
         # Create the search box
         self.searchbox_label = ctk.CTkLabel(self, text="Search")
         self.searchbox_label.grid(row=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="w")
-        self.searchbox_entry = AutocompleteEntry(self, 
-                                               variable=self.search_type, 
-                                               values=["Search by profile <integer>", "Search by timestamp <hh:mm:ss.sss>"], 
+        self.searchbox_entry = AutocompleteEntry(self,
+                                               variable=self.search_type,
+                                               values=["Search by profile <integer>", "Search by timestamp <hh:mm:ss.sss>"],
                                                command=self.searchbox_selection)
         self.searchbox_entry.grid(row=2, column=0, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew")
         self.searchbox_entry.set("Search by profile <integer>")
-        
+
         # Remove the original text after you click the searchbox
         self.searchbox_entry.bind("<Button-1>", lambda e: self.on_searchbox_click())
 
@@ -188,6 +189,19 @@ class PlotControlFrame(ctk.CTkFrame):
         else:
             self.invert_button.configure(fg_color=self.og_color, text_color="white")
 
+    def rotate(self):
+        # Do nothing if there is no reference line
+        if self.master.plot_frame.points % 2 != 0:
+            return
+
+        # Two last clicked points which form the reference line
+        point1 = self.master.plot_frame.points[-2]
+        point2 = self.master.plot_frame.points[-1]
+
+        lowered_data = lower_data(self.master.data_filtered, point1, point2)
+
+        self.master.data_filtered = lowered_data
+
     def interpolate_and_filter(self, row, choice):
         """
         Interpolate and filter.
@@ -337,10 +351,9 @@ class PlotControlFrame(ctk.CTkFrame):
     def restore_searchbox_text(self):
         # Restore the original text
         if self.selected_value == self.timestamp_search_option:
-            self.searchbox_entry.set("Search by timestamp <hh:mm:ss.sss>")            
+            self.searchbox_entry.set("Search by timestamp <hh:mm:ss.sss>")
         else:
             self.searchbox_entry.set("Search by profile <integer>")
-
 
     def timestamp_to_seconds(self, timestamp_str):
         # Convert timestamp string to seconds
@@ -367,12 +380,12 @@ class PlotControlFrame(ctk.CTkFrame):
         except Exception as e:
             print(f"Error in find_closest_timestamp: {e}")
             return None
-        
+
 
     def search_profile(self):
         # Get the search term from the search box
         search_term = self.searchbox_entry.get().strip()
-        
+
         try:
             if self.master.range_file is not None:
                 if search_term.startswith("profile") and self.selected_value == self.profile_search_option:
@@ -424,4 +437,31 @@ class PlotControlFrame(ctk.CTkFrame):
                 f"Profile number out of range (1 - {self.master.max_profiles + 1} ).", "ERROR"
         )
 
+def lower_data(data: List, point1: Tuple[float, float], point2: Tuple[float, float]) -> np.array:
+    """
+        Lowers the y-values of the data.
+
+        Points 1 and 2 form a line and that line is the new height 0 (new x-axis).
+
+        Args:
+            data: Data to lower.
+            point1: (x, y).
+            point2: (x, y).
+
+        Returns:
+            Lowered data.
+    """
+    x1 = point1[0]
+    y1 = point1[1]
+    x2 = point2[0]
+    y2 = point2[1]
+
+    if x2 == x1:
+        return np.array(data)
+
+    slope = (y2 - y1)/(x2 - x1)
+    intercept = y1 - slope * x1
+
+    lowered_data = np.array(data) - (np.arange(len(data))*slope + intercept)
+    return lowered_data
 
