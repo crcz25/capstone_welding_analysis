@@ -57,7 +57,7 @@ class Recorder(Node):
 
         # Generate timestamps in between message timestamps
         if len(self.timestamps) > 0:
-            timestamps_generated = self.generate_timestamps(np.asarray(self.timestamps, dtype=int))
+            timestamps_generated = self.generate_timestamps(np.asarray(self.timestamps, dtype=np.int64))
             timestamps_str = np.asarray(timestamps_generated, dtype=str)
         
         with self.lock:
@@ -91,8 +91,8 @@ class Recorder(Node):
         """
         new_timestamps = []
         for i in range(len(timestamps)-1):
-            new_timestamps.append(np.linspace(timestamps[i], timestamps[i+1], num=512, dtype=float).astype(int))
-        new_timestamps.append(np.linspace(timestamps[-1], timestamps[-1] + cycle_time*512, num=512, dtype=float).astype(int))
+            new_timestamps.append(np.linspace(timestamps[i], timestamps[i+1], num=512, dtype=float).astype(np.int64))
+        new_timestamps.append(np.linspace(timestamps[-1], timestamps[-1] + cycle_time*512, num=512, dtype=float).astype(np.int64))
         new_timestamps = np.array(new_timestamps)
         new_timestamps = np.ravel(new_timestamps)
         return new_timestamps
