@@ -30,12 +30,21 @@ class PlotControlFrame(ctk.CTkFrame):
 
         # Create the search box
         self.searchbox_label = ctk.CTkLabel(self, text="Search")
-        self.searchbox_label.grid(row=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="w")
-        self.searchbox_entry = AutocompleteEntry(self,
-                                               variable=self.search_type,
-                                               values=["Search by profile <integer>", "Search by timestamp <hh:mm:ss.sss>"],
-                                               command=self.searchbox_selection)
-        self.searchbox_entry.grid(row=2, column=0, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew")
+        self.searchbox_label.grid(
+            row=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="w"
+        )
+        self.searchbox_entry = AutocompleteEntry(
+            self,
+            variable=self.search_type,
+            values=[
+                "Search by profile <integer>",
+                "Search by timestamp <hh:mm:ss.sss>",
+            ],
+            command=self.searchbox_selection,
+        )
+        self.searchbox_entry.grid(
+            row=2, column=0, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew"
+        )
         self.searchbox_entry.set("Search by profile <integer>")
 
         # Remove the original text after you click the searchbox
@@ -59,10 +68,78 @@ class PlotControlFrame(ctk.CTkFrame):
             variable=self.slider_value,
             command=self.slider_event,
         )
-        self.start_position_label.grid(row=0, column=0, padx=(10, 10), pady=(10, 5), sticky="ew")
-        self.slider.grid(row=0, column=1, columnspan=2, padx=(10, 10), pady=(10, 5), sticky="ew")
-        self.end_position_label.grid(row=0, column=3, padx=(10, 10), pady=(10, 5), sticky="ew")
+        self.start_position_label.grid(
+            row=0, column=0, padx=(10, 10), pady=(10, 5), sticky="ew"
+        )
+        self.slider.grid(
+            row=0, column=1, columnspan=2, padx=(10, 10), pady=(10, 5), sticky="ew"
+        )
+        self.end_position_label.grid(
+            row=0, column=3, padx=(10, 10), pady=(10, 5), sticky="ew"
+        )
         self.slider.set(0)
+
+        # Create the subframe for the action buttons
+        self.checkbox_frame = ctk.CTkFrame(
+            self, bg_color="transparent", fg_color="transparent"
+        )
+        self.checkbox_frame.grid(row=1, column=1, columnspan=2, sticky="n")
+        # Configure the grid
+        for i in range(3):
+            self.checkbox_frame.grid_columnconfigure(i, weight=1)
+        self.checkbox_frame.grid_rowconfigure(0, weight=1)
+
+        # Points
+        self.pointsEnabled = ctk.StringVar(value="off")
+        self.checkboxPoints = ctk.CTkCheckBox(
+            self.checkbox_frame,
+            text="Point Selection",
+            command=self.checkbox_event_points,
+            variable=self.pointsEnabled,
+            onvalue="on",
+            offvalue="off",
+        )
+        self.checkboxPoints.grid(row=0, column=0, padx=10, pady=10, sticky="new")
+
+        # Invert
+        self.invertEnabled = ctk.StringVar(value="off")
+        self.checkboxInvert = ctk.CTkCheckBox(
+            self.checkbox_frame,
+            text="Invert Plot",
+            command=self.invert,
+            variable=self.invertEnabled,
+            onvalue="on",
+            offvalue="off",
+        )
+        self.checkboxInvert.grid(row=0, column=1, padx=10, pady=10, sticky="new")
+
+        # Create the search box
+        self.searchbox_label = ctk.CTkLabel(self, text="Search")
+        self.searchbox_label.grid(
+            row=1, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="w"
+        )
+        self.searchbox_entry = AutocompleteEntry(
+            self,
+            variable=self.search_type,
+            values=[
+                "Search by profile <integer>",
+                "Search by timestamp <hh:mm:ss.sss>",
+            ],
+            command=self.searchbox_selection,
+        )
+        self.searchbox_entry.grid(
+            row=2, column=0, columnspan=2, padx=(10, 10), pady=(5, 5), sticky="ew"
+        )
+        self.searchbox_entry.set("Search by profile <integer>")
+
+        # Remove the original text after you click the searchbox
+        self.searchbox_entry.bind("<Button-1>", lambda e: self.on_searchbox_click())
+
+        # Bind the search function to the search box when enter is pressed
+        self.searchbox_entry.bind("<Return>", lambda e: self.search_profile())
+
+        # Bind the function to restore the original text when the entry loses focus
+        self.searchbox_entry.bind("<FocusOut>", lambda e: self.restore_searchbox_text())
 
         # Create main control buttons
         self.scan_button = ctk.CTkButton(
@@ -78,8 +155,8 @@ class PlotControlFrame(ctk.CTkFrame):
         self.clear_point_of_interest = ctk.CTkButton(
             self, text="Reset plot", command=self.reset_cursors_and_plot
         )
-        self.invert_button = ctk.CTkButton(
-            self, text="Invert plot", command=self.invert
+        self.rotate_button = ctk.CTkButton(
+            self, text="Align plot", command=self.rotate
         )
 
         # Grid buttons
@@ -90,7 +167,7 @@ class PlotControlFrame(ctk.CTkFrame):
         self.clear_point_of_interest.grid(
             row=4, column=2, padx=10, pady=5, sticky="new"
         )
-        self.invert_button.grid(row=4, column=1, padx=10, pady=5, sticky="new")
+        self.rotate_button.grid(row=4, column=1, padx=10, pady=5, sticky="new")
 
         # Dropdown menus
         self.filter_menu_dropdown = ctk.CTkOptionMenu(
@@ -103,7 +180,10 @@ class PlotControlFrame(ctk.CTkFrame):
         self.filter_menu_dropdown.set("No Filter")
 
         self.export_menu_dropdown = ctk.CTkOptionMenu(
-            self, values=[".ply", ".npy", "plot"], anchor="center", command=self.export_menu
+            self,
+            values=[".ply", ".npy", "plot"],
+            anchor="center",
+            command=self.export_menu,
         )
         self.export_menu_dropdown.grid(row=4, column=3, padx=10, pady=5, sticky="new")
         self.export_menu_dropdown.set("Export")
@@ -111,13 +191,9 @@ class PlotControlFrame(ctk.CTkFrame):
 
         # Console
         self.console_label = ctk.CTkLabel(self, text="Console")
-        self.console_label.grid(
-            row=5, column=0, padx=(10, 10), pady=(5, 5), sticky="w"
-        )
+        self.console_label.grid(row=5, column=0, padx=(10, 10), pady=(5, 5), sticky="w")
 
-        self.console_entry = ctk.CTkTextbox(
-            self, height=150, text_color=self.color
-        )
+        self.console_entry = ctk.CTkTextbox(self, height=150, text_color=self.color)
         self.console_entry.grid(
             row=6,
             column=0,
@@ -131,7 +207,7 @@ class PlotControlFrame(ctk.CTkFrame):
         # Other variables
         self.choice = None
         self.invert_plot = False
-        self.og_color = self.scan_button.cget("fg_color")
+        # self.og_color = self.scan_button.cget("fg_color")
         self.profile_search_option = "Search by profile <integer>"
         self.timestamp_search_option = "Search by timestamp <hh:mm:ss.sss>"
         self.selected_value = self.profile_search_option
@@ -174,7 +250,6 @@ class PlotControlFrame(ctk.CTkFrame):
         # Default to no filter when files are imported
         self.filter_menu("No Filter")
         self.master.plot_frame.invert_plot = False
-        self.invert_button.configure(fg_color=self.og_color, text_color="white")
 
     def invert(self):
         # Change the flag True/False
@@ -183,24 +258,17 @@ class PlotControlFrame(ctk.CTkFrame):
         self.master.plot_frame.update_surface(
             profile=self.master.current_profile, choice=self.choice
         )
-        # Change the background color of the button to indicate the state active/inactive
-        if self.master.plot_frame.invert_plot:
-            self.invert_button.configure(fg_color="Light Green", text_color="black")
-        else:
-            self.invert_button.configure(fg_color=self.og_color, text_color="white")
 
     def rotate(self):
         # Do nothing if there is no reference line
-        if self.master.plot_frame.points % 2 != 0:
+        if len(self.master.plot_frame.points) % 2 != 0:
             return
-
-        # Two last clicked points which form the reference line
-        point1 = self.master.plot_frame.points[-2]
-        point2 = self.master.plot_frame.points[-1]
-
-        lowered_data = lower_data(self.master.data_filtered, point1, point2)
-
-        self.master.data_filtered = lowered_data
+        self.master.plot_frame.align_plot ^= True
+        self.master.plot_frame.pt1 = self.master.plot_frame.points[-2]
+        self.master.plot_frame.pt2 = self.master.plot_frame.points[-1]
+        self.master.plot_frame.update_surface(
+            profile=self.master.current_profile, choice=self.choice
+        )
 
     def interpolate_and_filter(self, row, choice):
         """
@@ -212,9 +280,9 @@ class PlotControlFrame(ctk.CTkFrame):
         """
         np.set_printoptions(threshold=np.inf)
         # Interpolate missing values
-        data_filtered = pd.Series(
-            np.where(row == 0, np.nan, row)
-        ).ffill().bfill()
+        data_filtered = pd.Series(np.where(row == 0, np.nan, row)).ffill().bfill()
+        # Convert to numpy array
+        data_filtered = data_filtered.to_numpy()
 
         # Apply filters
         if choice == "Gaussian":
@@ -233,7 +301,9 @@ class PlotControlFrame(ctk.CTkFrame):
                 i_weld = np.where(row > np.percentile(row, 10))[0]
             if i_weld.size == 0:
                 return data_filtered
-            data_filtered_smoothed = np.interp(np.arange(0, len(row)), i_weld, row[i_weld])
+            data_filtered_smoothed = np.interp(
+                np.arange(0, len(row)), i_weld, row[i_weld]
+            )
         else:
             return data_filtered
 
@@ -304,8 +374,8 @@ class PlotControlFrame(ctk.CTkFrame):
         pcd.points = o3d.utility.Vector3dVector(xyz)
         # Remove outliers
         # if remove_outliers:
-            # print("Removing outliers")
-            # pcd, _ = pcd.remove_statistical_outlier(nb_neighbors=20, std_ratio=2.0)
+        # print("Removing outliers")
+        # pcd, _ = pcd.remove_statistical_outlier(nb_neighbors=20, std_ratio=2.0)
         # Write point cloud to file
         o3d.io.write_point_cloud(file_name, pcd)
 
@@ -358,7 +428,7 @@ class PlotControlFrame(ctk.CTkFrame):
     def timestamp_to_seconds(self, timestamp_str):
         # Convert timestamp string to seconds
         try:
-            hours, minutes, seconds = map(float, timestamp_str.split(':'))
+            hours, minutes, seconds = map(float, timestamp_str.split(":"))
             return hours * 3600 + minutes * 60 + seconds
         except ValueError as ve:
             print(f"Error converting timestamp: {ve}")
@@ -369,18 +439,25 @@ class PlotControlFrame(ctk.CTkFrame):
             # Find the closest timestamp from the times list
             if self.master.formatted_timestamps:
                 # Convert each timestamp in the list to seconds
-                formatted_timestamps_seconds = [self.timestamp_to_seconds(ts) for ts in self.master.formatted_timestamps]
+                formatted_timestamps_seconds = [
+                    self.timestamp_to_seconds(ts)
+                    for ts in self.master.formatted_timestamps
+                ]
 
                 # Find the closest timestamp based on total seconds
-                closest_index = min(range(len(formatted_timestamps_seconds)), key=lambda i: abs(formatted_timestamps_seconds[i] - target_timestamp))
+                closest_index = min(
+                    range(len(formatted_timestamps_seconds)),
+                    key=lambda i: abs(
+                        formatted_timestamps_seconds[i] - target_timestamp
+                    ),
+                )
                 closest_timestamp = self.master.formatted_timestamps[closest_index]
 
-                return closest_index,closest_timestamp
+                return closest_index, closest_timestamp
 
         except Exception as e:
             print(f"Error in find_closest_timestamp: {e}")
             return None
-
 
     def search_profile(self):
         # Get the search term from the search box
@@ -388,28 +465,39 @@ class PlotControlFrame(ctk.CTkFrame):
 
         try:
             if self.master.range_file is not None:
-                if search_term.startswith("profile") and self.selected_value == self.profile_search_option:
-                    profile_number_str = search_term[len("profile"):].strip()
+                if (
+                    search_term.startswith("profile")
+                    and self.selected_value == self.profile_search_option
+                ):
+                    profile_number_str = search_term[len("profile") :].strip()
                     if profile_number_str.isdigit():
                         profile_number = int(profile_number_str) - 1
                         self.handle_search_result(profile_number)
 
-
-                elif search_term.startswith("timestamp") and self.selected_value == self.timestamp_search_option:
-                    timestamp_str = search_term[len("timestamp"):].strip()
+                elif (
+                    search_term.startswith("timestamp")
+                    and self.selected_value == self.timestamp_search_option
+                ):
+                    timestamp_str = search_term[len("timestamp") :].strip()
                     total_seconds = self.timestamp_to_seconds(timestamp_str)
 
                     if total_seconds is not None:
-                        closest_index, closest_timestamp = self.find_closest_timestamp(total_seconds)
+                        closest_index, closest_timestamp = self.find_closest_timestamp(
+                            total_seconds
+                        )
 
                         if closest_timestamp is not None:
                             self.handle_search_result(closest_index, closest_timestamp)
                         else:
-                            self.master.change_console_text("No formatted timestamps available.", "ERROR")
+                            self.master.change_console_text(
+                                "No formatted timestamps available.", "ERROR"
+                            )
 
                 else:
                     self.master.change_console_text(
-                        f"Invalid search format: {search_term} or search option. Use 'profile <integer>' or 'timestamp <hh:mm:ss.sss>'.", "ERROR")
+                        f"Invalid search format: {search_term} or search option. Use 'profile <integer>' or 'timestamp <hh:mm:ss.sss>'.",
+                        "ERROR",
+                    )
 
                 # Clear the search box after processing the search
                 self.restore_searchbox_text()
@@ -426,7 +514,8 @@ class PlotControlFrame(ctk.CTkFrame):
             if timestamp is not None:
                 # Display to the user which profile was selected (closest to search)
                 self.master.change_console_text(
-                    f"Found the closest timestamp: {timestamp}, profile: {profile_number + 1}.", "INFORMATION"
+                    f"Found the closest timestamp: {timestamp}, profile: {profile_number + 1}.",
+                    "INFORMATION",
                 )
             else:
                 self.master.change_console_text(
@@ -434,11 +523,20 @@ class PlotControlFrame(ctk.CTkFrame):
                 )
         else:
             self.master.change_console_text(
-                f"Profile number out of range (1 - {self.master.max_profiles + 1} ).", "ERROR"
+                f"Profile number out of range (1 - {self.master.max_profiles + 1} ).",
+                "ERROR",
+            )
+
+    def checkbox_event_points(self):
+        self.master.plot_frame.pointsEnabled ^= True
+        self.master.plot_frame.update_surface(
+            profile=self.master.current_profile, choice=self.choice
         )
 
-def lower_data(data: List, point1: Tuple[float, float], point2: Tuple[float, float]) -> np.array:
-    """
+    def lower_data(
+        self, data: List, point1: Tuple[float, float], point2: Tuple[float, float]
+    ) -> np.array:
+        """
         Lowers the y-values of the data.
 
         Points 1 and 2 form a line and that line is the new height 0 (new x-axis).
@@ -450,18 +548,17 @@ def lower_data(data: List, point1: Tuple[float, float], point2: Tuple[float, flo
 
         Returns:
             Lowered data.
-    """
-    x1 = point1[0]
-    y1 = point1[1]
-    x2 = point2[0]
-    y2 = point2[1]
+        """
+        x1 = point1[0]
+        y1 = point1[1]
+        x2 = point2[0]
+        y2 = point2[1]
 
-    if x2 == x1:
-        return np.array(data)
+        if x2 == x1:
+            return np.array(data)
 
-    slope = (y2 - y1)/(x2 - x1)
-    intercept = y1 - slope * x1
+        slope = (y2 - y1) / (x2 - x1)
+        intercept = y1 - slope * x1
 
-    lowered_data = np.array(data) - (np.arange(len(data))*slope + intercept)
-    return lowered_data
-
+        lowered_data = np.array(data) - (np.arange(len(data)) * slope + intercept)
+        return lowered_data

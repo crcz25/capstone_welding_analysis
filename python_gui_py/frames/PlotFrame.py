@@ -88,6 +88,8 @@ class PlotFrame(ctk.CTkFrame):
         self.height_of_weld = 0.0
         self.x_position_of_weld = 0.0
 
+        # Enable points for clicked guide lines
+        self.pointsEnabled = False
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def update_info_frame(self):
         """
@@ -307,6 +309,9 @@ class PlotFrame(ctk.CTkFrame):
         Args:
             event: The button press event.
         """
+        # Check if the points are enabled
+        if not self.pointsEnabled:
+            return
 
         # Get the x and y coordinates of the clicked point
         x = event.xdata
