@@ -1,4 +1,5 @@
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import customtkinter as ctk
@@ -11,7 +12,6 @@ from frames.NodeThread import ROSNodeThread
 from frames.PlotControlFrame import PlotControlFrame
 from frames.PlotFrame import PlotFrame
 from frames.SettingsFrame import SettingsFrame
-from datetime import datetime
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("dark-blue")
@@ -63,7 +63,6 @@ class App(ctk.CTk):
         # Visualization
         self.current_profile = 0
         self.max_profiles = 0
-        self.data_filtered = None
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def change_appearance_mode_event(self, new_appearance_mode: str):
@@ -235,7 +234,7 @@ class App(ctk.CTk):
 
         # open the csv file
         self.timestamp_data = np.genfromtxt(self.timestamp_file, delimiter=",")
-        
+
         # Divide the timestamps for each profile
         self.timestamp_formatter()
 
@@ -269,7 +268,7 @@ class App(ctk.CTk):
 
         # Update the info frame textboxes
         self.update_info_frame()
-    
+
 
     def timestamp_formatter(self):
         # Format csv file timestamps back to human readable for the UI
@@ -345,6 +344,10 @@ class App(ctk.CTk):
                 profile = 0
             elif profile > self.max_profiles:
                 profile = self.max_profiles
+            # Update the flags
+            self.plot_frame.align_plot = False
+            self.plot_frame.pt1 = None
+            self.plot_frame.pt2 = None
             # Update the info frame textboxes
             self.update_info_frame()
             # Update the plot

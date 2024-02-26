@@ -194,7 +194,7 @@ class InfoFrame(ctk.CTkFrame):
             return
 
         # Get the current profile shown in the plot
-        data = self.master.data_filtered
+        data = self.master.plot_frame.row_filtered
         # Get the current cursors to crop the data from the surface plot
         cursors = self.master.plot_frame.cursor_limits
         x_min = int(cursors["x_min"])
