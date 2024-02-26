@@ -6,7 +6,7 @@ import customtkinter as ctk
 class ExportPLYWindow(ctk.CTkToplevel):
     def __init__(self, master, choice, **kwargs):
         super().__init__(master, **kwargs)
-        self.title("Export PLY")
+        self.title("Export Data")
 
         # Get the chosen option
         self.choice = choice
