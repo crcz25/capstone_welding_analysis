@@ -4,11 +4,8 @@ import time
 import customtkinter as ctk
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 from frames.cursors import PlotCursor
-from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from matplotlib.patches import Arc
 
@@ -16,40 +13,45 @@ from matplotlib.patches import Arc
 # --------------------------------------------------------PLOT FRAME--------------------------------------------------------#
 class PlotFrame(ctk.CTkFrame):
     """
-    A custom frame for plotting data.
-
-    Args:
-        master: The parent widget.
-        **kwargs: Additional keyword arguments to pass to the parent widget.
+    A class representing a plot frame.
 
     Attributes:
-        fig: The figure object for the plot.
-        ax: The axes object for the plot.
-        canvas: The canvas object for displaying the plot.
-        initial_cursor_limits: Stores the original min,max values for each axis
-        cursor_limits: Stores the current min,max values
-        stop_event: Safe thread start/stop
-        y_1 = Y - max cursor
-        y_2 = Y - min cursor
-        x_1 = X - min cursor
-        x_2 = X - max cursor
-        invert_plot: Flag to invert the plot
-
+        fig (matplotlib.figure.Figure): The figure object for the plot.
+        ax (matplotlib.axes.Axes): The axes object for the plot.
+        canvas (matplotlib.backends.backend_tkagg.FigureCanvasTkAgg): The canvas object for the plot.
+        points (list): A list to store the clicked points.
+        initial_cursor_limits (dict): The initial cursor limits.
+        cursor_limits (dict): The current cursor limits.
+        stop_event (threading.Event): An event to signal the thread to stop.
+        invert_plot (bool): A flag for inverting the plot.
+        work_piece_thickness (float): The thickness of the work piece.
+        height_of_weld (float): The height of the weld.
+        x_position_of_weld (float): The x position of the weld.
+        row_filtered (None or ndarray): The filtered row data.
+        pointsEnabled (bool): A flag to enable points for clicked guide lines.
+        align_plot (bool): A flag for aligning the plot.
+        pt1 (None or tuple): The first point for aligning the plot.
+        pt2 (None or tuple): The second point for aligning the plot.
 
     Methods:
+        update_info_frame: Update the info frame with the newest info every second.
+        start_update_info_frame: Start the function update_info_frame() on a thread.
+        stop_update_info_frame: Stop the thread.
+        create_cursors: Creates 4 cursors. Calls the PlotCursor class.
+        reset_cursors: Resets the cursors to their initial limits.
+        update_cursor_limits: Updates the cursors limits with each adjustment.
         create_figure: Creates a new plot figure.
+        add_lines_on_click: Draws lines between clicked points.
+        add_guides: Adds guide lines to the figure.
+        reset_guides_defects: Resets the guide lines for defects.
+        add_guides_defects: Adds a guide line for the thickness of the work piece.
+        set_axes_limits: Update the axes limits of the plot.
         update_window: Updates the plot window.
+        apply_filter: Apply a filter to the given data and return the filtered section.
         update_surface: Updates the plot surface.
-        update_info_frame: Updates the textbox every x second
-        start_update_info_frame: Starts the thread and runs the update_info_frame method
-        stop_update_info_frame: Stops the thread running the update_info_frame method
-        create_cursors: Creates 4 cursors for the plot
-        reset_cursors: Resets the cursors and plot to the initial way
-        update_cursor_limits: Updates the cursor limits
-        set_axes_limits: Update the axes limits of the plot
-
+        clean_plot: Clean the plot.
+        save_plot: Save the plot as a .png file.
     """
-
     def __init__(self, master, **kwargs):
         super().__init__(master, bg_color="transparent", **kwargs)
         self.grid(row=0, column=1, padx=(10, 10), pady=(10, 10), sticky="nsew")
@@ -101,9 +103,7 @@ class PlotFrame(ctk.CTkFrame):
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def update_info_frame(self):
         """
-
         Update the info frame with the newest info every second
-
         """
         while not self.stop_event.is_set():
             # Check if the update is in progress
@@ -141,9 +141,7 @@ class PlotFrame(ctk.CTkFrame):
 
     def start_update_info_frame(self):
         """
-
         Start the function update_info_frame() on a thread
-
         """
         # Clear the event
         self.stop_event.clear()
@@ -156,11 +154,8 @@ class PlotFrame(ctk.CTkFrame):
 
     def stop_update_info_frame(self):
         """
-
         Stop the thread
-
         """
-
         # Set the event
         self.stop_event.set()
         # Kill the thread
@@ -168,7 +163,6 @@ class PlotFrame(ctk.CTkFrame):
 
     def create_cursors(self):
         """
-
         Creates 4 cursors. Calls the PlotCursor class
 
         Args:
@@ -191,9 +185,7 @@ class PlotFrame(ctk.CTkFrame):
 
     def reset_cursors(self, profile, data, choice):
         """
-
         Resets the cursors to their initial limits.
-
         """
         try:
             # Check if the cursor limits have changed
@@ -255,11 +247,8 @@ class PlotFrame(ctk.CTkFrame):
 
     def update_cursor_limits(self):
         """
-
         Updates the cursors limits with each adjustment.
-
         """
-
         # Update cursor limits by getting current axis value
         self.cursor_limits["x_min"] = self.x_1.line.get_xdata()[0]
         self.cursor_limits["x_max"] = self.x_2.line.get_xdata()[0]
@@ -268,16 +257,13 @@ class PlotFrame(ctk.CTkFrame):
 
     def create_figure(self, profile=0, data=None, choice=None):
         """
-
         Creates a new plot figure.
 
         Args:
             profile: The index of the current profile.
             data: The data to plot.
             choice: Filter type
-
         """
-
         # Clear the previous plot
         self.ax.clear()
 
@@ -439,7 +425,6 @@ class PlotFrame(ctk.CTkFrame):
             profile: The index of the current profile.
             data: The data to plot.
         """
-
         # Get the section to plot
         section = data[profile, :]
 
@@ -482,14 +467,16 @@ class PlotFrame(ctk.CTkFrame):
     def reset_guides_defects(self):
         """
         Resets the guide lines for defects.
-
         """
         # remove previous guide lines
         for line in self.ax.lines:
             if line.get_label() in ["thickness", "height"]:
                 line.remove()
         for child in self.ax.get_children():
-            if isinstance(child, Line2D) and child.get_label() in ["thickness", "height"]:
+            if isinstance(child, Line2D) and child.get_label() in [
+                "thickness",
+                "height",
+            ]:
                 child.remove()
         # Remove the text
         for text in self.ax.texts:
@@ -515,7 +502,13 @@ class PlotFrame(ctk.CTkFrame):
 
         if self.work_piece_thickness > 0 and self.height_of_weld > 0:
             # Plot the guide line of the work piece thickness
-            line = Line2D([0, 1600], [self.work_piece_thickness, self.work_piece_thickness], color="black", linestyle="--", label="thickness")
+            line = Line2D(
+                [0, 1600],
+                [self.work_piece_thickness, self.work_piece_thickness],
+                color="black",
+                linestyle="--",
+                label="thickness",
+            )
             self.ax.add_line(line)
             print(f"X position of weld: {self.x_position_of_weld}")
             print(f"Height of weld: {self.height_of_weld}")
@@ -524,7 +517,13 @@ class PlotFrame(ctk.CTkFrame):
             if self.master.info_frame.defect_choice == "Excessive":
                 y_min = self.work_piece_thickness
                 y_max = self.work_piece_thickness + self.height_of_weld
-                line = Line2D([self.x_position_of_weld, self.x_position_of_weld], [y_min, y_max], color="black", linestyle="--", label="height")
+                line = Line2D(
+                    [self.x_position_of_weld, self.x_position_of_weld],
+                    [y_min, y_max],
+                    color="black",
+                    linestyle="--",
+                    label="height",
+                )
                 self.ax.add_line(line)
                 self.ax.text(
                     self.x_position_of_weld,
@@ -538,7 +537,13 @@ class PlotFrame(ctk.CTkFrame):
             elif self.master.info_frame.defect_choice == "Sagging":
                 y_min = self.work_piece_thickness - self.height_of_weld
                 y_max = self.work_piece_thickness
-                line = Line2D([self.x_position_of_weld, self.x_position_of_weld], [y_min, y_max], color="black", linestyle="--", label="height")
+                line = Line2D(
+                    [self.x_position_of_weld, self.x_position_of_weld],
+                    [y_min, y_max],
+                    color="black",
+                    linestyle="--",
+                    label="height",
+                )
                 self.ax.add_line(line)
                 self.ax.text(
                     self.x_position_of_weld,
@@ -554,23 +559,17 @@ class PlotFrame(ctk.CTkFrame):
                     "Plot error: Unknown defect type", "ERROR"
                 )
 
-
     def set_axes_limits(self):
         """
         Update the axes limits of the plot
-
         """
-
         self.ax.set_xlim(self.cursor_limits["x_min"], self.cursor_limits["x_max"])
         self.ax.set_ylim(self.cursor_limits["y_min"], self.cursor_limits["y_max"])
 
     def update_window(self):
         """
-
         Updates the plot window.
-
         """
-
         # Draw the plot
         self.canvas.draw()
         # Set the plot position to fill the frame and expand to fill the frame
@@ -579,6 +578,16 @@ class PlotFrame(ctk.CTkFrame):
         super().update()
 
     def apply_filter(self, data=None, choice=None):
+        """
+        Apply a filter to the given data and return the filtered section.
+
+        Parameters:
+        - data: The input data to be filtered (default: None)
+        - choice: The choice of filter to be applied (default: None)
+
+        Returns:
+        - section: The filtered section of the data
+        """
         # Interpolate (and possibly filter) the data first
         section = self.master.plot_control_frame.interpolate_and_filter(data, choice)
 
@@ -591,7 +600,9 @@ class PlotFrame(ctk.CTkFrame):
 
         # Align the data
         if self.align_plot:
-            section = self.master.plot_control_frame.lower_data(section, self.pt1, self.pt2)
+            section = self.master.plot_control_frame.lower_data(
+                section, self.pt1, self.pt2
+            )
 
         # Set the data filtered
         self.row_filtered = section
@@ -600,14 +611,12 @@ class PlotFrame(ctk.CTkFrame):
 
     def update_surface(self, profile=0, data=None, choice=None):
         """
-
         Updates the plot surface.
 
         Args:
             current_profile: The index of the current frame.
             profile: The index of the current profile.
             data: The data to plot.
-
         """
         data = self.master.range_data
         try:
@@ -670,7 +679,6 @@ class PlotFrame(ctk.CTkFrame):
     def clean_plot(self):
         """
         Clean the plot.
-
         """
         self.ax.clear()
         self.update_window()
@@ -678,6 +686,5 @@ class PlotFrame(ctk.CTkFrame):
     def save_plot(self, file_name):
         """
         Save the plot as a .png file.
-
         """
         self.fig.savefig(file_name, dpi=300, bbox_inches="tight")
