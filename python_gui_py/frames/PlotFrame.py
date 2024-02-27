@@ -73,7 +73,7 @@ class PlotFrame(ctk.CTkFrame):
         }
         # Current cursor limits
         self.cursor_limits = self.initial_cursor_limits.copy()
-        
+
         # Inital cursors
         self.create_cursors()
 
@@ -83,10 +83,20 @@ class PlotFrame(ctk.CTkFrame):
         # Flag for inverting the plot
         self.invert_plot = False
 
-        # Work piece thickness
+        # For weld defects guide lines
         self.work_piece_thickness = 0.0
         self.height_of_weld = 0.0
         self.x_position_of_weld = 0.0
+        # For weld defects processing
+        self.row_filtered = None
+
+        # Enable points for clicked guide lines
+        self.pointsEnabled = False
+
+        # Flag for aligning the plot
+        self.align_plot = False
+        self.pt1 = None
+        self.pt2 = None
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def update_info_frame(self):
@@ -307,6 +317,9 @@ class PlotFrame(ctk.CTkFrame):
         Args:
             event: The button press event.
         """
+        # Check if the points are enabled
+        if not self.pointsEnabled:
+            return
 
         # Get the x and y coordinates of the clicked point
         x = event.xdata
@@ -576,8 +589,12 @@ class PlotFrame(ctk.CTkFrame):
             min_value = np.min(inverted_section)
             section = inverted_section - min_value
 
-        # Set the section data
-        self.master.data_filtered = section
+        # Align the data
+        if self.align_plot:
+            section = self.master.plot_control_frame.lower_data(section, self.pt1, self.pt2)
+
+        # Set the data filtered
+        self.row_filtered = section
 
         return section
 
