@@ -83,7 +83,10 @@ class App(ctk.CTk):
         # Check if it is time to start or stop the scan
         if current_state == "Take scan":
             self.change_console_text("Listening to scan topic /range", "INFORMATION")
-            self.change_console_text("Verify that ros2 node is publishing or the rosbag is playing", "INFORMATION")
+            self.change_console_text(
+                "Verify that ros2 node is publishing or the rosbag is playing",
+                "INFORMATION",
+            )
             self.start_scan()
         elif current_state == "Stop scan":
             self.change_console_text("Stopping scan", "INFORMATION")
@@ -269,14 +272,14 @@ class App(ctk.CTk):
         # Update the info frame textboxes
         self.update_info_frame()
 
-
     def timestamp_formatter(self):
         # Format csv file timestamps back to human readable for the UI
         self.formatted_timestamps = []
         for timestamp in self.timestamp_data:
-            formatted_timestamp = datetime.fromtimestamp(timestamp / 1e9).strftime("%H:%M:%S.%f")
+            formatted_timestamp = datetime.fromtimestamp(timestamp / 1e9).strftime(
+                "%H:%M:%S.%f"
+            )
             self.formatted_timestamps.append(formatted_timestamp)
-
 
     def update_info_frame(self, new_limits=None):
         # Check if the data is loaded
@@ -293,9 +296,15 @@ class App(ctk.CTk):
             if self.current_profile == 0:
                 time_difference = 0
             elif self.current_profile <= 1536:
-                time_difference = ((self.timestamp_data[self.current_profile] - self.timestamp_data[self.current_profile - 1]) // 1000000)
+                time_difference = (
+                    self.timestamp_data[self.current_profile]
+                    - self.timestamp_data[self.current_profile - 1]
+                ) // 1000000
             else:
-                time_difference = ((self.timestamp_data[self.current_profile] - self.timestamp_data[self.current_profile - 1]) // 1000)
+                time_difference = (
+                    self.timestamp_data[self.current_profile]
+                    - self.timestamp_data[self.current_profile - 1]
+                ) // 1000
 
             tstampdif = f"{time_difference:.2f} ms"
             profile = self.current_profile + 1
