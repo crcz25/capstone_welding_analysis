@@ -5,6 +5,21 @@ import matplotlib.pyplot as plt
 
 # --------------------------------------------------------CURSORS--------------------------------------------------------#
 class PlotCursor(ctk.CTkFrame):
+    """
+    A class representing a cursor on a plot.
+
+    Parameters:
+    - master: The master widget.
+    - ax: The matplotlib axes object on which the cursor will be displayed.
+    - axis_name: The name of the axis ('x' or 'y') along which the cursor will move.
+    - axis: The initial position of the cursor along the specified axis.
+    - label: The label of the cursor.
+    - minimum_x: The minimum value for the x-axis.
+    - minimum_y: The minimum value for the y-axis.
+    - maximum_x: The maximum value for the x-axis.
+    - maximum_y: The maximum value for the y-axis.
+    - **kwargs: Additional keyword arguments to be passed to the ctk.CTkFrame constructor.
+    """
     def __init__(
         self,
         master,
@@ -18,21 +33,6 @@ class PlotCursor(ctk.CTkFrame):
         maximum_y=70,
         **kwargs,
     ):
-        """
-        A class representing a cursor on a plot.
-
-        Parameters:
-        - master: The master widget.
-        - ax: The matplotlib axes object on which the cursor will be displayed.
-        - axis_name: The name of the axis ('x' or 'y') along which the cursor will move.
-        - axis: The initial position of the cursor along the specified axis.
-        - label: The label of the cursor.
-        - minimum_x: The minimum value for the x-axis.
-        - minimum_y: The minimum value for the y-axis.
-        - maximum_x: The maximum value for the x-axis.
-        - maximum_y: The maximum value for the y-axis.
-        - **kwargs: Additional keyword arguments to be passed to the ctk.CTkFrame constructor.
-        """
         super().__init__(master, bg_color="transparent", **kwargs)
         # Get canvas and assign basic variables
         self.ax = ax
