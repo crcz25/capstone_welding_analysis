@@ -3,7 +3,7 @@ import tkinter
 import customtkinter as ctk
 
 
-class ExportPLYWindow(ctk.CTkToplevel):
+class ExportWindow(ctk.CTkToplevel):
     def __init__(self, master, choice, **kwargs):
         super().__init__(master, **kwargs)
         self.title("Export Data")

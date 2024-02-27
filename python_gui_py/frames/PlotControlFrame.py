@@ -8,7 +8,7 @@ import pandas as pd
 from scipy.ndimage import gaussian_filter, median_filter, uniform_filter1d
 
 from .AutoCompleteEntry import AutocompleteEntry
-from .ExportPLYFrame import ExportPLYWindow
+from .ExportFrame import ExportWindow
 
 
 # --------------------------------------------------------SLIDER/MAIN CONTROL FRAME--------------------------------------------------------#
@@ -393,7 +393,7 @@ class PlotControlFrame(ctk.CTkFrame):
                 self.master.change_console_text("Exporting point cloud", "INFO")
                 # Create the window to export the point cloud, if it doesn't exist
                 if self.export_window is None or not self.export_window.winfo_exists():
-                    self.export_window = ExportPLYWindow(self.master, choice)
+                    self.export_window = ExportWindow(self.master, choice)
                     # Set the focus to the window and on top of all other windows
                     self.export_window.focus()
                     self.export_window.grab_set()
