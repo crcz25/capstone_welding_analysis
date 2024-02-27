@@ -380,9 +380,14 @@ class App(ctk.CTk):
             self.change_console_text("Scan stopped", "INFORMATION")
             ## Save the data ##
             # Ask the user where to save the data
-            self.csv_file_path = filedialog.askdirectory()
-            self.change_console_text(f"Saving data to {self.csv_file_path}", "SUCCESS")
-            self.ros_node_thread.save_data(self.csv_file_path)
+            self.file_path = filedialog.askdirectory()
+            # Check if the user selected a directory
+            if len(self.file_path) == 0:
+                self.change_console_text("No directory selected", "ERROR")
+                return
+            # Convert to absolute path
+            self.change_console_text(f"Saving data to {self.file_path}", "SUCCESS")
+            self.ros_node_thread.save_data(self.file_path)
 
 
 if __name__ == "__main__":

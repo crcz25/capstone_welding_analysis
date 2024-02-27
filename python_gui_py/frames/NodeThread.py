@@ -56,10 +56,10 @@ class ROSNodeThread(threading.Thread):
                 # Spin the node once
                 rclpy.spin_once(self.ros_node, timeout_sec=0.1)
                 # Print the length of the data, we use a lock to prevent the node from changing the data while we are printing it
-                with self.ros_node.lock:
+                # with self.ros_node.lock:
                     # We can do something with the data here
-                    if len(self.ros_node.data_npy) > 0:
-                        print(len(self.ros_node.data_npy))
+                    # if len(self.ros_node.data_npy) > 0:
+                        # print(len(self.ros_node.data_npy))
                 # If the node is not alive, break out of the loop
                 if not self.is_alive():
                     break
