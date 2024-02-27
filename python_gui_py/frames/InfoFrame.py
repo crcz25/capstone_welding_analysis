@@ -9,6 +9,37 @@ from util.Defects import WeldDefectsReport, find_defect
 
 # --------------------------------------------------------RIGHT INFO/DEFECTS FRAME--------------------------------------------------------#
 class InfoFrame(ctk.CTkFrame):
+    """
+    A custom frame class that displays information and allows for defect analysis.
+
+    Args:
+    - master: The parent widget.
+    - **kwargs: Additional keyword arguments to configure the frame.
+
+    Attributes:
+    - scaling_label_info: A label widget for displaying the "Information" text.
+    - textbox_info: A textbox widget for displaying information.
+    - scaling_label_alerts: A label widget for displaying the "Defects" text.
+    - textbox_alerts: A textbox widget for displaying defects.
+    - dropdown: An option menu widget for selecting defect types.
+    - work_piece_thickness: A DoubleVar for storing the work piece thickness.
+    - height_of_weld: A DoubleVar for storing the height of the weld.
+    - x_position_of_weld: A DoubleVar for storing the x position of the weld.
+    - defects_found_text: A StringVar for storing the defects found.
+    - defect_choice: A string representing the selected defect type.
+    - template_string: A string template for formatting defect information.
+    - export_path: The path for exporting data.
+    - update_in_progress: A boolean indicating if an update is in progress.
+    - data: The data loaded from the defects.json file.
+
+    Methods:
+    - change_defects_found: Change the data in the defects panel according to the selected defect type.
+    - find_height: Find the height of the weld based on the defect type.
+    - process_defects: Find defects in the current weld.
+    - process_all_defects: Find all defects in the ranges.
+    - open_json_file: Open and read a JSON file.
+    """
+
     def __init__(self, master, **kwargs):
         super().__init__(master, corner_radius=0, **kwargs)
 
@@ -136,8 +167,7 @@ class InfoFrame(ctk.CTkFrame):
         Change the data in the defects panel according to what is selected from the defect type menu.
 
         Parameters:
-        - choice (str).
-
+        - choice (str): The choice selected from the defect type menu.
         """
         self.defect_choice = choice
         if choice == "None":
@@ -181,7 +211,6 @@ class InfoFrame(ctk.CTkFrame):
     def process_defects(self):
         """
         Find defects in current weld.
-
         """
         # Save settings for the weld
         work_piece_thickness = self.work_piece_thickness.get()
@@ -260,9 +289,7 @@ class InfoFrame(ctk.CTkFrame):
             filter = self.master.plot_control_frame.choice
             report = WeldDefectsReport()
             for idx, (range, timestamp) in enumerate(zip(ranges, timestamps)):
-                filtered_data = self.master.plot_frame.apply_filter(
-                    range, filter
-                )
+                filtered_data = self.master.plot_frame.apply_filter(range, filter)
                 # Find the defect
                 height_of_weld, x_position = self.find_height(
                     filtered_data,
@@ -316,7 +343,6 @@ class InfoFrame(ctk.CTkFrame):
             print(e)
 
     def open_json_file(self, file_path):
-        # TODO: Check if you can actually display something or not (display only after analysis done)
         """
         Open and read a JSON file.
 
