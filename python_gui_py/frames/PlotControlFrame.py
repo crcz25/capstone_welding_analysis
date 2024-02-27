@@ -345,6 +345,16 @@ class PlotControlFrame(ctk.CTkFrame):
         )
 
     def rotate(self):
+        """
+        Rotate the plot by toggling the alignment of the reference line.
+
+        If there is no reference line, the method does nothing.
+
+        This method updates the plot surface based on the current profile and choice.
+
+        Returns:
+            None
+        """
         # Do nothing if there is no reference line
         if len(self.master.plot_frame.points) % 2 != 0:
             return
