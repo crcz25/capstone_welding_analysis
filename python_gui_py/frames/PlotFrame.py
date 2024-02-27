@@ -226,6 +226,11 @@ class PlotFrame(ctk.CTkFrame):
             self.master.info_frame.dropdown.set("None")
             self.master.info_frame.work_piece_thickness.set(0.0)
 
+            # Reset the lower data
+            self.align_plot = False
+            self.pt1 = None
+            self.pt2 = None
+
             # Add guide lines for defects
             self.add_guides_defects()
 

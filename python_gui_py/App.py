@@ -451,7 +451,7 @@ class App(ctk.CTk):
                 profile = 0
             elif profile > self.max_profiles:
                 profile = self.max_profiles
-            # Update the flags
+            # Reset alignment flags
             self.plot_frame.align_plot = False
             self.plot_frame.pt1 = None
             self.plot_frame.pt2 = None
