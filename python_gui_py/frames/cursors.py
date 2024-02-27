@@ -18,6 +18,21 @@ class PlotCursor(ctk.CTkFrame):
         maximum_y=70,
         **kwargs,
     ):
+        """
+        A class representing a cursor on a plot.
+
+        Parameters:
+        - master: The master widget.
+        - ax: The matplotlib axes object on which the cursor will be displayed.
+        - axis_name: The name of the axis ('x' or 'y') along which the cursor will move.
+        - axis: The initial position of the cursor along the specified axis.
+        - label: The label of the cursor.
+        - minimum_x: The minimum value for the x-axis.
+        - minimum_y: The minimum value for the y-axis.
+        - maximum_x: The maximum value for the x-axis.
+        - maximum_y: The maximum value for the y-axis.
+        - **kwargs: Additional keyword arguments to be passed to the ctk.CTkFrame constructor.
+        """
         super().__init__(master, bg_color="transparent", **kwargs)
         # Get canvas and assign basic variables
         self.ax = ax
@@ -49,9 +64,7 @@ class PlotCursor(ctk.CTkFrame):
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def click_on_line(self, event):
         """
-
         Create follower, releaser for the clicked line
-
         """
         if event.artist == self.line:
             print("Selected line:", self.line)
@@ -66,9 +79,7 @@ class PlotCursor(ctk.CTkFrame):
 
     def disconnect_and_redraw(self):
         """
-
         Disconnect the line and then update the plot
-
         """
         if hasattr(self, "releaser"):
             self.canvas.mpl_disconnect(self.releaser)
@@ -79,17 +90,17 @@ class PlotCursor(ctk.CTkFrame):
         self.canvas.draw_idle()
 
     def remove_label(self):
+        """
+        Removes the text label associated with the cursor, if it exists.
+        """
         if hasattr(self, "text_label") and self.text_label is not None:
             self.text_label.remove()
             self.text_label = None
 
     def follow_mouse(self, event):
         """
-
         Line follows the mouse position and updates the text label with the current position.
-
         """
-
         # Check if the mouse position is valid
         if event.xdata is None or event.ydata is None:
             return
@@ -144,11 +155,8 @@ class PlotCursor(ctk.CTkFrame):
 
     def release_on_click(self, event):
         """
-
         When released, plot limits are changed and lines are moved to the current mouse position.
-
         """
-
         # Assuming self.line is the line that was clicked on
         if self.axis_name == "y":
             ydata = self.line.get_ydata()
@@ -197,9 +205,7 @@ class PlotCursor(ctk.CTkFrame):
 
     def reset_cursors(self):
         """
-
         Plot and lines go to their initial positions/values.
-
         """
         # Reset to the initial position
         if self.axis_name == "y":
