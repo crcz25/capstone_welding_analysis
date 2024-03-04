@@ -27,63 +27,29 @@ class SettingsFrame(ctk.CTkFrame):
         super().__init__(master, bg_color="transparent", **kwargs)
         self.grid(row=0, column=1, padx=(10, 10), pady=(10, 10), sticky="nsew")
 
-        # Divide the frame into 9 columns and 4 rows
+        # Divide the frame into 9 columns and 3 rows
         for i in range(9):
             self.grid_columnconfigure(i, weight=1)
-        for i in range(2):
+        for i in range(3):
             self.grid_rowconfigure(i, weight=1)
-        # Last row should occupy the entire width of the frame
-        # self.grid_rowconfigure(3, weight=1)
 
-        # --------------- Camera settings ---------------
-        # self.camera_title_label = ctk.CTkLabel(self, text="Camera settings")
-        # self.camera_title_label.grid(row=0, column=0, columnspan=3, padx=(10, 10), pady=(10, 10), sticky="we")
-
-        # IP Address
-        # self.ip_label = ctk.CTkLabel(self, text="IP Address:")
-        # self.ip_label.grid(row=1, column=0, padx=(10, 10), pady=(10, 10), sticky="ew")
-
-        # self.ip_entry = ctk.CTkEntry(self)
-        # self.ip_entry.grid(row=1, column=1, padx=(10, 10), pady=(10, 10), sticky="ew")
-
-        # Parameter file
-        # self.paramfile_label = ctk.CTkLabel(self, text="Parameter file:")
-        # self.paramfile_label.grid(row=2, column=0, padx=(10, 10), pady=(10, 10), sticky="ew")
-
-        # self.parameter_file_button = ctk.CTkButton(self, text="Import parameter file",
-        #    command=master.import_files)
-        # self.parameter_file_button.grid(row=2, column=2, padx=(10, 10), pady=(10, 10), sticky="ew")
-
-        # Connect Button
-        # self.connect_disconnect_button = ctk.CTkButton(self, text="Connect",
-        #    command=lambda: master.change_button_text(self.connect_disconnect_button, "Connect", "Disconnect"))
-        # self.connect_disconnect_button.grid(row=1, column=2, pady=(10, 10), sticky="ew")
-
-        # --------------- ROS2 settings ---------------
-        # self.ros_title_label = ctk.CTkLabel(self, text="ROS2 settings")
-        # self.ros_title_label.grid(row=0, column=4, columnspan=3, padx=(10, 10), pady=(10, 10), sticky="we")
-
-        # Topic name
-        # self.topic_label = ctk.CTkLabel(self, text="Topic:")
-        # self.topic_label.grid(row=1, column=4, padx=(10, 10), pady=(10, 10), sticky="ew")
-
-        # self.topic_entry_ros = ctk.CTkEntry(self)
-        # self.topic_entry_ros.grid(row=1, column=5, padx=(10, 10), pady=(10, 10), sticky="ew")
-
-        # Set topic button
-        # self.set_topic_button = ctk.CTkButton(self, text="Set",
-        #    command=lambda: master.change_button_text(self.set_topic_button, "Set", "Unset"))
-        # self.set_topic_button.grid(row=1, column=6, pady=(10, 10), sticky="ew")
-
-        # Create settings frame
-        self.settings_frame = ctk.CTkFrame(self, bg_color="transparent")
+        # --------------- Settings Frame ---------------
+        self.settings_frame = ctk.CTkFrame(
+            self, bg_color="transparent", fg_color="transparent"
+        )
         self.settings_frame.grid(
-            row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew"
+            row=0,
+            column=0,
+            padx=(10, 10),
+            pady=(10, 10),
+            rowspan=2,
+            columnspan=9,
+            sticky="nsew",
         )
         # Configure the grid
-        for i in range(2):
+        for i in range(9):
             self.settings_frame.grid_columnconfigure(i, weight=1)
-        for i in range(4):
+        for i in range(2):
             self.settings_frame.grid_rowconfigure(i, weight=1)
 
         # --------------- Import settings ---------------
@@ -100,43 +66,54 @@ class SettingsFrame(ctk.CTkFrame):
         )
         for i in range(2):
             self.pixel_size_frame.grid_columnconfigure(i, weight=1)
-        for i in range(4):
+        for i in range(5):
             self.pixel_size_frame.grid_rowconfigure(i, weight=0)
 
         # Create widgets
-        self.pixel_label = ctk.CTkLabel(self.pixel_size_frame, text="Pixel Size:")
+        self.pixel_label = ctk.CTkLabel(
+            self.pixel_size_frame,
+            text="Pixel Size",
+            font=ctk.CTkFont(size=20, weight="bold"),
+        )
         self.pixel_label.grid(
-            row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew"
+            row=0, column=0, padx=(10, 10), pady=(10, 10), columnspan=2, sticky="nsew"
         )
         self.pixel_size_x_label = ctk.CTkLabel(self.pixel_size_frame, text="X:")
         self.pixel_size_x_label.grid(
-            row=1, column=0, padx=(10, 10), pady=(10, 10), sticky="nse"
+            row=2, column=0, padx=(10, 10), pady=(10, 10), sticky="nse"
         )
         self.pixel_size_x_entry = ctk.CTkEntry(
             self.pixel_size_frame, textvariable=self.pixel_size_x
         )
         self.pixel_size_x_entry.grid(
-            row=1, column=1, padx=(10, 10), pady=(10, 10), sticky="nsew"
+            row=2, column=1, padx=(10, 50), pady=(10, 10), sticky="nsew"
         )
         self.pixel_size_y_label = ctk.CTkLabel(self.pixel_size_frame, text="Y:")
         self.pixel_size_y_label.grid(
-            row=2, column=0, padx=(10, 10), pady=(10, 10), sticky="nse"
+            row=3, column=0, padx=(10, 10), pady=(10, 10), sticky="nse"
         )
         self.pixel_size_y_entry = ctk.CTkEntry(
             self.pixel_size_frame, textvariable=self.pixel_size_y
         )
         self.pixel_size_y_entry.grid(
-            row=2, column=1, padx=(10, 10), pady=(10, 10), sticky="nsew"
+            row=3, column=1, padx=(10, 50), pady=(10, 10), sticky="nsew"
         )
         self.pixel_size_z_label = ctk.CTkLabel(self.pixel_size_frame, text="Z:")
         self.pixel_size_z_label.grid(
-            row=3, column=0, padx=(10, 10), pady=(10, 10), sticky="nse"
+            row=4, column=0, padx=(10, 10), pady=(10, 10), sticky="nse"
         )
         self.pixel_size_z_entry = ctk.CTkEntry(
             self.pixel_size_frame, textvariable=self.pixel_size_z
         )
         self.pixel_size_z_entry.grid(
-            row=3, column=1, padx=(10, 10), pady=(10, 10), sticky="nsew"
+            row=4, column=1, padx=(10, 50), pady=(10, 10), sticky="nsew"
+        )
+        self.pixel_note = ctk.CTkLabel(
+            self.pixel_size_frame,
+            text="Default values for SICK Ranger E55\n(Verify the values for your camera)",
+        )
+        self.pixel_note.grid(
+            row=1, column=0, padx=(10, 10), pady=(10, 10), columnspan=2, sticky="nsew"
         )
 
         # --------------- Action Frame ---------------
@@ -145,7 +122,7 @@ class SettingsFrame(ctk.CTkFrame):
             self, bg_color="transparent", fg_color="transparent"
         )
         self.action_frame.grid(
-            row=3, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew", columnspan=9
+            row=2, column=0, padx=(10, 10), pady=(10, 10), sticky="ew", columnspan=9
         )
         # Configure the grid
         for i in range(3):
@@ -157,7 +134,7 @@ class SettingsFrame(ctk.CTkFrame):
             self.action_frame, text="Save settings", command=self.save_settings
         )
         self.save_settings_button.grid(
-            row=0, column=3, padx=(10, 10), pady=(10, 10), sticky="nse"
+            row=0, column=2, padx=(10, 10), pady=(10, 10), sticky="nse"
         )
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
