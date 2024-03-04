@@ -11,20 +11,41 @@ import os
 
 
 class Recorder(Node):
+    """
+    A class that represents a data recorder node in ROS2.
+
+    This node subscribes to a Scan message and records the received data.
+    The recorded data can be saved to a file.
+
+    Attributes:
+        data_npy (list): A list to store the recorded data in npy format.
+        timestamps (list): A list to store the timestamps of the received messages.
+        lock (threading.Lock): A lock to prevent concurrent access to the data.
+
+    Methods:
+        __init__(): Initializes the Recorder node.
+        listener_callback(msg): Callback function to process the received Scan message.
+        save_data(file_path): Saves the recorded data to a file.
+        get_timestamp() -> datetime: Returns the timestamp of the first received message.
+        generate_timestamps(timestamps, cycle_time) -> np.ndarray: Generates timestamps between received messages.
+    """
     def __init__(self):
         super().__init__("recorder")
-        # Create the subscriber. This subscriber will receive a Scan message and the window for plotting
         self.subscription = self.create_subscription(
             Scan, "range", self.listener_callback, 10
         )
-        self.subscription  # prevent unused variable warning
-        # Variable to save the data in npy format
+        self.subscription
         self.data_npy = []
         self.timestamps = []
-        # Lock to prevent the node from changing the data while accessing it
         self.lock = threading.Lock()
 
     def listener_callback(self, msg):
+        """
+        Callback function to process the received Scan message.
+
+        Args:
+            msg (Scan): The received Scan message.
+        """
         id = msg.id
         height = msg.height
         width = msg.width
@@ -32,14 +53,10 @@ class Recorder(Node):
         data = msg.data
         timestamp = msg.header.stamp
 
-        # Convert the time from ROS message to a single string value
-        # and add leading zeros to nanoseconds
         timestamp = str(timestamp.sec) + str(timestamp.nanosec).zfill(9)
         with self.lock:
             self.timestamps.append(timestamp)
-        # Reshape the data to a 2D array of 512, whatever the width is
         data = np.array(data).reshape(height, width)
-        # Log the data information
         self.get_logger().info(f"ID: {id}")
         self.get_logger().info(f"height: {height}, width: {width}, step: {step}")
         self.get_logger().info(f"size: {len(data)}")
@@ -48,20 +65,28 @@ class Recorder(Node):
             self.data_npy.append(data)
 
     def save_data(self, file_path):
+        """
+        Saves the recorded data to a file.
+
+        Args:
+            file_path (str): The path to the directory where the data will be saved.
+        """
         print("Saving data")
         print(f"File path: {file_path}")
         timestamp = self.get_timestamp()
 
-        # Create a folder for the ranges and timestamps
         os.mkdir(os.path.join(file_path, timestamp))
 
-        # Generate timestamps in between message timestamps
         if len(self.timestamps) > 0:
-            timestamps_generated = self.generate_timestamps(np.asarray(self.timestamps, dtype=np.int64))
+            timestamps_generated = self.generate_timestamps(
+                np.asarray(self.timestamps, dtype=np.int64)
+            )
             timestamps_str = np.asarray(timestamps_generated, dtype=str)
-        
+
         with self.lock:
-            timestamp_path = os.path.join(file_path, timestamp, f"timestamps_ns_{timestamp}.csv")
+            timestamp_path = os.path.join(
+                file_path, timestamp, f"timestamps_ns_{timestamp}.csv"
+            )
             np.savetxt(
                 timestamp_path,
                 timestamps_str,
@@ -75,28 +100,45 @@ class Recorder(Node):
             self.get_logger().info("Data saved")
 
     def get_timestamp(self) -> datetime:
+        """
+        Returns the timestamp of the first received message.
+
+        Returns:
+            datetime: The timestamp of the first received message.
+        """
         now = datetime.now()
-        timestamp = datetime.fromtimestamp(
-                    float(self.timestamps[0]) // 1000000000
-                )
-        # Convert timestamp to human readable
+        timestamp = datetime.fromtimestamp(float(self.timestamps[0]) // 1000000000)
         timestamp = now.strftime("%d-%m-%Y-%H-%M-%S")
         return timestamp
-    
-    def generate_timestamps(self, timestamps: np.ndarray, cycle_time: float = 3000000) -> np.ndarray:
+
+    def generate_timestamps(
+        self, timestamps: np.ndarray, cycle_time: float = 3000000
+    ) -> np.ndarray:
         """
-        len(timestamps) > 0
-        
-        cycle_time in nanoseconds
+        Generates timestamps between received messages.
+
+        Args:
+            timestamps (np.ndarray): The timestamps of the received messages.
+            cycle_time (float): The cycle time in nanoseconds.
+
+        Returns:
+            np.ndarray: The generated timestamps.
         """
         new_timestamps = []
-        for i in range(len(timestamps)-1):
-            new_timestamps.append(np.linspace(timestamps[i], timestamps[i+1], num=512, dtype=float).astype(np.int64))
-        new_timestamps.append(np.linspace(timestamps[-1], timestamps[-1] + cycle_time*512, num=512, dtype=float).astype(np.int64))
+        for i in range(len(timestamps) - 1):
+            new_timestamps.append(
+                np.linspace(
+                    timestamps[i], timestamps[i + 1], num=512, dtype=float
+                ).astype(np.int64)
+            )
+        new_timestamps.append(
+            np.linspace(
+                timestamps[-1], timestamps[-1] + cycle_time * 512, num=512, dtype=float
+            ).astype(np.int64)
+        )
         new_timestamps = np.array(new_timestamps)
         new_timestamps = np.ravel(new_timestamps)
         return new_timestamps
-
 
 
 def main(args=None):

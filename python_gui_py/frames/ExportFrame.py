@@ -3,7 +3,40 @@ import tkinter
 import customtkinter as ctk
 
 
-class ExportPLYWindow(ctk.CTkToplevel):
+class ExportWindow(ctk.CTkToplevel):
+    """
+    A class representing the export window for exporting data.
+
+    Args:
+        master: The master widget.
+        choice: The chosen option for export.
+
+    Attributes:
+        choice (str): The chosen option for export.
+        pixel_size_x (ctk.DoubleVar): The pixel size in the x direction.
+        pixel_size_y (ctk.DoubleVar): The pixel size in the y direction.
+        pixel_size_z (ctk.DoubleVar): The pixel size in the z direction.
+        frame (ctk.CTkFrame): The frame for the widgets.
+        pixel_size_frame (ctk.CTkFrame): The subframe for pixel size.
+        pixel_label (ctk.CTkLabel): The label for pixel size.
+        pixel_size_x_label (ctk.CTkLabel): The label for pixel size in the x direction.
+        pixel_size_x_entry (ctk.CTkEntry): The entry for pixel size in the x direction.
+        pixel_size_y_label (ctk.CTkLabel): The label for pixel size in the y direction.
+        pixel_size_y_entry (ctk.CTkEntry): The entry for pixel size in the y direction.
+        pixel_size_z_label (ctk.CTkLabel): The label for pixel size in the z direction.
+        pixel_size_z_entry (ctk.CTkEntry): The entry for pixel size in the z direction.
+        file_path_frame (ctk.CTkFrame): The subframe for file path and check button.
+        file_path_label (ctk.CTkLabel): The label for file path.
+        file_path_entry (ctk.CTkEntry): The entry for file path.
+        file_path_button (ctk.CTkButton): The button for browsing file path.
+        export_cancel_frame (ctk.CTkFrame): The subframe for export and cancel buttons.
+        export_button (ctk.CTkButton): The button for exporting.
+        cancel_button (ctk.CTkButton): The button for canceling.
+        file_name (str): The name of the file to be exported.
+        remove_outliers (bool): Flag indicating whether to remove outliers from the point cloud.
+
+    """
+
     def __init__(self, master, choice, **kwargs):
         super().__init__(master, **kwargs)
         self.title("Export Data")
@@ -13,7 +46,9 @@ class ExportPLYWindow(ctk.CTkToplevel):
 
         # - Pixel size (x, y, z) The scale/size of the pixel in the x, y and z directions.
         # Get the pixel sizes from the settings window and apply them to the export window
-        pixel_size_x, pixel_size_y, pixel_size_z = self.master.settings_frame.get_pixel_size()
+        pixel_size_x, pixel_size_y, pixel_size_z = (
+            self.master.settings_frame.get_pixel_size()
+        )
         self.pixel_size_x = ctk.DoubleVar(value=pixel_size_x)
         self.pixel_size_y = ctk.DoubleVar(value=pixel_size_y)
         self.pixel_size_z = ctk.DoubleVar(value=pixel_size_z)
@@ -150,6 +185,9 @@ class ExportPLYWindow(ctk.CTkToplevel):
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
 
     def browse_file_path(self):
+        """
+        Browse the file path and update the entry widget with the selected file path.
+        """
         # Check what option was selected if npy or ply
         if self.choice == ".ply":
             # Ask for the file name to save the point cloud
@@ -195,11 +233,12 @@ class ExportPLYWindow(ctk.CTkToplevel):
         self.file_path_entry.delete(0, tkinter.END)
         self.file_path_entry.insert(0, self.file_name)
         # Print the file name and path
-        self.master.change_console_text(
-            f"Saving as {self.file_name}", "INFO"
-        )
+        self.master.change_console_text(f"Saving as {self.file_name}", "INFO")
 
     def export(self):
+        """
+        Export the data based on the chosen option.
+        """
         # Check if the file name is valid
         if self.file_name is None:
             self.master.change_console_text("Invalid file name", "ERROR")
@@ -240,9 +279,7 @@ class ExportPLYWindow(ctk.CTkToplevel):
                 file_name=self.file_name,
             )
         # Print the file name and path
-        self.master.change_console_text(
-            f"File exported as {self.file_name}", "SUCCESS"
-        )
+        self.master.change_console_text(f"File exported as {self.file_name}", "SUCCESS")
         # Print the file name and path
         self.destroy()
 
@@ -255,4 +292,7 @@ class ExportPLYWindow(ctk.CTkToplevel):
     #     print("checkbox toggled, current value:", value)
 
     def cancel(self):
+        """
+        Cancels the operation and destroys the current frame.
+        """
         self.destroy()
