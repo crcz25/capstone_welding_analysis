@@ -1,0 +1,9 @@
+axes.facecolor: 0.9490196078431372, 0.9490196078431372, 0.9490196078431372
+figure.facecolor: 0.9490196078431372, 0.9490196078431372, 0.9490196078431372
+xtick.color: black
+ytick.color: black
+text.color: black
+lines.color: red
+legend.facecolor: black
+legend.edgecolor: black
+axes.labelcolor: black

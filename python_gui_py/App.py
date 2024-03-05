@@ -13,7 +13,7 @@ from frames.PlotControlFrame import PlotControlFrame
 from frames.PlotFrame import PlotFrame
 from frames.SettingsFrame import SettingsFrame
 
-ctk.set_appearance_mode("System")
+ctk.set_appearance_mode("Light")
 ctk.set_default_color_theme("dark-blue")
 
 
@@ -44,9 +44,9 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("GUI for SICK E55 Weld Monitoring")
-        self.geometry(f"{1400}x{900}")
-        self.minsize(1400, 900)
+        self.title("Graphical user interface for SICK E55 Weld Monitoring")
+        self.geometry(f"{1400}x{1000}")
+        self.minsize(1400, 1000)
 
         self.grid_columnconfigure(1, weight=1)
         self.grid_columnconfigure((2, 3), weight=0)
@@ -62,7 +62,7 @@ class App(ctk.CTk):
         self.settings_frame = SettingsFrame(self)
 
         # Set default values
-        self.menu_frame.appearance_mode_optionmenu.set("Dark")
+        self.menu_frame.appearance_mode_optionmenu.set("Light")
         self.menu_frame.scaling_optionmenu.set("100%")
         self.plot_control_frame.slider.set(0)
         self.settings_frame.grid_remove()
@@ -88,20 +88,16 @@ class App(ctk.CTk):
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def change_appearance_mode_event(self, new_appearance_mode: str):
-        """
-        Change the appearance mode of the application.
-
-        Args:
-            new_appearance_mode (str): The new appearance mode to set.
-
-        Returns:
-            None
-        """
         ctk.set_appearance_mode(new_appearance_mode)
         self.show_default_frames()
-        self.change_console_text(
-            self
-        )  # Make sure that text colors change when theme is changed
+
+        self.change_console_text(None, 'INFORMATION')
+        if self.range_file is not None:
+            self.plot_frame.update_surface(
+                    profile=self.current_profile,
+                    data=self.range_data,
+                    choice=self.plot_control_frame.choice,
+            )
 
     def change_scaling_event(self, new_scaling: str):
         """
@@ -161,7 +157,7 @@ class App(ctk.CTk):
             self.plot_control_frame.console_entry.tag_config(
                 "INFORMATION", foreground="white"
             )
-        else:
+        elif ap_mode == "Light":
             self.plot_control_frame.searchbox_entry.configure(text_color="black")
             self.plot_control_frame.console_entry.tag_config(
                 "INFORMATION", foreground="black"
@@ -170,15 +166,16 @@ class App(ctk.CTk):
         self.plot_control_frame.console_entry.tag_config("ERROR", foreground="red")
         self.plot_control_frame.console_entry.tag_config("SUCCESS", foreground="green")
 
-        # Insert colored text to console
-        self.plot_control_frame.console_entry.configure(state=ctk.NORMAL)
-        self.plot_control_frame.console_entry.insert(
-            ctk.END, tags + ": " + text + "\n", tags
-        )
-        self.plot_control_frame.console_entry.configure(state=ctk.DISABLED)
+        if text is not None:
+            # Insert colored text to console
+            self.plot_control_frame.console_entry.configure(state=ctk.NORMAL)
+            self.plot_control_frame.console_entry.insert(
+                ctk.END, tags + ": " + text + "\n", tags
+            )
+            self.plot_control_frame.console_entry.configure(state=ctk.DISABLED)
 
-        # Keep focus on the end line
-        self.plot_control_frame.console_entry.see("end")
+            # Keep focus on the end line
+            self.plot_control_frame.console_entry.see("end")
 
     def menu_button(self, frame_type):
         """

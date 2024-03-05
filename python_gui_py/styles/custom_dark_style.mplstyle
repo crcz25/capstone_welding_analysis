@@ -1,0 +1,9 @@
+axes.facecolor: 0.1, 0.1, 0.1
+figure.facecolor: 0.1, 0.1, 0.1
+xtick.color: white
+ytick.color: white
+text.color: white
+lines.color: red
+legend.facecolor: white
+legend.edgecolor: white
+axes.labelcolor: white
