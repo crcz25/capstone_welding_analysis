@@ -355,12 +355,15 @@ class PlotControlFrame(ctk.CTkFrame):
         Returns:
             None
         """
-        # Do nothing if there is no reference line
-        if len(self.master.plot_frame.points) % 2 != 0:
+        if len(self.master.plot_frame.points) < 2:
+            self.master.change_console_text(
+                "Please select two points to align the plot", "ERROR"
+            )
+            return
+        if len(self.master.plot_frame.points) > 2:
+            self.master.change_console_text("Too many reference points. Please reset and select two points", "ERROR")
             return
         self.master.plot_frame.align_plot ^= True
-        self.master.plot_frame.pt1 = self.master.plot_frame.points[-2]
-        self.master.plot_frame.pt2 = self.master.plot_frame.points[-1]
         self.master.plot_frame.update_surface(
             profile=self.master.current_profile, choice=self.choice
         )
@@ -737,6 +740,7 @@ class PlotControlFrame(ctk.CTkFrame):
         self.master.plot_frame.update_surface(
             profile=self.master.current_profile, choice=self.choice
         )
+
 
     def lower_data(
         self, data: List, point1: Tuple[float, float], point2: Tuple[float, float]

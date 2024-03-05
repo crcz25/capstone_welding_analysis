@@ -52,6 +52,7 @@ class PlotFrame(ctk.CTkFrame):
         clean_plot: Clean the plot.
         save_plot: Save the plot as a .png file.
     """
+
     def __init__(self, master, **kwargs):
         super().__init__(master, bg_color="transparent", **kwargs)
         self.grid(row=0, column=1, padx=(10, 10), pady=(10, 10), sticky="nsew")
@@ -97,8 +98,9 @@ class PlotFrame(ctk.CTkFrame):
 
         # Flag for aligning the plot
         self.align_plot = False
-        self.pt1 = None
-        self.pt2 = None
+
+        # Plot margins
+        self.margin_cursor = 10
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def update_info_frame(self):
@@ -228,8 +230,7 @@ class PlotFrame(ctk.CTkFrame):
 
             # Reset the lower data
             self.align_plot = False
-            self.pt1 = None
-            self.pt2 = None
+            self.points = []
 
             # Add guide lines for defects
             self.add_guides_defects()
@@ -316,8 +317,31 @@ class PlotFrame(ctk.CTkFrame):
         x = event.xdata
         y = event.ydata
 
+        # Check the position of the clicked point, we assume a margin for the cursor limits to avoid the user clicking outside the plot
+        if (
+            x < self.cursor_limits["x_min"] + self.margin_cursor
+            or x > self.cursor_limits["x_max"] - self.margin_cursor
+            or y < self.cursor_limits["y_min"] + self.margin_cursor
+            or y > self.cursor_limits["y_max"] - self.margin_cursor
+        ):
+            # Add a legend in the top center of the plot to inform the user
+            self.ax.text(
+                self.cursor_limits["x_max"] / 2,
+                self.cursor_limits["y_max"] * 0.5,
+                "Point out of bounds",
+                horizontalalignment="center",
+                color="black",
+                fontsize=10,
+                zorder=2,
+            )
+            self.points = []
+            return
+
         # Append the point to the list
         self.points.append((x, y))
+
+        # Add a legend in the top center of the plot
+        self.add_points_legend(event=event)
 
         # Check that list has at least 2 points and that all points have a pair
         if len(self.points) < 2 or len(self.points) % 2 != 0:
@@ -419,7 +443,42 @@ class PlotFrame(ctk.CTkFrame):
         )
 
         # Draw the plot
-        self.canvas.draw()
+        self.canvas.draw_idle()
+
+    def add_points_legend(self, event=None):
+        """
+        Adds a legend in the top center of the plot when setting points for aligning the plot.
+        """
+        if len(self.points) % 2 == 0:
+            # Remove the previous text
+            for text in self.ax.texts:
+                if text.get_text() in ["Set point 1", "Set point 2"]:
+                    text.remove()
+            self.ax.text(
+                self.cursor_limits["x_max"] / 2,
+                self.cursor_limits["y_max"] * 0.9,
+                "Set point 1",
+                horizontalalignment="center",
+                color="black",
+                fontsize=10,
+                zorder=2,
+            )
+        else:
+            # Remove the previous text
+            for text in self.ax.texts:
+                if text.get_text() in ["Set point 1", "Set point 2"]:
+                    text.remove()
+            self.ax.text(
+                self.cursor_limits["x_max"] / 2,
+                self.cursor_limits["y_max"] * 0.9,
+                "Set point 2",
+                horizontalalignment="center",
+                color="black",
+                fontsize=10,
+                zorder=2,
+            )
+
+        self.canvas.draw_idle()
 
     def add_guides(self, profile=0, data=None):
         """
@@ -606,7 +665,7 @@ class PlotFrame(ctk.CTkFrame):
         # Align the data
         if self.align_plot:
             section = self.master.plot_control_frame.lower_data(
-                section, self.pt1, self.pt2
+                section, self.points[-2], self.points[-1]
             )
 
         # Set the data filtered
@@ -659,6 +718,9 @@ class PlotFrame(ctk.CTkFrame):
             # self.add_guides(profile, data)
             # Add the guide line for the work piece thickness
             self.add_guides_defects()
+            # Add legend to the plot saying select point 1 and 2
+            if self.pointsEnabled:
+                self.add_points_legend()
             # Remove points for clicked guide lines
             self.points = []
             # Define plot_title and axis labels
