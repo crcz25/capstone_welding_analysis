@@ -46,7 +46,7 @@ class MenuFrame(ctk.CTkFrame):
         self.appearance_mode_label.grid(row=5, column=0, padx=20, pady=(10, 0))
         self.appearance_mode_optionmenu = ctk.CTkOptionMenu(
             self,
-            values=["Light", "Dark", "System"],
+            values=["Light", "Dark"],
             command=master.change_appearance_mode_event,
         )
         self.appearance_mode_optionmenu.grid(row=6, column=0, padx=20, pady=(10, 10))

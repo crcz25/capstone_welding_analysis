@@ -103,6 +103,40 @@ class PlotFrame(ctk.CTkFrame):
         self.margin_cursor = 10
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
+    def update_plot_style(self, plot_title, x_label, y_label):
+        """
+        Applies a custom light or dark theme to the plot
+        """
+        ap_mode = ctk.get_appearance_mode()
+
+        # Set plot custom style
+        if ap_mode == "Light":
+            self.fig.patch.set_facecolor('#f2f2f2')
+            self.ax.set_facecolor('#f2f2f2')
+            plt.style.use(r'python_gui_py\\styles\\custom_light_style.mplstyle')
+            self.line_text_color = 'black'
+
+        elif ap_mode == "Dark":
+            self.fig.patch.set_facecolor('#1a1a1a')
+            self.ax.set_facecolor('#1a1a1a')
+            plt.style.use(r'python_gui_py\\styles\\custom_dark_style.mplstyle')
+            self.line_text_color = 'white'
+
+        # Plot edge color
+        self.ax.tick_params(axis='both', colors=self.line_text_color, labelsize=10)
+        self.ax.spines['bottom'].set_color(self.line_text_color)
+        self.ax.spines['top'].set_color(self.line_text_color)
+        self.ax.spines['right'].set_color(self.line_text_color)
+        self.ax.spines['left'].set_color(self.line_text_color)
+
+        # Plot titles & labels color
+        self.ax.set_title(plot_title, color=self.line_text_color, fontsize=12)
+        self.ax.set_xlabel(x_label, color=self.line_text_color, fontsize=10)
+        self.ax.set_ylabel(y_label, color=self.line_text_color, fontsize=10)
+
+        self.canvas.draw_idle()
+            
+
     def update_info_frame(self):
         """
         Update the info frame with the newest info every second
@@ -272,29 +306,25 @@ class PlotFrame(ctk.CTkFrame):
         """
         # Clear the previous plot
         self.ax.clear()
-
         # Update cursor limits, create them and start the info_frame thread
         self.create_cursors()
         self.update_cursor_limits()
         # self.start_update_info_frame()
-
         # Depending on the choice plot differently
         # Apply the filter
         section = self.apply_filter(data[profile, :], choice)
-        self.ax.plot(section)
-
         # Define the plot title and axis labels
         plot_title = f"Profile {profile + 1}, Filter {choice}"
         x_label = "Width [mm]"
         y_label = "Height [mm]"
-
+        self.update_plot_style(plot_title, x_label, y_label)
+        self.ax.plot(section)
+        # Set the axes limits based on cursor positions
+        self.set_axes_limits()
         # Set the plot title and axis labels
         self.ax.set_title(plot_title)
         self.ax.set_xlabel(x_label)
         self.ax.set_ylabel(y_label)
-
-        # Set the axes limits based on cursor positions
-        self.set_axes_limits()
 
         # Add guide lines to the plot
         # self.add_guides(profile, data)
@@ -330,7 +360,6 @@ class PlotFrame(ctk.CTkFrame):
                 self.cursor_limits["y_max"] * 0.5,
                 "Point out of bounds",
                 horizontalalignment="center",
-                color="black",
                 fontsize=10,
                 zorder=2,
             )
@@ -415,7 +444,6 @@ class PlotFrame(ctk.CTkFrame):
             y_lower - 1,
             f"a={angle_deg:.2f}°",
             horizontalalignment="center",
-            color="black",
             fontsize=10,
             zorder=2,
         )
@@ -426,7 +454,6 @@ class PlotFrame(ctk.CTkFrame):
             y_upper,
             f"w={width:.2f}",
             horizontalalignment="center",
-            color="black",
             fontsize=10,
             zorder=2,
         )
@@ -437,7 +464,6 @@ class PlotFrame(ctk.CTkFrame):
             (p1[1] + p2[1]) / 2,
             f"h={height:.2f}",
             horizontalalignment="center",
-            color="black",
             fontsize=10,
             zorder=2,
         )
@@ -459,7 +485,6 @@ class PlotFrame(ctk.CTkFrame):
                 self.cursor_limits["y_max"] * 0.9,
                 "Set point 1",
                 horizontalalignment="center",
-                color="black",
                 fontsize=10,
                 zorder=2,
             )
@@ -473,7 +498,6 @@ class PlotFrame(ctk.CTkFrame):
                 self.cursor_limits["y_max"] * 0.9,
                 "Set point 2",
                 horizontalalignment="center",
-                color="black",
                 fontsize=10,
                 zorder=2,
             )
@@ -569,7 +593,7 @@ class PlotFrame(ctk.CTkFrame):
             line = Line2D(
                 [0, 1600],
                 [self.work_piece_thickness, self.work_piece_thickness],
-                color="black",
+                color=self.line_text_color,
                 linestyle="--",
                 label="thickness",
             )
@@ -584,7 +608,7 @@ class PlotFrame(ctk.CTkFrame):
                 line = Line2D(
                     [self.x_position_of_weld, self.x_position_of_weld],
                     [y_min, y_max],
-                    color="black",
+                    color=self.line_text_color,
                     linestyle="--",
                     label="height",
                 )
@@ -594,7 +618,6 @@ class PlotFrame(ctk.CTkFrame):
                     y_max * 1.1,
                     f"H={self.height_of_weld:.2f}",
                     horizontalalignment="center",
-                    color="black",
                     fontsize=10,
                     zorder=2,
                 )
@@ -604,7 +627,7 @@ class PlotFrame(ctk.CTkFrame):
                 line = Line2D(
                     [self.x_position_of_weld, self.x_position_of_weld],
                     [y_min, y_max],
-                    color="black",
+                    color=self.line_text_color,
                     linestyle="--",
                     label="height",
                 )
@@ -614,7 +637,6 @@ class PlotFrame(ctk.CTkFrame):
                     y_min * 0.9,
                     f"H={self.height_of_weld:.2f}",
                     horizontalalignment="center",
-                    color="black",
                     fontsize=10,
                     zorder=2,
                 )
@@ -696,6 +718,12 @@ class PlotFrame(ctk.CTkFrame):
             y_2_pos = self.y_2.line.get_ydata()[0]
             # Clean the plot
             self.ax.clear()
+            # Plot style change
+            # Define plot_title and axis labels
+            plot_title = f"Profile {profile + 1}, Filter {choice}"
+            x_label = "Width [mm]"
+            y_label = "Height [mm]"  
+            self.update_plot_style(plot_title, x_label, y_label)
             # Remove and re-add the cursors to the plot
             for cursor in [self.y_1, self.y_2, self.x_1, self.x_2]:
                 if cursor.line is not None:
@@ -714,6 +742,10 @@ class PlotFrame(ctk.CTkFrame):
             self.set_axes_limits()
             # Plot the data
             self.ax.plot(section, color=default_color)
+            # Set the plot title and axis labels
+            self.ax.set_title(plot_title)
+            self.ax.set_xlabel(x_label)
+            self.ax.set_ylabel(y_label)
             # Add guide lines to the plot
             # self.add_guides(profile, data)
             # Add the guide line for the work piece thickness
@@ -723,14 +755,6 @@ class PlotFrame(ctk.CTkFrame):
                 self.add_points_legend()
             # Remove points for clicked guide lines
             self.points = []
-            # Define plot_title and axis labels
-            plot_title = f"Profile {profile + 1}, Filter {choice}"
-            x_label = "Width [mm]"
-            y_label = "Height [mm]"
-            # Set the plot title and axis labels
-            self.ax.set_title(plot_title)
-            self.ax.set_xlabel(x_label)
-            self.ax.set_ylabel(y_label)
             # Redraw the canvas
             self.canvas.draw_idle()
             # Update the plot window
