@@ -203,6 +203,9 @@ class InfoFrame(ctk.CTkFrame):
                 )
                 return
 
+            # Correct the x position
+            x_position = x_position + x_min
+
             return height_of_weld, x_position
         except Exception as e:
             self.master.change_console_text(f"Verify there is data imported.", "ERROR")
