@@ -685,10 +685,11 @@ class PlotFrame(ctk.CTkFrame):
             section = inverted_section - min_value
 
         # Align the data
-        if self.align_plot:
+        if self.align_plot and len(self.points) == 2:
             section = self.master.plot_control_frame.lower_data(
                 section, self.points[-2], self.points[-1]
             )
+
 
         # Set the data filtered
         self.row_filtered = section
@@ -722,7 +723,7 @@ class PlotFrame(ctk.CTkFrame):
             # Define plot_title and axis labels
             plot_title = f"Profile {profile + 1}, Filter {choice}"
             x_label = "Width [mm]"
-            y_label = "Height [mm]"  
+            y_label = "Height [mm]"
             self.update_plot_style(plot_title, x_label, y_label)
             # Remove and re-add the cursors to the plot
             for cursor in [self.y_1, self.y_2, self.x_1, self.x_2]:
@@ -754,7 +755,7 @@ class PlotFrame(ctk.CTkFrame):
             if self.pointsEnabled:
                 self.add_points_legend()
             # Remove points for clicked guide lines
-            self.points = []
+            # self.points = []
             # Redraw the canvas
             self.canvas.draw_idle()
             # Update the plot window
