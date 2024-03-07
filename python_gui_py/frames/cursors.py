@@ -53,7 +53,7 @@ class PlotCursor(ctk.CTkFrame):
         # Create lines on the plot
         self.label = f"{label}"
         self.line = lines.Line2D(
-            self.x, self.y, picker=10, color="red", linewidth=2, label=label
+            self.x, self.y, picker=5, color="red", linewidth=2, label=label
         )
         self.ax.add_line(self.line)
         self.canvas.draw_idle()

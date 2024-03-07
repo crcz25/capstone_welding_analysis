@@ -99,8 +99,8 @@ class PlotFrame(ctk.CTkFrame):
         # Flag for aligning the plot
         self.align_plot = False
 
-        # Plot margins
-        self.margin_cursor = 10
+        # Plot margins of 5% area of the plot for the cursor limits
+        self.margin_cursor = 0.01
 
     # --------------------------------------------------------FUNCTIONALITY--------------------------------------------------------#
     def update_plot_style(self, plot_title, x_label, y_label):
@@ -135,7 +135,7 @@ class PlotFrame(ctk.CTkFrame):
         self.ax.set_ylabel(y_label, color=self.line_text_color, fontsize=10)
 
         self.canvas.draw_idle()
-            
+
 
     def update_info_frame(self):
         """
@@ -347,12 +347,26 @@ class PlotFrame(ctk.CTkFrame):
         x = event.xdata
         y = event.ydata
 
-        # Check the position of the clicked point, we assume a margin for the cursor limits to avoid the user clicking outside the plot
+        # Check the position of the clicked point, we calculate the bounds by using a margin of 15%. The offset is always internal as it is a percentage of the plot area and not the window area.
+        width = self.cursor_limits["x_max"] - self.cursor_limits["x_min"]
+        height = self.cursor_limits["y_max"] - self.cursor_limits["y_min"]
+        offset_x = width * self.margin_cursor
+        offset_y = height * self.margin_cursor
+        lower_x = self.cursor_limits["x_min"] + offset_x
+        upper_x = self.cursor_limits["x_max"] - offset_x
+        lower_y = self.cursor_limits["y_min"] + offset_y
+        upper_y = self.cursor_limits["y_max"] - offset_y
+        print(f"X: {x}, Y: {y}")
+        print(f"Lower X: {lower_x}, Upper X: {upper_x}")
+        print(f"Lower Y: {lower_y}, Upper Y: {upper_y}")
+
         if (
-            x < self.cursor_limits["x_min"] + self.margin_cursor
-            or x > self.cursor_limits["x_max"] - self.margin_cursor
-            or y < self.cursor_limits["y_min"] + self.margin_cursor
-            or y > self.cursor_limits["y_max"] - self.margin_cursor
+            x < lower_x
+            or x > upper_x
+            or y < lower_y
+            or y > upper_y
+            or x == None
+            or y == None
         ):
             # Add a legend in the top center of the plot to inform the user
             self.ax.text(
@@ -767,6 +781,7 @@ class PlotFrame(ctk.CTkFrame):
                 f"Error during plot update: verify there is data imported and try again.",
                 "ERROR",
             )
+            print(e)
 
     def clean_plot(self):
         """
