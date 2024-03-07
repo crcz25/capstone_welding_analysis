@@ -449,9 +449,7 @@ class App(ctk.CTk):
             elif profile > self.max_profiles:
                 profile = self.max_profiles
             # Reset alignment flags
-            self.plot_frame.align_plot = False
-            self.plot_frame.pt1 = None
-            self.plot_frame.pt2 = None
+            self.plot_frame.reset_points_alignment()
             # Update the info frame textboxes
             self.update_info_frame()
             # Update the plot

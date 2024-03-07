@@ -518,6 +518,10 @@ class PlotFrame(ctk.CTkFrame):
 
         self.canvas.draw_idle()
 
+    def reset_points_alignment(self):
+        self.align_plot = False
+        self.points = []
+
     def add_guides(self, profile=0, data=None):
         """
         Adds guide lines to the figure.

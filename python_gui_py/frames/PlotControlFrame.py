@@ -737,6 +737,8 @@ class PlotControlFrame(ctk.CTkFrame):
             None
         """
         self.master.plot_frame.pointsEnabled ^= True
+        if len(self.master.plot_frame.points) > 0:
+            self.master.plot_frame.points = []
         self.master.plot_frame.update_surface(
             profile=self.master.current_profile, choice=self.choice
         )
