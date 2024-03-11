@@ -35,7 +35,7 @@ class SettingsFrame(ctk.CTkFrame):
 
         # --------------- Settings Frame ---------------
         self.settings_frame = ctk.CTkFrame(
-            self, bg_color="transparent", fg_color="transparent"
+            self, bg_color="transparent"
         )
         self.settings_frame.grid(
             row=0,
@@ -59,7 +59,7 @@ class SettingsFrame(ctk.CTkFrame):
         self.pixel_size_z = ctk.StringVar(master=self, value=1.0)
         # Create subframe for pixel size
         self.pixel_size_frame = ctk.CTkFrame(
-            self.settings_frame, bg_color="transparent", fg_color="transparent"
+            self.settings_frame, bg_color="transparent"
         )
         self.pixel_size_frame.grid(
             row=0, column=0, padx=(10, 10), pady=(10, 10), sticky="nsew"
