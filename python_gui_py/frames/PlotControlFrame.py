@@ -761,17 +761,22 @@ class PlotControlFrame(ctk.CTkFrame):
         Returns:
             Lowered data.
         """
-        x1 = point1[0]
-        y1 = point1[1]
-        x2 = point2[0]
-        y2 = point2[1]
-        print(f"Point 1: ({x1}, {y1}), Point 2: ({x2}, {y2})")
-
+        # Get the pixel size
+        pixel_size_x, pixel_size_y, _ = self.master.settings_frame.get_pixel_size()
+        # Get the x and y values of the two points
+        x1, y1 = point1[0], point1[1]
+        x2, y2 = point2[0], point2[1]
+        # Fix the points with the pixel size
+        x1 *= pixel_size_x
+        x2 *= pixel_size_x
+        y1 *= pixel_size_y
+        y2 *= pixel_size_y
+        # Check if the points are the same
         if x2 == x1:
             return np.array(data)
-
+        # Calculate the slope and intercept of the line
         slope = (y2 - y1) / (x2 - x1)
         intercept = y1 - slope * x1
-
+        # Lower the data
         lowered_data = np.array(data) - (np.arange(len(data)) * slope + intercept)
         return lowered_data
