@@ -368,6 +368,7 @@ class PlotControlFrame(ctk.CTkFrame):
             profile=self.master.current_profile, choice=self.choice
         )
 
+
     def interpolate_and_filter(self, row, choice):
         """
         Interpolate and filter.
@@ -764,6 +765,7 @@ class PlotControlFrame(ctk.CTkFrame):
         y1 = point1[1]
         x2 = point2[0]
         y2 = point2[1]
+        print(f"Point 1: ({x1}, {y1}), Point 2: ({x2}, {y2})")
 
         if x2 == x1:
             return np.array(data)

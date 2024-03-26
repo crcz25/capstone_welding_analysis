@@ -55,7 +55,7 @@ class SettingsFrame(ctk.CTkFrame):
         # --------------- Import settings ---------------
         # - Pixel size (x, y, z) The scale/size of the pixel in the x, y and z directions.
         self.pixel_size_x = ctk.StringVar(master=self, value=0.1122161041015625)
-        self.pixel_size_y = ctk.StringVar(master=self, value=1.0)
+        self.pixel_size_y = ctk.StringVar(master=self, value=0.0095)
         self.pixel_size_z = ctk.StringVar(master=self, value=1.0)
         # Create subframe for pixel size
         self.pixel_size_frame = ctk.CTkFrame(
@@ -207,4 +207,4 @@ class SettingsFrame(ctk.CTkFrame):
         Returns:
             tuple: A tuple containing the pixel size in the x, y, and z dimensions.
         """
-        return self.pixel_size_x.get(), self.pixel_size_y.get(), self.pixel_size_z.get()
+        return float(self.pixel_size_x.get()), float(self.pixel_size_y.get()), float(self.pixel_size_z.get())
