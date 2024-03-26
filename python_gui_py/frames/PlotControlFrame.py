@@ -355,12 +355,12 @@ class PlotControlFrame(ctk.CTkFrame):
         Returns:
             None
         """
-        if len(self.master.plot_frame.points) < 2:
+        if len(self.master.plot_frame.align_points) < 2:
             self.master.change_console_text(
                 "Please select two points to align the plot", "ERROR"
             )
             return
-        if len(self.master.plot_frame.points) > 2:
+        if len(self.master.plot_frame.align_points) > 2:
             self.master.change_console_text("Too many reference points. Please reset and select two points", "ERROR")
             return
         self.master.plot_frame.align_plot ^= True
@@ -737,12 +737,19 @@ class PlotControlFrame(ctk.CTkFrame):
         Returns:
             None
         """
-        self.master.plot_frame.pointsEnabled ^= True
-        if len(self.master.plot_frame.points) > 0:
-            self.master.plot_frame.points = []
-        self.master.plot_frame.update_surface(
-            profile=self.master.current_profile, choice=self.choice
-        )
+        if not self.master.plot_frame.pointsEnabled:
+            self.master.change_console_text("Point selection enabled", "INFORMATION")
+            self.master.plot_frame.pointsEnabled = True
+            self.master.plot_frame.update_surface(
+                profile=self.master.current_profile, choice=self.choice
+            )
+        else:
+            self.master.change_console_text("Point selection disabled", "INFORMATION")
+            self.master.plot_frame.pointsEnabled = False
+            # if len(self.master.plot_frame.points) > 0:
+                # self.master.plot_frame.points = []
+            self.master.plot_frame.clear_points_legend()
+            self.master.plot_frame.update_window()
 
 
     def lower_data(

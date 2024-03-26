@@ -67,6 +67,7 @@ class PlotFrame(ctk.CTkFrame):
 
         # Initialize an empty list to store the clicked points
         self.points = []
+        self.align_points = []
 
         # Default cursor limits
         self.initial_cursor_limits = {
@@ -266,6 +267,7 @@ class PlotFrame(ctk.CTkFrame):
             # Reset the lower data
             self.align_plot = False
             self.points = []
+            self.align_points = []
 
             # Add guide lines for defects
             self.add_guides_defects()
@@ -392,6 +394,9 @@ class PlotFrame(ctk.CTkFrame):
         if len(self.points) < 2 or len(self.points) % 2 != 0:
             return
 
+        # Always keep the last two points for aligning the plot
+        self.align_points = self.points[-2:]
+
         # Get the last two points to draw the newest line
         p1 = self.points[-2]
         p2 = self.points[-1]
@@ -487,15 +492,22 @@ class PlotFrame(ctk.CTkFrame):
         # Draw the plot
         self.canvas.draw_idle()
 
+    def clear_points_legend(self):
+        """
+        Clears the legend in the top center of the plot.
+        """
+        for text in self.ax.texts:
+            if text.get_text() in ["Set point 1", "Set point 2"]:
+                text.remove()
+
     def add_points_legend(self, event=None):
         """
         Adds a legend in the top center of the plot when setting points for aligning the plot.
         """
-        if len(self.points) % 2 == 0:
+        if len(self.align_points) % 2 == 0:
             # Remove the previous text
-            for text in self.ax.texts:
-                if text.get_text() in ["Set point 1", "Set point 2"]:
-                    text.remove()
+            self.clear_points_legend()
+            # Add the new text
             self.ax.text(
                 self.cursor_limits["x_max"] / 2,
                 self.cursor_limits["y_max"] * 0.9,
@@ -506,9 +518,8 @@ class PlotFrame(ctk.CTkFrame):
             )
         else:
             # Remove the previous text
-            for text in self.ax.texts:
-                if text.get_text() in ["Set point 1", "Set point 2"]:
-                    text.remove()
+            self.clear_points_legend()
+            # Add the new text
             self.ax.text(
                 self.cursor_limits["x_max"] / 2,
                 self.cursor_limits["y_max"] * 0.9,
@@ -522,7 +533,7 @@ class PlotFrame(ctk.CTkFrame):
 
     def reset_points_alignment(self):
         self.align_plot = False
-        self.points = []
+        self.align_points = []
 
     def add_guides(self, profile=0, data=None):
         """
@@ -705,9 +716,9 @@ class PlotFrame(ctk.CTkFrame):
             section = inverted_section - min_value
 
         # Align the data
-        if self.align_plot and len(self.points) == 2:
+        if self.align_plot and len(self.align_points) == 2:
             section = self.master.plot_control_frame.lower_data(
-                section, self.points[-2], self.points[-1]
+                section, self.align_points[-2], self.align_points[-1]
             )
 
         # Set the data filtered
