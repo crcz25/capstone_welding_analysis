@@ -60,12 +60,14 @@ class PlotFrame(ctk.CTkFrame):
         # Create the plot
         self.fig, self.ax = plt.subplots()
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
+        self.x_axis = np.arange(0, 1600, 1)
 
         # Connect the mouse click event to the add_lines_on_click function
         self.canvas.mpl_connect("button_press_event", self.add_lines_on_click)
 
         # Initialize an empty list to store the clicked points
         self.points = []
+        self.align_points = []
 
         # Default cursor limits
         self.initial_cursor_limits = {
@@ -265,6 +267,7 @@ class PlotFrame(ctk.CTkFrame):
             # Reset the lower data
             self.align_plot = False
             self.points = []
+            self.align_points = []
 
             # Add guide lines for defects
             self.add_guides_defects()
@@ -317,15 +320,16 @@ class PlotFrame(ctk.CTkFrame):
         plot_title = f"Profile {profile + 1}, Filter {choice}"
         x_label = "Width [mm]"
         y_label = "Height [mm]"
+        # Set the plot style
         self.update_plot_style(plot_title, x_label, y_label)
-        self.ax.plot(section)
+        # Plot the data with the coordinates used after setting the pixel size
+        self.ax.plot(self.x_axis, section)
         # Set the axes limits based on cursor positions
         self.set_axes_limits()
         # Set the plot title and axis labels
         self.ax.set_title(plot_title)
         self.ax.set_xlabel(x_label)
         self.ax.set_ylabel(y_label)
-
         # Add guide lines to the plot
         # self.add_guides(profile, data)
 
@@ -389,6 +393,9 @@ class PlotFrame(ctk.CTkFrame):
         # Check that list has at least 2 points and that all points have a pair
         if len(self.points) < 2 or len(self.points) % 2 != 0:
             return
+
+        # Always keep the last two points for aligning the plot
+        self.align_points = self.points[-2:]
 
         # Get the last two points to draw the newest line
         p1 = self.points[-2]
@@ -485,15 +492,22 @@ class PlotFrame(ctk.CTkFrame):
         # Draw the plot
         self.canvas.draw_idle()
 
+    def clear_points_legend(self):
+        """
+        Clears the legend in the top center of the plot.
+        """
+        for text in self.ax.texts:
+            if text.get_text() in ["Set point 1", "Set point 2"]:
+                text.remove()
+
     def add_points_legend(self, event=None):
         """
         Adds a legend in the top center of the plot when setting points for aligning the plot.
         """
-        if len(self.points) % 2 == 0:
+        if len(self.align_points) % 2 == 0:
             # Remove the previous text
-            for text in self.ax.texts:
-                if text.get_text() in ["Set point 1", "Set point 2"]:
-                    text.remove()
+            self.clear_points_legend()
+            # Add the new text
             self.ax.text(
                 self.cursor_limits["x_max"] / 2,
                 self.cursor_limits["y_max"] * 0.9,
@@ -504,9 +518,8 @@ class PlotFrame(ctk.CTkFrame):
             )
         else:
             # Remove the previous text
-            for text in self.ax.texts:
-                if text.get_text() in ["Set point 1", "Set point 2"]:
-                    text.remove()
+            self.clear_points_legend()
+            # Add the new text
             self.ax.text(
                 self.cursor_limits["x_max"] / 2,
                 self.cursor_limits["y_max"] * 0.9,
@@ -520,7 +533,7 @@ class PlotFrame(ctk.CTkFrame):
 
     def reset_points_alignment(self):
         self.align_plot = False
-        self.points = []
+        self.align_points = []
 
     def add_guides(self, profile=0, data=None):
         """
@@ -609,7 +622,7 @@ class PlotFrame(ctk.CTkFrame):
         if self.work_piece_thickness > 0 and self.height_of_weld > 0:
             # Plot the guide line of the work piece thickness
             line = Line2D(
-                [0, 1600],
+                [0, self.cursor_limits["x_max"]],
                 [self.work_piece_thickness, self.work_piece_thickness],
                 color=self.line_text_color,
                 linestyle="--",
@@ -703,11 +716,10 @@ class PlotFrame(ctk.CTkFrame):
             section = inverted_section - min_value
 
         # Align the data
-        if self.align_plot and len(self.points) == 2:
+        if self.align_plot and len(self.align_points) == 2:
             section = self.master.plot_control_frame.lower_data(
-                section, self.points[-2], self.points[-1]
+                section, self.align_points[-2], self.align_points[-1]
             )
-
 
         # Set the data filtered
         self.row_filtered = section
@@ -760,7 +772,8 @@ class PlotFrame(ctk.CTkFrame):
             # Set the axes limits based on cursor positions
             self.set_axes_limits()
             # Plot the data
-            self.ax.plot(section, color=default_color)
+            # self.ax.plot(section, color=default_color)
+            self.ax.plot(self.x_axis, section, color=default_color)
             # Set the plot title and axis labels
             self.ax.set_title(plot_title)
             self.ax.set_xlabel(x_label)
@@ -799,3 +812,13 @@ class PlotFrame(ctk.CTkFrame):
         Save the plot as a .png file.
         """
         self.fig.savefig(file_name, dpi=300, bbox_inches="tight")
+
+    def set_axis_dimensions(self, data_dict):
+        """
+        Set the axis dimensions of the plot.
+        """
+        self.initial_cursor_limits["x_max"] = data_dict["x_max"]
+        self.initial_cursor_limits["y_max"] = data_dict["z_max"]
+        self.cursor_limits["x_max"] = data_dict["x_max"]
+        self.cursor_limits["y_max"] = data_dict["z_max"]
+        self.x_axis = data_dict["x_axis"]

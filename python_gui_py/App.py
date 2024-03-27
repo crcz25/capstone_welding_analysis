@@ -12,6 +12,7 @@ from frames.NodeThread import ROSNodeThread
 from frames.PlotControlFrame import PlotControlFrame
 from frames.PlotFrame import PlotFrame
 from frames.SettingsFrame import SettingsFrame
+from scipy.interpolate import griddata
 
 ctk.set_appearance_mode("Light")
 ctk.set_default_color_theme("dark-blue")
@@ -298,17 +299,6 @@ class App(ctk.CTk):
                 total_profiles, self.range_data.shape[2]
             )
 
-        # Set the current frame to 0
-        self.current_profile = 0
-        # Set the max frames
-        self.max_profiles = self.range_data.shape[0] - 1
-        # Set the slider to the max number of scans
-        # Calculate number of steps in which the slider can be positioned (one step per profile)
-        self.plot_control_frame.slider.configure(
-            to=self.max_profiles,
-            number_of_steps=self.max_profiles,
-        )
-
         # open the csv file
         self.timestamp_data = np.genfromtxt(self.timestamp_file, delimiter=",")
 
@@ -323,15 +313,43 @@ class App(ctk.CTk):
         )
 
         # Correct the dimensions of the data based on the pixel size from the settings frame
-        # Get the pixel size from the settings frame
+        # Get the pixel size factor from the settings frame
         pixel_size_x, pixel_size_y, pixel_size_z = self.settings_frame.get_pixel_size()
-        # Apply the pixel size to the range data
-        self.range_data[:, 0] *= float(pixel_size_x)
-        self.range_data[:, 1] *= float(pixel_size_y)
-        self.range_data[:, 2] *= float(pixel_size_z)
+        # Get the axes
+        # X axis is the width or number of columns
+        # y axis is the depth or number of rows
+        # z axis is the height of the profiles or max value in the range data
+        depth, width = self.range_data.shape
+        height = np.max(self.range_data)
+        print(f"Old dimensions: {width}, {depth}, {height}")
 
-        # Extrapolate the nan values in the range data with 0
-        # self.range_data = np.nan_to_num(self.range_data, nan=0)
+        # Set the current frame to 0
+        self.current_profile = 0
+        # TODO Verify that this is the correct way to calculate the max profiles as it works when exporting the data into ply but not when visualizing it
+        # self.max_profiles = int(new_y - 1)
+        # Calculate the new depth of the data
+        # new_depth = depth * pixel_size_y
+        new_depth = depth
+        # Set the max frames
+        self.max_profiles = self.range_data.shape[0] - 1
+        # Set the slider to the max number of scans
+        # Calculate number of steps in which the slider can be positioned (one step per profile)
+        self.plot_control_frame.slider.configure(
+            to=self.max_profiles,
+            number_of_steps=self.max_profiles,
+        )
+        # Rescale the data
+        new_height = height * pixel_size_z
+        self.range_data = self.range_data * pixel_size_z
+        # Calculate the new width of the data
+        new_width = round(width * pixel_size_x)
+        x_axis = np.linspace(0, new_width, width)
+        print(f"New dimensions: {new_width}, {new_depth}, {new_height}")
+        print(f"new x axis: {x_axis.shape}")
+        print(f"range shape: {self.range_data.shape}")
+
+        # Set the new values in the plot frame
+        self.plot_frame.set_axis_dimensions({"x_max": round(new_width), "y_max": round(new_depth), "z_max": round(new_height), "x_axis": x_axis})
 
         # Update the plot
         self.plot_frame.create_figure(

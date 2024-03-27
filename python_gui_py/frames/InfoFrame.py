@@ -204,7 +204,7 @@ class InfoFrame(ctk.CTkFrame):
                 return
 
             # Correct the x position
-            x_position = x_position + x_min
+            x_position =  round(x_position * self.master.settings_frame.get_pixel_size()[0])
 
             return height_of_weld, x_position
         except Exception as e:
@@ -229,8 +229,10 @@ class InfoFrame(ctk.CTkFrame):
         data = self.master.plot_frame.row_filtered
         # Get the current cursors to crop the data from the surface plot
         cursors = self.master.plot_frame.cursor_limits
-        x_min = int(cursors["x_min"])
-        x_max = int(cursors["x_max"])
+        x_min = round(cursors["x_min"] / self.master.settings_frame.get_pixel_size()[0])
+        x_max = round(cursors["x_max"] / self.master.settings_frame.get_pixel_size()[0])
+        print(x_min, x_max)
+        print(data.shape)
 
         # Find the defect
         height_of_weld, x_position = self.find_height(

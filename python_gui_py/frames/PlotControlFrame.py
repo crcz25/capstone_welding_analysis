@@ -355,18 +355,19 @@ class PlotControlFrame(ctk.CTkFrame):
         Returns:
             None
         """
-        if len(self.master.plot_frame.points) < 2:
+        if len(self.master.plot_frame.align_points) < 2:
             self.master.change_console_text(
                 "Please select two points to align the plot", "ERROR"
             )
             return
-        if len(self.master.plot_frame.points) > 2:
+        if len(self.master.plot_frame.align_points) > 2:
             self.master.change_console_text("Too many reference points. Please reset and select two points", "ERROR")
             return
         self.master.plot_frame.align_plot ^= True
         self.master.plot_frame.update_surface(
             profile=self.master.current_profile, choice=self.choice
         )
+
 
     def interpolate_and_filter(self, row, choice):
         """
@@ -736,12 +737,19 @@ class PlotControlFrame(ctk.CTkFrame):
         Returns:
             None
         """
-        self.master.plot_frame.pointsEnabled ^= True
-        if len(self.master.plot_frame.points) > 0:
-            self.master.plot_frame.points = []
-        self.master.plot_frame.update_surface(
-            profile=self.master.current_profile, choice=self.choice
-        )
+        if not self.master.plot_frame.pointsEnabled:
+            self.master.change_console_text("Point selection enabled", "INFORMATION")
+            self.master.plot_frame.pointsEnabled = True
+            self.master.plot_frame.update_surface(
+                profile=self.master.current_profile, choice=self.choice
+            )
+        else:
+            self.master.change_console_text("Point selection disabled", "INFORMATION")
+            self.master.plot_frame.pointsEnabled = False
+            # if len(self.master.plot_frame.points) > 0:
+                # self.master.plot_frame.points = []
+            self.master.plot_frame.clear_points_legend()
+            self.master.plot_frame.update_window()
 
 
     def lower_data(
@@ -760,16 +768,22 @@ class PlotControlFrame(ctk.CTkFrame):
         Returns:
             Lowered data.
         """
-        x1 = point1[0]
-        y1 = point1[1]
-        x2 = point2[0]
-        y2 = point2[1]
-
+        # Get the pixel size
+        pixel_size_x, pixel_size_y, _ = self.master.settings_frame.get_pixel_size()
+        # Get the x and y values of the two points
+        x1, y1 = point1[0], point1[1]
+        x2, y2 = point2[0], point2[1]
+        # Fix the points with the pixel size
+        x1 *= pixel_size_x
+        x2 *= pixel_size_x
+        y1 *= pixel_size_y
+        y2 *= pixel_size_y
+        # Check if the points are the same
         if x2 == x1:
             return np.array(data)
-
+        # Calculate the slope and intercept of the line
         slope = (y2 - y1) / (x2 - x1)
         intercept = y1 - slope * x1
-
+        # Lower the data
         lowered_data = np.array(data) - (np.arange(len(data)) * slope + intercept)
         return lowered_data
